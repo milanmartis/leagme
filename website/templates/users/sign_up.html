@@ -1,0 +1,97 @@
+{% extends "base.html" %} {% block title %}Sign Up{% endblock %} {% block
+content %}
+<div style="background:transparent !important" class="jumbotron vertical-center">
+  <div class="container readinglazy" align="center">
+    <div class="row" style="display:block;max-width:320px; text-align: center;">
+      <div valign="middle" align="center"  class="col-12">
+        <h1 align="center">
+          <img
+            src="{{ url_for('static', filename='img/signup.svg') }}"
+            width="260"
+            class="filter-green"
+          />
+        </h1>
+      </div>
+
+      <div class="col-12 align-items-center justify-content-center" style="display:block;min-width:320px; text-align: center;">
+        <form method="POST" action="{{ url_for('auth.register', next=request.endpoint) }}">
+          <h3 align="center"></h3>
+          <div class="form-group">
+            <!-- <label for="email">Email Address</label> -->
+            <input
+              type="email"
+              class="form-control"
+              required
+              id="email"
+              name="email"
+              placeholder="Enter email"
+              value="{{ request.form['email'] }}"
+            />
+          </div>
+          <div class="form-group">
+            <!-- <label for="first_name">First Name</label> -->
+            <input
+              type="text"
+              class="form-control"
+              required
+              maxlength="10"
+              id="first_name"
+              name="first_name"
+              placeholder="Enter user name"
+              value="{{ request.form['first_name'] }}"
+            />
+          </div>
+          <div class="form-group">
+            <!-- <label for="password1">Password</label> -->
+            <input
+            type="password"
+            class="form-control"
+            required
+            id="password1"
+            name="password1"
+            placeholder="Enter password"
+            value="{{ request.form['password1'] }}"
+            />
+            <!--
+            <i class="far fa-eye" id="togglePassword1" style="float:right;position:relative; right:12px; top:-25px;color:#00EE00;cursor: pointer;padding:0px;margin:0px;"></i>
+            -->
+          </div>
+          <div class="form-group">
+            <!-- <label for="password2">Password (Confirm)</label> -->
+            <input
+            type="password"
+            class="form-control"
+            required
+            id="password2"
+            name="password2"
+            placeholder="Confirm password"
+            value="{{ request.form['password2'] }}"
+            />
+            <!--
+
+              <i class="far fa-eye" id="togglePassword2" style="float:right;position:relative; right:12px; top:-25px;color:#00EE00;cursor: pointer;padding:0px;margin:0px;"></i>
+            -->
+          </div>
+<br>
+          <button
+            type="submit"
+            id="location_href_register"
+            name="location_href_register"
+            class="btn-demo btn-outline-dark btn-block"
+            onclick="javascript:spinner();document.getElementById('login_button').style.color='#00EE00';"
+          >
+            Sign up
+            <div class="loader">
+              <div class="loading-login">
+              </div>
+            </div>
+          </button>
+        </form>
+        <div class="col mt-10">
+          <h4><a href="login">Login</a></h4>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

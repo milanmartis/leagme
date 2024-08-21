@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}
+  DartsClub - Create Tournament
+{% endblock %}
+{% block content %}
+<h1 align="center"><img src="{{ url_for('static', filename = 'img/'+ head +'.svg') }}" class="filter-green" width="290" /></h1>
+<div class="content-section">
+    <form action="" method="post" class="form" role="form" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        <fieldset class="form-group">
+            <div class="form-group">
+                {{ form.name.label(class="form-control-label createforms") }}
+                {% if form.name.errors %}
+                    {{ form.name(class="form-control form-control-lg is-invalid ") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.name.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.name(autocomplete="off", class="form-control form-control-lg  createforms") }}
+                {% endif %}
+            </div>
+            <div class="form-group">
+                {{ form.min_players.label(class="form-control-label createforms") }}
+                {% if form.min_players.errors %}
+                    {{ form.min_players(class="form-control form-control-lg is-invalid") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.min_players.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.min_players(class="form-control form-control-lg createforms ") }}
+                {% endif %}
+            </div>
+
+
+
+            <div class="form-group">
+                {{ form.open.label(class="form-control-label createforms") }}
+                {% if form.open.errors %}
+                    {{ form.open(class="form-control form-control-lg is-invalid") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.open.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.open(class="form-control form-control-lg createforms") }}
+                {% endif %}
+            </div>
+            <div class="form-group">
+                {{ form.visible.label(class="form-control-label createforms") }}
+                {% if form.visible.errors %}
+                    {{ form.visible(class="form-control form-control-lg is-invalid") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.visible.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.visible(class="form-control form-control-lg createforms") }}
+                {% endif %}
+            </div>
+            <input type="hidden" id="season_type" name="season_type" value="2">
+
+           <!--
+
+               <div class="form-group">
+                   {{ form.season_from.label(class="form-control-label") }}
+                   {% if form.season_from.errors %}
+                   {{ form.season_from(class="form-control form-control-lg is-invalid") }}
+                   <div class="invalid-feedback">
+                        {% for error in form.season_from.errors %}
+                        <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    {{ form.season_from(class="datepicker form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+            -->
+
+<br>
+        </fieldset>
+        <div class="form-group">
+            {{ form.submit(class="btn-demo btn-outline-info createforms", value=title) }}
+        </div>
+    </form>
+<br>
+{% if season %}
+    <button onclick="javascript:location.href='{{ url_for('views.season_manager', season=season.id) }}';" class="btn btn-sm createforms2" />Back</button>
+{% endif %}
+</div>
+<script>
+    
+  let formHasChanged = false;
+  window.onload = function() {
+    const form = document.querySelector('form');
+    form.addEventListener('input', function() {
+      formHasChanged = true;
+    });
+    window.addEventListener('beforeunload', function(e) {
+      if (formHasChanged) {
+        const confirmationMessage = 'Are you sure you want to leave? You have unsaved changes.';
+        (e || window.event).returnValue = confirmationMessage; //Gecko + IE
+        return confirmationMessage; //Gecko + Webkit, Safari, Chrome etc.
+      }
+    });
+  };
+
+
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Vyhľadá všetky formuláre na stránke
+    const forms = document.querySelectorAll('form');
+
+    forms.forEach(form => {
+        const inputs = form.querySelectorAll('input[type=text], input[type=number], input[type=email]');
+
+        inputs.forEach(input => {
+            // Pre každý input načíta uloženú hodnotu z localStorage
+            const savedValue = localStorage.getItem(input.name); // Používa 'name' ako kľúč
+            if (savedValue) {
+                input.value = savedValue;
+            }
+
+            // Ukladá hodnotu inputu do localStorage pri zmene
+            input.addEventListener('input', function() {
+                localStorage.setItem(this.name, this.value);
+            });
+        });
+    });
+});
+
+</script>
+{% endblock content %}

@@ -1,0 +1,38 @@
+{% extends 'base.html' %} {% block title %}
+  User Page
+{% endblock %} {% block content %}
+  <div style="background: transparent !important;" class="jumbotron vertical-center">
+    <div class="container readinglazy" align="center">
+        <div class="row" style="display:block;max-width:320px; text-align: center;">
+          <div valign="middle" align="center"  class="col-12">
+            <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            <fieldset class="form-group">
+                <h1 align="center">
+                    <img
+                      src="{{ url_for('static', filename='img/reset_password.svg') }}"
+                      width="290"
+                      class="filter-green"
+                    />              
+            <div class="form-group">
+                {% if form.email.errors %}
+                {{ form.email(class = 'form-control form-control-xs is-invalid') }}
+                <div class="invalid-feedback">
+                    {% for error in form.email.errors %}
+                    <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                {{ form.email(class = 'form-control form-control-xs') }}
+                {% endif %}
+            </div>
+        </fieldset>
+        <fieldset class="form-group">
+            <div class="form-group">{{ form.submit(class = 'btn-demo btn-outline-dark btn-block') }}</div>
+        </fieldset>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

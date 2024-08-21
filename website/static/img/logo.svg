@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, minimum-scale=1, minimal-ui"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <link
+      rel="apple-touch-icon"
+      href="/static/img/logo-icon-mobile.png"
+    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <link rel="icon" href="/static/img/logo.ico" />
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+
+    <link
+      rel="stylesheet"
+      href="/static/css/style.css"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/3.2.0/css/bootstrap-colorpicker.min.css"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <title>DartsClub - Standings</title>
+    <meta name="description" content="DARTS CLUB" />
+    <meta name="googlebot" content="index,follow" />
+    <meta name="author" content="milanmartis" />
+    <meta property="fb:pages" content="115401168589113" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="DARTS CLUB" />
+    <meta property="og:description" content="Play with sparings" />
+    <meta
+      property="og:image"
+      content="/static/img/logo.png"
+    />
+    <meta
+      property="og:url"
+      content="https://darts-club-g2oik2cmrq-ew.a.run.app"
+    />
+    <meta property="og:locale" content="sk_SK" />
+    <meta property="og:site_name" content="DARTS CLUB" />
+  </head>
+  <body>
+    <!--
+
+      <div class="popup" id="error-popup">
+        <div class="popup-content">
+          <span class="close" id="close-popup">&times;</span>
+          <p id="error-message">Default error message</p>
+        </div>
+      </div>
+    -->
+    
+
+    <div class="container justify-content-center w-100" align="center">
+
+      <nav align="center" class="justify-content-center navbar navbar-expand navbar-dark fixed-bottom" >
+        <div class="navbar order-1 dual-collapse2">
+          <ul class="navbar-nav">
+
+            <li class="nav-item" style="margin-right: 17px;">
+              <a href="/">
+              <img
+              src="/static/img/logo-head.svg"
+              class="filter-green"
+              width="73"
+            />
+              </a>
+          </h1>
+            </li>
+            
+
+            
+            <li class="nav-item">
+              <a href="/home/23/" class="nav-item nav-link">
+                Standings
+              </a>
+            </li>
+            
+            <li class="nav-item">
+              <a href="/season/23" class="nav-item nav-link">
+                Rounds
+              </a>
+            </li>
+            
+
+ 
+          </ul>
+        </div>
+        <div class="navbar-dark brand"></div>
+        <div class="mx-auto order-0">
+          <a class="navbar-brand mx-auto" href="#"></a>
+          <button
+            class="navbar-toggler"
+            type="button"
+            data-toggle="collapse"
+            data-target=".dual-collapse2"
+          >
+            <span class="navbar-toggler-icon"></span>
+          </button>
+        </div>
+        <div class="navbar-collapse collapse order-3 dual-collapse2 justify-content-end" style="text-aling:right; float:right;">
+          <ul class="navbar-nav  text-end">
+            <li
+              class="nav-item justify-content-end"
+            >
+             <font class="username_text" style="opacity: 0.7;font-size: 90%;text-decoration: none;">
+              <a href="/account">centrum</a> 
+             </font> 
+              <a href="/account">
+                <i class="fa fa-user fa-sm" style="font-size:116%;padding:6px;margin-right: 10px;"></i>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+      
+      
+        
+         
+
+  
+  <h1 align="center">
+    <img
+      src="/static/img/standings.svg"
+      class="filter-green"
+      width="260"
+    />
+  </h1>
+  <h2>Second Season</h2>
+  
+  <div class="container readinglazy" align="center">
+    <div class="row" style="display:block;max-width:320px; text-align: center;">
+        <div
+          id="carouselTabs"
+          class="carousel slide"
+          data-bs-ride="carousel" data-bs-touch="true" data-bs-interval="false"
+        >
+            <center>
+              <div class="carousel-indicators">
+                
+                
+                <button type="button" class="btn text active" data-bs-target="#carouselTabs" data-bs-slide-to="0" aria-current="true" aria-label="Slide 1">A</button>
+                
+                
+                
+                <button class="btn text" data-bs-target="#carouselTabs" data-bs-slide-to="1" aria-label="Slide 2">B1</button>
+                
+                
+                <button class="btn text" data-bs-target="#carouselTabs" data-bs-slide-to="2" aria-label="Slide 3">B2</button>
+                
+                
+                
+                
+                
+                
+              </div>
+            </center>
+
+            <div class="carousel-inner w-100"  style="align-items: center;">
+              
+              
+               
+               
+    
+              
+                
+              <!-- <div class="carousel-item " > -->
+
+              <div class="carousel-item active" style="align-items: center;height: fit-content;" >
+    
+                <table class="table" style="display:block;position:relative;" id="datas">
+                  <thead style="margin-bottom:5px;">
+                    <tr>
+                      <th scope="col"></th>
+                      <th scope="col"></th>
+                      <th scope="col" style="width: 15px;" title="Game Played">G</th>
+                      <th scope="col" style="width: 15px;">W</th>
+                      <th scope="col" style="width: 15px;">L</th>
+                      <th scope="col" style="width: 35px;">Legs</th>
+                      <th scope="col" style="width: 15px; text-align: center;">+/-</th>
+                      <th scope="col" style="width: 15px;">P</th>
+                    </tr>
+                  </thead>
+    
+                   
+    
+                  <tr>
+                    <!-- <tr onclick="javascript:location.href='myduels.html'"> -->
+                    <td class="tab-others">
+                      1
+                    </td>
+                    
+                    
+                    
+                    <td class="tab-name">CENTRUM</td>
+                     
+                    
+                    
+                    <td class="tab-others">3</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">1</td>
+                     
+                    
+                    
+                    <td class="tab-others">15/11</td>
+                     
+                    
+                    
+                    <td class="tab-others">4</td>
+                     
+                    
+                    
+                    <td class="tab-points">6</td>
+                     
+
+                    
+                    
+                    
+                    
+                    
+                    <!--  <td class="tab-others"><i class="fa fa-arrow-up" style="color:blue"></i></td>  -->
+                    
+                  </tr>
+                  
+    
+                  <tr>
+                    <!-- <tr onclick="javascript:location.href='myduels.html'"> -->
+                    <td class="tab-others">
+                      2
+                    </td>
+                    
+                    
+                    
+                    <td class="tab-name">APPDESIGN</td>
+                     
+                    
+                    
+                    <td class="tab-others">2</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">1</td>
+                     
+                    
+                    
+                    <td class="tab-others">11/6</td>
+                     
+                    
+                    
+                    <td class="tab-others">5</td>
+                     
+                    
+                    
+                    <td class="tab-points">4</td>
+                     
+
+                    
+                    
+                    
+                    
+                    
+                    <!--  -->
+                    
+                  </tr>
+                  
+    
+                  <tr>
+                    <!-- <tr onclick="javascript:location.href='myduels.html'"> -->
+                    <td class="tab-others">
+                      3
+                    </td>
+                    
+                    
+                    
+                    <td class="tab-name">MILAN</td>
+                     
+                    
+                    
+                    <td class="tab-others">2</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">1</td>
+                     
+                    
+                    
+                    <td class="tab-others">6/9</td>
+                     
+                    
+                    
+                    <td class="tab-others">-3</td>
+                     
+                    
+                    
+                    <td class="tab-points">3</td>
+                     
+
+                     <td class="tab-others2"><i class="fa fa-arrow-down" style="color:#0ca00c"></i></td> 
+                    
+                    
+                    
+                    
+                    <!--  -->
+                    
+                  </tr>
+                  
+    
+                  <tr>
+                    <!-- <tr onclick="javascript:location.href='myduels.html'"> -->
+                    <td class="tab-others">
+                      4
+                    </td>
+                    
+                    
+                    
+                    <td class="tab-name">H1</td>
+                     
+                    
+                    
+                    <td class="tab-others">1</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">1</td>
+                     
+                    
+                    
+                    <td class="tab-others">0/6</td>
+                     
+                    
+                    
+                    <td class="tab-others">-6</td>
+                     
+                    
+                    
+                    <td class="tab-points">0</td>
+                     
+
+                     <td class="tab-others2"><i class="fa fa-arrow-down" style="color:#0ca00c"></i></td> 
+                    
+                    
+                    
+                    
+                    <!--  -->
+                    
+                  </tr>
+                   
+                </table>
+              </div>
+              
+              
+               
+               
+    
+              
+                
+              <!-- <div class="carousel-item " > -->
+
+              <div class="carousel-item " style="align-items: center;height: fit-content;" >
+    
+                <table class="table" style="display:block;position:relative;" id="datas">
+                  <thead style="margin-bottom:5px;">
+                    <tr>
+                      <th scope="col"></th>
+                      <th scope="col"></th>
+                      <th scope="col" style="width: 15px;" title="Game Played">G</th>
+                      <th scope="col" style="width: 15px;">W</th>
+                      <th scope="col" style="width: 15px;">L</th>
+                      <th scope="col" style="width: 35px;">Legs</th>
+                      <th scope="col" style="width: 15px; text-align: center;">+/-</th>
+                      <th scope="col" style="width: 15px;">P</th>
+                    </tr>
+                  </thead>
+    
+                   
+    
+                  <tr>
+                    <!-- <tr onclick="javascript:location.href='myduels.html'"> -->
+                    <td class="tab-others">
+                      1
+                    </td>
+                    
+                    
+                    
+                    <td class="tab-name">H10</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0/0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-points">0</td>
+                     
+
+                    
+                    
+                     <td class="tab-others2"><i class="fa fa-arrow-up" style="color:#0ca00c"></i></td> 
+                    
+                    
+                    <!--  <td class="tab-others"><i class="fa fa-arrow-up" style="color:blue"></i></td>  -->
+                    
+                  </tr>
+                  
+    
+                  <tr>
+                    <!-- <tr onclick="javascript:location.href='myduels.html'"> -->
+                    <td class="tab-others">
+                      2
+                    </td>
+                    
+                    
+                    
+                    <td class="tab-name">H11</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0/0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-points">0</td>
+                     
+
+                    
+                    
+                    
+                    
+                    
+                    <!--  -->
+                    
+                  </tr>
+                  
+    
+                  <tr>
+                    <!-- <tr onclick="javascript:location.href='myduels.html'"> -->
+                    <td class="tab-others">
+                      3
+                    </td>
+                    
+                    
+                    
+                    <td class="tab-name">H12</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0/0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-points">0</td>
+                     
+
+                    
+                    
+                    
+                    
+                    
+                    <!--  -->
+                    
+                  </tr>
+                  
+    
+                  <tr>
+                    <!-- <tr onclick="javascript:location.href='myduels.html'"> -->
+                    <td class="tab-others">
+                      4
+                    </td>
+                    
+                    
+                    
+                    <td class="tab-name">MARTIS</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0/0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-points">0</td>
+                     
+
+                    
+                     <td class="tab-others2"><i class="fa fa-arrow-down" style="color:#0ca00c"></i></td> 
+                    
+                    
+                    
+                    <!--  -->
+                    
+                  </tr>
+                   
+                </table>
+              </div>
+              
+              
+               
+               
+    
+              
+                
+              <!-- <div class="carousel-item " > -->
+
+              <div class="carousel-item " style="align-items: center;height: fit-content;" >
+    
+                <table class="table" style="display:block;position:relative;" id="datas">
+                  <thead style="margin-bottom:5px;">
+                    <tr>
+                      <th scope="col"></th>
+                      <th scope="col"></th>
+                      <th scope="col" style="width: 15px;" title="Game Played">G</th>
+                      <th scope="col" style="width: 15px;">W</th>
+                      <th scope="col" style="width: 15px;">L</th>
+                      <th scope="col" style="width: 35px;">Legs</th>
+                      <th scope="col" style="width: 15px; text-align: center;">+/-</th>
+                      <th scope="col" style="width: 15px;">P</th>
+                    </tr>
+                  </thead>
+    
+                   
+    
+                  <tr>
+                    <!-- <tr onclick="javascript:location.href='myduels.html'"> -->
+                    <td class="tab-others">
+                      1
+                    </td>
+                    
+                    
+                    
+                    <td class="tab-name">H3</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0/0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-points">0</td>
+                     
+
+                    
+                    
+                     <td class="tab-others2"><i class="fa fa-arrow-up" style="color:#0ca00c"></i></td> 
+                    
+                    
+                    <!--  <td class="tab-others"><i class="fa fa-arrow-up" style="color:blue"></i></td>  -->
+                    
+                  </tr>
+                  
+    
+                  <tr>
+                    <!-- <tr onclick="javascript:location.href='myduels.html'"> -->
+                    <td class="tab-others">
+                      2
+                    </td>
+                    
+                    
+                    
+                    <td class="tab-name">H5</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0/0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-points">0</td>
+                     
+
+                    
+                    
+                    
+                    
+                    
+                    <!--  -->
+                    
+                  </tr>
+                  
+    
+                  <tr>
+                    <!-- <tr onclick="javascript:location.href='myduels.html'"> -->
+                    <td class="tab-others">
+                      3
+                    </td>
+                    
+                    
+                    
+                    <td class="tab-name">H8</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0/0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-points">0</td>
+                     
+
+                    
+                    
+                    
+                    
+                    
+                    <!--  -->
+                    
+                  </tr>
+                  
+    
+                  <tr>
+                    <!-- <tr onclick="javascript:location.href='myduels.html'"> -->
+                    <td class="tab-others">
+                      4
+                    </td>
+                    
+                    
+                    
+                    <td class="tab-name">H9</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0/0</td>
+                     
+                    
+                    
+                    <td class="tab-others">0</td>
+                     
+                    
+                    
+                    <td class="tab-points">0</td>
+                     
+
+                    
+                     <td class="tab-others2"><i class="fa fa-arrow-down" style="color:#0ca00c"></i></td> 
+                    
+                    
+                    
+                    <!--  -->
+                    
+                  </tr>
+                   
+                </table>
+              </div>
+              
+            </div>
+        </div>
+    </div>
+  
+    <div class="row" style="display:block;max-width:320px; text-align: center;">
+        <h1 align="center">
+          <img
+            src="/static/img/all.svg"
+            class="filter-green"
+            width="180"
+          />
+        </h1>        <table class="table" id="datas" style="align-items: center; max-width: 420px;">
+          <thead>
+            <tr>
+              <th scope="col"></th>
+              <th scope="col"></th>
+              <th scope="col" style="width: 15px;" title="Game Played">G</th>
+              <th scope="col" style="width: 15px;">W</th>
+              <th scope="col" style="width: 15px;">L</th>
+              <th scope="col" style="width: 35px;">Legs</th>
+              <th scope="col" style="width: 15px; text-align: center;">+/-</th>
+              <th scope="col" style="width: 15px;">P</th>
+            </tr>
+          </thead>
+               
+          <tr>
+            <td class="tab-others">1</td>
+  
+             
+            
+            <td class="tab-name">CENTRUM</td>
+              
+            
+            
+            <td class="tab-others">3</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">1</td>
+              
+            
+            
+            <td class="tab-others">15/11</td>
+              
+            
+            
+            <td class="tab-others">4</td>
+              
+            
+            
+            <td class="tab-points">6</td>
+             
+          </tr>
+             
+          <tr>
+            <td class="tab-others">2</td>
+  
+             
+            
+            <td class="tab-name">APPDESIGN</td>
+              
+            
+            
+            <td class="tab-others">2</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">1</td>
+              
+            
+            
+            <td class="tab-others">11/6</td>
+              
+            
+            
+            <td class="tab-others">5</td>
+              
+            
+            
+            <td class="tab-points">4</td>
+             
+          </tr>
+             
+          <tr>
+            <td class="tab-others">3</td>
+  
+             
+            
+            <td class="tab-name">MILAN</td>
+              
+            
+            
+            <td class="tab-others">2</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">1</td>
+              
+            
+            
+            <td class="tab-others">6/9</td>
+              
+            
+            
+            <td class="tab-others">-3</td>
+              
+            
+            
+            <td class="tab-points">3</td>
+             
+          </tr>
+             
+          <tr>
+            <td class="tab-others">4</td>
+  
+             
+            
+            <td class="tab-name">H10</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0/0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-points">0</td>
+             
+          </tr>
+             
+          <tr>
+            <td class="tab-others">5</td>
+  
+             
+            
+            <td class="tab-name">H11</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0/0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-points">0</td>
+             
+          </tr>
+             
+          <tr>
+            <td class="tab-others">6</td>
+  
+             
+            
+            <td class="tab-name">H12</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0/0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-points">0</td>
+             
+          </tr>
+             
+          <tr>
+            <td class="tab-others">7</td>
+  
+             
+            
+            <td class="tab-name">H5</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0/0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-points">0</td>
+             
+          </tr>
+             
+          <tr>
+            <td class="tab-others">8</td>
+  
+             
+            
+            <td class="tab-name">H8</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0/0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-points">0</td>
+             
+          </tr>
+             
+          <tr>
+            <td class="tab-others">9</td>
+  
+             
+            
+            <td class="tab-name">H9</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0/0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-points">0</td>
+             
+          </tr>
+             
+          <tr>
+            <td class="tab-others">10</td>
+  
+             
+            
+            <td class="tab-name">MARTIS</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-others">0/0</td>
+              
+            
+            
+            <td class="tab-others">0</td>
+              
+            
+            
+            <td class="tab-points">0</td>
+             
+          </tr>
+            
+        </table>
+    </div>
+  
+  </div>
+  
+  
+
+
+
+
+  
+
+
+   <div class="container">
+    <br />
+
+  <div class="row align-items-center justify-content-center">
+  <div class="col-12 align-items-center justify-content-center" style="width:100%; text-align: center;">
+    <a href='/'>
+
+      <img
+      src="/static/img/sipka-2.svg"
+      width="100px"
+      class="filter-foot"
+      
+      />
+    </a>
+  </div>
+
+  <div class="footer-text">
+    <center>
+        <h5>©4nolimit. Powered by appdesign.sk</h5>
+    </center>
+ </div>
+</div>
+</div>
+
+
+<br />
+<br />
+<br />
+<br />
+<br />
+
+      </div>
+      
+      <div class="popup-background" id="cookie-popup">
+        <div class="popup-content2">
+            <h2>Your privacy matters</h2>
+            <p>Cookies and similar technologies are used on our sites to personalise content and ads, 
+              provide and improve product features and to analyse traffic on our sites by DartsClub, 
+              our business partners and authors. You can find further
+               details and change your personal settings below. By clicking OK, 
+               or by clicking any content on our sites, you agree to the use of these cookies and similar technologies.</p>
+            <button onclick="acceptAllCookies()" class="btn btn-sm createforms2">OK</button>
+            <button onclick="openSettings()" class="btn btn-sm createforms2">Setting</button>
+        </div>
+    </div>
+  
+    <!-- Nastavení souborů cookie -->
+    <div class="popup-background" id="cookie-settings" style="display: none;">
+        <div class="popup-content2">
+            <h2>Setting cookies:</h2>
+            <p>Choose your preferences for individual categories of cookies:</p><center>
+            Strictly Necessary <br><input type="checkbox" checked disabled id="strictly-necessary"><br>
+            Preferences<br><input type="checkbox" checked id="preferences"><br> 
+            Statistics <br><input type="checkbox" checked id="statistics"><br> 
+            Marketing <br><input type="checkbox" checked id="marketing"><br>
+            <button onclick="openSettings2()" class="btn btn-sm createforms2">Back</button>
+            <button onclick="saveCookiePreferences()" class="btn btn-sm createforms2">Save</button></center>
+        </div>
+    </div>
+
+
+  <!-- JavaScript pro ovládání vyskakovacího okna -->
+  <script>
+      // Funkce pro přijetí všech souborů cookie a zavření vyskakovacího okna
+      function acceptAllCookies() {
+          // Uložíme informaci o souhlasu do souboru cookie na 365 dní (nastavit podle potřeby)
+          document.cookie = "cookie_consent=accepted; expires=" + new Date(new Date().getTime() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+          document.getElementById("cookie-popup").style.display = "none";
+      }
+
+      // Funkce pro otevření nastavení souborů cookie
+      function openSettings() {
+          document.getElementById("cookie-popup").style.display = "none";
+          document.getElementById("cookie-settings").style.display = "block";
+      }
+      function openSettings2() {
+          document.getElementById("cookie-popup").style.display = "block";
+          document.getElementById("cookie-settings").style.display = "none";
+      }
+
+      // Funkce pro uložení preferencí souborů cookie a zavření okna
+      function saveCookiePreferences() {
+          var strictlyNecessary = document.getElementById("strictly-necessary").checked;
+          var preferences = document.getElementById("preferences").checked;
+          var statistics = document.getElementById("statistics").checked;
+          var marketing = document.getElementById("marketing").checked;
+
+          // Zde můžete implementovat kód pro uložení preferencí do souborů cookie nebo jiného úložiště
+
+          // Uložíme informaci o souhlasu do souboru cookie na 365 dní (nastavit podle potřeby)
+          document.cookie = "cookie_consent=accepted; expires=" + new Date(new Date().getTime() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+
+          document.getElementById("cookie-settings").style.display = "none";
+      }
+
+      // Zkontrolujeme, zda uživatel již udělil souhlas nebo odmítl soubory cookie
+      window.onload = function() {
+          if (document.cookie.indexOf("cookie_consent=accepted") === -1) {
+              document.getElementById("cookie-popup").style.display = "block";
+          }
+      }
+  </script>
+
+
+
+
+
+    <script
+      type="text/javascript"
+      src="/static/index.js"
+    ></script>
+    <script
+      src="https://code.jquery.com/jquery-3.6.3.min.js"
+      integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+      integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/3.2.0/js/bootstrap-colorpicker.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="/static/js/brackets.js"></script>
+
+
+
+
+  <script>
+    $(document).ready(function() {
+      // Find the maximum height of the slides within the carousel
+      var maxHeight = 0;
+      $('.carousel-inner .carousel-item').each(function() {
+        var slideHeight = $(this).height();
+        if (slideHeight > maxHeight) {
+          maxHeight = slideHeight;
+        }
+      });
+    
+      // Set the height of .carousel-inner to the maximum slide height
+      $('.carousel-inner').height(maxHeight + 20);
+    });
+  </script>
+
+
+  </body>
+</html>

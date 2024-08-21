@@ -1,0 +1,78 @@
+{% extends "base.html" %} {% block title %}Login{% endblock %} {% block content
+%}
+
+<div
+  style="background: transparent !important;"
+  class="jumbotron vertical-center"
+>
+  <div class="container readinglazy" align="center">
+    <div class="row" style="display:block;max-width:320px; text-align: center;">
+      <div valign="middle" align="center"  class="col-12">
+        <h1 align="center">
+          <img
+            src="{{ url_for('static', filename='img/login.svg') }}"
+            width="260"
+            class="filter-green"
+          />
+        </h1>
+      </div>
+      <div class="col-12 align-items-center justify-content-center" style="display:block;min-width:320px; text-align: center;">
+        <form method="POST" action="{{ url_for('auth.login') }}">
+          <h3 align="center" class="pt-4"></h3>
+          <div class="form-group">
+            <!-- <label for="email">Email Address</label> -->
+            <input
+              type="email"
+              class="form-control"
+              id="email"
+              required
+              name="email"
+              placeholder="Email"
+              value="{{ request.form['email'] }}"
+            />
+          </div>
+
+          <div class="form-group">
+            <!-- <label for="password">Password</label> -->
+            <input
+              type="password"
+              class="form-control"
+              id="password"
+              required
+              name="password"
+              placeholder="Password"
+              value="{{ request.form['password'] }}"
+            />
+
+          </div>
+
+          <br />
+          <button
+            id="login_button"
+            type="submit"
+            class="btn-demo btn-outline-dark btn-block"
+            onclick="javascript:spinner();document.getElementById('login_button').style.color='#00EE00';"
+          >
+            Login
+            <div class="loader">
+              <div class="loading-login">
+              </div>
+            </div>
+          </button>
+          
+        </form>
+        <small class="text-muted ml-1">
+          <a href="{{ url_for('auth.reset_request') }}">Forgot your password?</a>
+      </small>
+      
+<br>
+  <div class="col-12">
+    <h4><a href="register">Sign up</a></h4>
+  </div>
+  
+</div>
+</div>
+  </div>
+</div>
+
+{% endblock %}

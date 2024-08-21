@@ -1,0 +1,82 @@
+
+{% extends 'base.html' %} {% block title %}
+  DartsClub - Products
+{% endblock %} {% block content %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    
+    <h2>Products</h2>
+
+    <form id="productForm" action="javascript:;">
+        <input type="text" style="padding:4px;"  id="productName" placeholder="Product Name" required>
+        <input type="number" style="height:33px;padding:4px; font-size: 100%;" id="productPrice" placeholder="Price" required>
+        <button type="submit" style="width:53px;padding-bottom:3px;margin:0px;font-weight: 800;" class="btn2 btn-outline-dark shadow-none">+</button>
+    </form>
+<br><br>
+<table style="width:330px;padding: 4px;margin:4px;">
+    <thead>
+        <tr>
+            <th style="width:70%;padding:6px;">Product Name</th>
+            <th>Price</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody id="productTable">
+        {% for product in products %}
+        <tr data-id="{{ product.id }}">
+            <td data-name="title" style="font-weight: 700;">{{ product.title }}</td>
+            <td data-name="price">{{ product.price }}</td>
+            <td>
+                <button class="edit"><i class="fa fa-edit" aria-hidden="true"></i></button>
+            </td>
+            <td>
+                <button class="delete"><i class="fa fa-trash" aria-hidden="true"></i></button>
+            </td>
+            <td></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<script>
+    // Edit button click event listener
+    $(document).on('click', '.edit', function () {
+        const row = $(this).closest('tr');
+        const id = row.data('id');
+        const title = row.find('[data-name="title"]').text();
+        const price = row.find('[data-name="price"]').text();
+        
+        const newName = prompt('Enter new product name:', title);
+        const newPrice = prompt('Enter new price:', price);
+        
+        if (newName !== null && newPrice !== null) {
+            $.ajax({
+                url: `/products/edit/${id}`,
+                method: 'PUT',
+                data: JSON.stringify({ title: newName, price: newPrice }),
+                contentType: 'application/json',
+                success: function (data) {
+                    row.find('[data-name="title"]').text(newName);
+                    row.find('[data-name="price"]').text(newPrice);
+                }
+            });
+        }
+    });
+
+    // Delete button click event listener
+    $(document).on('click', '.delete', function () {
+        const row = $(this).closest('tr');
+        const id = row.data('id');
+        
+        if (confirm('Are you sure you want to delete this row?')) {
+            $.ajax({
+                url: `/products/delete/${id}`,
+                method: 'DELETE',
+                success: function (data) {
+                    row.remove();
+                }
+            });
+        }
+    });
+</script>
+
+    {% endblock %}

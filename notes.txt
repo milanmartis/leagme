@@ -1,0 +1,10 @@
+- zaznamenať výsledok až po potvrdení oboch duelantov
+- ako naožiť so zoznamom waiting players ak sa ten uzivatel ohlasi z predplatného
+- subscribe button nastavit tak, aby sa dal stlacit iba raz
+- ak má season iba jedno kolo, tabuľka iba jedna views.home
+- podakovanie za subscribe
+- poslat email pri subscribe a pri novom kole sezony
+
+- faktura best practices->
+    https://stripe.com/docs/invoicing/global-config-guide
+

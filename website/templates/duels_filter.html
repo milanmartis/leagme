@@ -1,0 +1,219 @@
+{% extends "base.html" %} {% block content %} {% block duels_filter %}
+
+{% for role in user.roles %}
+{% if loop.index0 == 0%}
+<h1 align="center">
+  <img
+    src="{{ url_for('static', filename='img/duels.svg') }}"
+    class="filter-green"
+    width="250"
+  />
+</h1>
+{{season_type}}
+{% if round|int >= 10 %}{% set roundno = round|int - 4 %}{% else %}{% set roundno = round %}{% endif %}
+<h6><a href="{{url_for('views.season_manager', season=season_obj.id)}}">{{season_obj.name}}</a> | Round #{{seas_no_r}}</h6>
+{% if groups %}
+<div class="container readinglazy" align="center">
+  <div class="row" style="display:block;max-width:360px; text-align: center;">
+
+    {% set groupz = request.args.get('groupz') %}
+      <div
+        id="carouselTabs"
+        class="carousel slide"
+        data-bs-ride="carousel" data-bs-touch="true" data-bs-interval="false"
+      >
+          <div class="carousel-indicators">
+            {% if groups|length == 1 %}{%else%}
+            {% for gro in groups %}
+            {% if groupz|int == gro.id %}{% set active2 = 'active' %}{% else %}{% if 1==loop.index and groupz|int < 1 %}{% set active2 = 'active' %}{% else %}{% set active2 = '' %}{% endif %}{% endif %}
+            
+            <button type="button" class="btn text {{active2}}" data-bs-target="#carouselTabs" data-bs-slide-to="{{loop.index0}}" aria-label="Slide {{loop.index}}">{{gro.shorts}}</button>
+            
+            {% endfor %}
+            {% endif %}
+          </div>
+          <center>
+
+            <div class="carousel-inner">
+              {% for g in groups %}
+              <div class="carousel-item  {% if groupz|int == g.id %}active{% else %}{% if 1==loop.index and groupz|int < 1 %}active{% else %}{% endif %}{% endif %}"  style="align-items: center;height: fit-content;">
+                {% for duell in duels %} 
+              
+              <div class="container readinglazy" align="center">
+                <div class="row" style="display:block;max-width:320px; text-align: center;">
+
+                  {% for duel in duell %}
+                  {% if duel.groupy[0].groupz_id == g.id %}
+                    {% set user_ids = [duel.useride[0].user_id if duel.useride|length > 0 else None, 
+                                       duel.useride[1].user_id if duel.useride|length > 1 else None] %}
+                    {% set is_disabled = not user.id in user_ids + [adminz[0], adminz[1], seas.user_id] %}
+                    {% set is_checked = duel.checking[0].checked == 'true' and duel.checking[1].checked == 'true' if duel.checking|length > 1 else False %}
+                    
+                    {% set disabled = "disabled" if is_disabled else "" %}
+                    {% set checked = "btn btn-outline-dark btn-block shadow-none" if is_checked else "btn2 btn-outline-dark btn-block shadow-none" %}
+                    
+
+              
+                  <div valign="middle" align="center"  class="col-12">
+                    <form method="POST" action="javascript:;">
+                      <input type="hidden" id="duelz" name="duelz" value="{{duel.duel_id}}" />
+                      <button id="location_href_season/{{season}}/duel/{{duel.duel_id}}" name="location_href_season/{{season}}/duel/{{duel.duel_id}}" onclick="locationHref('season/{{season}}/duel/{{duel.duel_id}}')" type="submit" {{disabled}} class="{{checked}}">
+                        <div class="row">
+
+                              {% if season_type == 1 %}
+                              
+                              <div class="col-5" style="text-align: right;padding: 0px; margin: 0px;">
+                     
+                                {{duel.player[0].first_name | upper }}
+                              </div>
+                              <div class="col-2" style="text-align: center;padding: 0px; margin: 0px;">
+                                
+                               {{duel.result_[0].result}} : {{duel.result_[1].result}} 
+              
+                              </div>
+                              <div class="col-5" style="text-align: left;padding: 0px; margin: 0px;">
+                               {{duel.player[1].first_name | upper}}
+              
+                              </div>
+
+                              {% endif %}
+                              {% if season_type == 2 %}
+
+                              <div class="row">
+                              <div class="col-10" >
+                     
+                                {% if duel.player[0]|length > 0 %}
+                                {{ duel.player[0].first_name | upper }} 
+                              {% else %}
+                                Unknown
+                              {% endif %}
+                            </div>
+
+                            <div class="col-2" >
+                              {% if duel.result_[0]|length > 0 %}
+                             {{duel.result_[0].result}} 
+                             {% else %}
+                             Unknown
+                           {% endif %}
+                            </div>
+                            </div>
+                            <div class="row">
+                            <div class="col-10" >
+                              {% if duel.player[1]|length > 0 %}
+                              {{ duel.player[1].first_name | upper }} 
+                            {% else %}
+                              Unknown
+                            {% endif %}
+                              
+                            </div>
+                            <div class="col-2" >
+                              
+                              {% if duel.result_[1]|length > 0 %}
+                              {{duel.result_[1].result}} 
+                              {% else %}
+                              Unknown
+                            {% endif %}
+              
+                              </div>
+                            </div>
+
+                              {% endif %}
+
+                        </div>
+                      </button>
+                    </form>
+                  </div>
+              
+                  {% endif %}
+                  {% endfor %}
+                  
+                  
+                  
+                  
+                </div>
+              </div>
+              {% endfor %}
+              </div>
+              {% endfor %}
+          </div>
+      </div>
+        
+  </div>
+</div>
+{% else %}
+<div class="container">
+  <div class="row">
+    <div class="col-12">
+      <h1>NO GROUPS YET</h1>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+
+
+<!-- <div class="container">
+  <div class="row">
+    <div class="col-12">
+      {% for duel in duels %} 
+      <h1>
+        {% if loop.index == 1 %}A{% endif %}
+        {% if loop.index == 2 %}B1{% endif %}
+        {% if loop.index == 3 %}B2{% endif %}
+        {% if loop.index == 4 %}C1{% endif %}
+        {% if loop.index == 5 %}C2{% endif %}
+      </h1>
+      {% endfor %}
+    </div>
+  </div>
+</div> -->
+{% if duels %}
+
+{% else %}
+<div class="container">
+  <div class="row">
+    <div class="col">
+      <h1>NO DUELS YET</h1>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if roundz.open == false  %} {% set ch = "unchecked" %}{% set infoo = "Closed Round" %} {% else %} {% set ch = "checked" %} {% set infoo = "Opened Round" %} {% endif %}
+<br>
+<center>
+<div id="confirmed"><h4>{{infoo}}</h4></div>
+{% if role.name in ('Admin')  or ((manager != none) and role.name in ('Manager') and user.stripe_subscription_id!='')  %}
+
+  <form method="POST" id="checkRoundOpen">
+
+    <input
+      type="hidden"
+      id="season_id"
+      name="season_id"
+      value="{{season}}"
+    />
+    <input
+      type="hidden"
+      id="round_id"
+      name="round_id"
+      value="{{round}}"
+    />
+    <center>
+    <input
+    {{ch}}
+      type="checkbox"
+      class="form-control-check"
+      id="checked"
+      name="checked"
+      value=""
+      onClick="updateRound()"
+    />
+    </center>
+  </form>
+  {%endif%}
+  
+</center>
+
+{%endif%}
+{%endfor%}
+{% endblock %} {% endblock %}

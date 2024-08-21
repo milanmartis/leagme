@@ -1,0 +1,2 @@
+.gitattributes
+env/Lib/site-packages/flask_security/decorators.py -text

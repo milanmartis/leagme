@@ -1,0 +1,560 @@
+{% block content %}
+<script src="https://js.stripe.com/v3/"></script>
+
+    <style scoped>
+
+        body{
+            color:aliceblue;
+        }
+
+           
+        /* Jednoduché CSS pre lepšiu vizuálnu prezentáciu */
+        .product-card {
+            max-width: 290px;
+            border: 3px solid #4CAF50;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 22px;
+            opacity: 0;
+            animation: fadeIn22 1s ease-in-out 1s forwards; /* Nastavte animaci s 2 sekundovým zpožděním */
+            
+        }
+        @keyframes fadeIn22 {
+          0% {
+            opacity: 0; /* Div bude neprůhledný na začátku */
+          }
+          100% {
+            opacity: 1; /* Div bude plně viditelný po animaci */
+          }
+        }
+        .product-name {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        .product-price {
+            margin-bottom: 10px;
+        }
+        .buy-button {
+            background-color: #4CAF50; /* Zelená */
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+        }
+
+        .btn-reverse{
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+        .confirm-button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            opacity: 0; /* Tlačidlo bude neviditeľné na začiatku */
+            transition: opacity 1s ease-in-out; /* Animácia pre zobrazenie */
+          }
+    </style>
+
+
+
+    {% for product in products %}
+    {% if orders is defined and orders %}
+    {% if product.id==orders[0].produc_id and user.stripe_subscription_id %}
+
+    <div class="col-sm-12">
+            
+        <div class="product-card">
+            <h4 style="font-size: 80%;line-height:86%;padding:0px;margin-top:10px;">My current subscription</h4>
+            <div class="product-name"><img
+                src="{{ url_for('static', filename='img/'+ product['title']|lower +'.svg') }}"
+                class="filter-green"
+                width="100%"
+                /></div>
+
+
+                <form method="post" action="/user/cancel_subscription">
+                    <input type="hidden" name="subscription_id" value="{{user.stripe_subscription_id}}">
+                    <input type="hidden" name="produc_id" value="{{orders[0].produc_id}}">
+                    <button id="cancelsubscription" class="btn-reverse" type="submit" style="cursor: pointer;margin-left: 0px;margin-right: 5px;">Cancel Subscription</button>
+                </form>
+                <script>
+                    document.addEventListener("DOMContentLoaded", function() {
+                        var cancelBtn = document.getElementById('cancelsubscription'); // Získanie tlačidla podľa ID
+                        cancelBtn.onclick = function(e) {
+                            e.preventDefault(); // Zabráni predvolenému spracovaniu formulára
+                            var confirmAction = confirm("Are you sure you want to cancel your subscription?"); // Zobrazí potvrdenie
+                            if (confirmAction) {
+                                document.querySelector('form').submit(); // Odosiela formulár, ak užívateľ potvrdí
+                            } else {
+                                // Akcia bola zrušená, nič sa nestane
+                                console.log('Subscription cancellation was cancelled.');
+                            }
+                        };
+                    });
+                </script>
+            </div>
+        </div>
+
+        <script>
+            // Initialize Stripe.js with your actual Stripe public key
+            document.addEventListener("DOMContentLoaded", function() {
+
+                const cancelsubscription = document.getElementById("cancelsubscription");
+              
+                cancelsubscription.addEventListener("click", function() {
+                 
+                });
+            });
+    
+        </script>
+
+    </div>
+
+    {%endif%}
+    {%endif%}
+    {%endfor%}
+
+<br>
+{% if user.stripe_subscription_id %}{% set subscribed22 = "disabled" %}{% set subscribedstyle = 'opacity:0.3;' %}{%else%}{% set subscribed = "" %} {% set subscribedstyle = "copacity:0.1;" %}{%endif%}
+
+
+
+<!-- Zobrazenie produktov -->
+<center>
+    
+    <img
+    src="{{ url_for('static', filename='img/pricing.svg') }}"
+    class="filter-green"
+    style="{{subscribedstyle}}"
+    width="180"
+    />
+    
+    <div class="row">
+            {% for product in products %}
+
+    <!-- ************************************* -->
+    <!-- ********** PLAYER PRODUCT ********** -->
+    <!-- ************************************* -->
+    
+    {% if loop.index0==0 %}
+            <div class="col-sm-12" style="{{subscribedstyle}}">
+            
+            <div class="product-card">
+                <div class="product-name"><img
+                    src="{{ url_for('static', filename='img/'+ product['title']|lower +'.svg') }}"
+                    class="filter-green"
+                    width="100%"
+                    /></div>
+                    
+                    {% if product['id'] == 45 %}
+                    <h4 style="font-size: 80%;line-height:86%;padding:0px;margin-top:-20px;">Access to any season</h4>
+                    {% endif %}
+                    <div class="product-price"><h1>{{ product['price']|round(0) }} €/m</h1></div>
+
+
+                    <form id="payment-form-player" {{subscribed22}}>
+                        <!-- Stripe Elements container -->
+                        <style>
+                            /* Change the cursor color for the Card Element input fields */
+                            #card-element .StripeElement {
+                                caret-color: #00EE00; /* Change the cursor color to red */
+                            }
+                            
+                            /* You can customize the cursor color further if needed */
+                            #card-element .StripeElement:focus {
+                                caret-color: blue; /* Change the cursor color to blue when the input is focused */
+                            }
+                        </style>
+                        <button {{subscribed22}} id="buynow_player" type="submit" class="btn-reverse" style="cursor: pointer;margin-left: 0px;margin-right: 5px;">Subscribe</button>
+                        <button {{subscribed22}} id="submit-button-player" type="submit" class="btn-reverse" style="display:none;cursor: pointer;margin-left: 0px;margin-right: 5px;">Submit Payment</button>
+                        <div id="cardz-player"><center><img src="{{ url_for('static', filename='img/paycards.svg') }}" width="180"></center></div>
+                        <div id="card-element-player" style="background-color:bisque;caret-color: #00EE00;display:none;color:#000;border:2px solid #00EE00;margin-top:20px;padding: 8px;border-radius: 12px;">
+                            <!-- Popisky pre jednotlivé polia -->
+                            <label for="card-number">Card Number</label>
+                            <div id="card-number"></div>
+                          
+                            <label for="card-name">Full Name</label>
+                            <div id="card-name"></div>
+                          
+                            <label for="card-expiry">Expiry Date</label>
+                            <div id="card-expiry"></div>
+                          
+                            <label for="card-cvc">CVC</label>
+                            <div id="card-cvc"></div>
+                          </div>
+                    </form>
+
+
+                        <center>
+
+                            <input {{subscribed22}} type="checkbox" unchecked id="checkcondition_player" name="checkcondition_player" class="form-control-check">
+                        </center>
+                    <center>
+                        
+                        <a href="{{ url_for('views.business_conditions') }}" target="_blank" id="agreecondition_player" style="font-size: 80%;line-height: 67%;"><h4 style="font-size: 80%;line-height: 67%;">I agree with Business Condition</h4></a>
+                    </center>
+
+                </div>
+            </div>
+  
+
+            <script>
+                // Initialize Stripe.js with your actual Stripe public key
+                document.addEventListener("DOMContentLoaded", function() {
+                    let paymentInProgress = false;
+
+                    const checkbox_player = document.getElementById("checkcondition_player");
+                    const buynow_player = document.getElementById("buynow_player");
+                    const agreecondition_player = document.getElementById("agreecondition_player");
+                    const cardz_player = document.getElementById("cardz-player");
+                    const cardelement_player = document.getElementById("card-element-player");
+
+                    var stripe = Stripe('{{checkout_public_key}}');
+            
+                    // Create an instance of Elements
+                    var elements = stripe.elements();
+            
+                    // Create a card Element and add it to the card-element containe
+                    var style = {
+                        base: {
+                            fontSize: '17px',
+                            color: '#000',
+                            
+                        },
+                    };
+    
+                    var card_player = elements.create('card', {
+                        style: style,
+                        hidePostalCode: true
+                        });
+                    card_player.mount('#card-element-player');
+            
+                    // Handle form submission
+                    var form_player = document.getElementById('payment-form-player');
+                    form_player.addEventListener('submit', function(event) {
+                        event.preventDefault();
+                        
+                        if (checkbox_player.checked) {
+                            // The checkbox is checked, generate the URL
+                            cardelement_player.style.display = 'block';
+                            cardz_player.style.display = 'none';
+                            
+                            // Create a PaymentMethod using Stripe.js
+                            stripe
+                            .createPaymentMethod({
+                                type: 'card',
+                                card: card_player,
+                            })
+                            .then(function(result) {
+   
+                                if (result.error) {
+                                    // Handle error (e.g., display an error message to the user)
+                                    console.error(result.error.message);
+                                } else {
+                                    if (!paymentInProgress) {
+                                        // Disable the button to prevent double-clicking
+                                        buynow_player.disabled = true;
+                                
+                                        // Change the button text or appearance to indicate payment processing
+                                        buynow_player.innerHTML = 'Processing...';
+                                
+                                        // Set the flag to indicate that the payment is in progress
+                                        paymentInProgress = true;
+                                        // Send the payment method ID to your Flask server
+                                        var paymentMethodId = result.paymentMethod.id;
+                                     
+                    
+                                        // Make an AJAX request to your Flask server to create the customer
+                                        // and attach the payment method
+                                        fetch('/user/make_order', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                            },
+                                            body: JSON.stringify({
+                                                payment_method_id: paymentMethodId,
+                                                email: '{{ user.email }}',
+                                                user_id: '{{ user.id }}',
+                                                product_id: 45,
+                                                quantity: 1,
+                                                amount: 'price_1O3vq1Kr9xveA3fnavSwPRzO',
+                                                role_name: 'Player'
+  
+                                            }),
+                                        })
+                                        .then(function(response) {
+                                            return response.json();
+                                        })
+                                        .then(function(data) {
+                                            // Handle the response (e.g., save customer and payment method IDs)
+                                            
+                                            location.href="{{ url_for('views.index', purchase='success') }}"
+                                            console.log(data);
+                                        })
+                                        .catch(function(error) {
+                                            // Handle any errors
+                                            console.error(error);
+                                        });
+                                    }
+                                    }
+                                });
+                                
+                        } else {
+                            // The checkbox is not checked, handle accordingly
+                            agreecondition_player.innerHTML = "<h3>You must agree with conditions.</h3>";
+                            checkbox_player.style.borderColor = "red";
+                            console.log("Checkbox is not checked.");
+                            setTimeout(function() {
+                                checkbox_player.style.borderColor = "#00EE00";
+                                agreecondition_player.innerHTML = "<h4 style=\"font-size: 80%;line-height: 67%;\">I agree with Business Conditions.</h4>";
+                            }, 2500)
+                        }
+                    });
+                });
+            
+            
+            </script>
+            <script>
+                // Get a reference to the button element
+                const paymentButton_player = document.getElementById('submit-button-player');
+        
+                // Create a variable to track whether the button has been clicked
+                let isClicked_player = false;
+        
+                // Function to handle the button click
+                function handleClick_player() {
+                    if (!isClicked_player) {
+                        // Disable the button
+                        paymentButton_player.disabled = true;
+                        // Set the flag to true to prevent further clicks
+                        isClicked_player = true;
+        
+                        // Perform the payment processing or any other action here
+                        // You can make an API call to process the payment, show a success message, etc.
+                        // For example: alert('Payment processed successfully');
+                    }
+                }
+        
+                // Attach the handleClick function to the button's click event
+                paymentButton_player.addEventListener('click', handleClick_player);
+            </script>
+            </div>
+            {% endif %}
+
+            <!-- ************************************* -->
+            <!-- ********** MANAGER PRODUCT ********** -->
+            <!-- ************************************* -->
+
+            {% if loop.index0==1 %}
+        <div class="col-sm-12" style="{{subscribedstyle}}">
+            
+            <div class="product-card">
+                <div class="product-name"><img
+                    src="{{ url_for('static', filename='img/'+ product['title']|lower +'.svg') }}"
+                    class="filter-green"
+                    width="100%"
+                    /></div>
+                    {% if product['id'] == 45 %}
+                    <h4 style="font-size: 80%;line-height:86%;padding:0px;margin-top:-20px;">Access to any season</h4>
+                    {% endif %}
+                    {% if product['id'] == 46 %}
+                    <h4 style="font-size: 80%;line-height:86%;padding:0px;margin-top:-20px;">Access to any season</h4>
+                    <h4 style="font-size: 80%;line-height:86%;padding:0px;">Creating a season</h4>
+                    <h4 style="font-size: 80%;line-height:86%;padding:0px;">Manage own season</h4>
+                    
+                    {% endif %}
+                    <div class="product-price"><h1>{{ product['price']|round(0) }} €/m</h1></div>
+                    
+                    
+                    <form id="payment-form_manager" {{subscribed22}}>
+                        <!-- Stripe Elements container -->
+                        <style>
+                            /* Change the cursor color for the Card Element input fields */
+                            #card-element .StripeElement {
+                                caret-color: #00EE00; /* Change the cursor color to red */
+                            }
+                            
+                            /* You can customize the cursor color further if needed */
+                            #card-element .StripeElement:focus {
+                                caret-color: blue; /* Change the cursor color to blue when the input is focused */
+                            }
+                        </style>
+                        <button {{subscribed22}} id="buynow_manager" type="submit" class="btn-reverse" style="cursor: pointer;margin-left: 0px;margin-right: 5px;">Subscribe</button>
+                        <button {{subscribed22}} id="submit-button_manager" type="submit" class="btn-reverse" style="display:none;cursor: pointer;margin-left: 0px;margin-right: 5px;">Submit Payment</button>
+                        <div id="cardz_manager"><center><img src="{{ url_for('static', filename='img/paycards.svg') }}" width="180"></center></div>
+                        <div id="card-element_manager" style="background-color:bisque;caret-color: #00EE00;display:none;color:#000;border:2px solid #00EE00;margin-top:20px;padding: 8px;border-radius: 12px;">
+                            <!-- Popisky pre jednotlivé polia -->
+                            <label for="card-number">Card Number</label>
+                            <div id="card-number"></div>
+                          
+                            <label for="card-name">Full Name</label>
+                            <div id="card-name"></div>
+                          
+                            <label for="card-expiry">Expiry Date</label>
+                            <div id="card-expiry"></div>
+                          
+                            <label for="card-cvc">CVC</label>
+                            <div id="card-cvc"></div>
+                          </div>
+                    </form>
+
+
+                        <center>
+
+                            <input {{subscribed22}} type="checkbox" unchecked id="checkcondition_manager" name="checkcondition_manager" class="form-control-check">
+                        </center>
+                    <center>
+                        
+                        <a href="{{ url_for('views.business_conditions') }}" target="_blank" id="agreecondition_manager" style="font-size: 80%;line-height: 67%;"><h4 style="font-size: 80%;line-height: 67%;">I agree with Business Condition</h4></a>
+                    </center>
+
+                </div>
+            </div>
+  
+
+            <script>
+                // Initialize Stripe.js with your actual Stripe public key
+                document.addEventListener("DOMContentLoaded", function() {
+                    const checkbox_manager = document.getElementById("checkcondition_manager");
+                    const buynow_manager = document.getElementById("buynow_manager");
+                    const agreecondition_manager = document.getElementById("agreecondition_manager");
+                    const cardz_manager = document.getElementById("cardz_manager");
+                    const cardelement_manager = document.getElementById("card-element_manager");
+            
+                    var stripe = Stripe('{{checkout_public_key}}');
+            
+                    // Create an instance of Elements
+                    var elements = stripe.elements();
+            
+                    // Create a card Element and add it to the card-element container
+                    var style_manager = {
+                        base: {
+                            fontSize: '17px',
+                            color: '#000',
+                            
+                        },
+                        };
+    
+                    var card_manager = elements.create('card', {
+                        style: style_manager,
+                        hidePostalCode: true
+                        });
+                    
+                    card_manager.mount('#card-element_manager');
+            
+                    // Handle form submission
+                    var form_manager = document.getElementById('payment-form_manager');
+                    form_manager.addEventListener('submit', function(event) {
+                        event.preventDefault();
+                        if (checkbox_manager.checked) {
+                            // The checkbox is checked, generate the URL
+                            cardelement_manager.style.display = 'block';
+                            cardz_manager.style.display = 'none';
+                    
+                            // Create a PaymentMethod using Stripe.js
+                            stripe
+                                .createPaymentMethod({
+                                    type: 'card',
+                                    card: card_manager,
+                                })
+                                .then(function(result) {
+                                    if (result.error) {
+                                        // Handle error (e.g., display an error message to the user)
+                                        console.error(result.error.message);
+                                    } else {
+                                        // Send the payment method ID to your Flask server
+                                        var paymentMethodId = result.paymentMethod.id;
+                    
+                                        // Make an AJAX request to your Flask server to create the customer
+                                        // and attach the payment method
+                                        fetch('/user/make_order', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                            },
+                                            body: JSON.stringify({
+                                                payment_method_id: paymentMethodId,
+                                                email: '{{ user.email }}',
+                                                user_id: '{{ user.id }}',
+                                                product_id: 46,
+                                                quantity: 1,
+                                                amount: 'price_1O3vryKr9xveA3fnqYnskbdW',
+                                                role_name: 'Manager'
+                                            }),
+                                        })
+                                        .then(function(response) {
+                                            return response.json();
+                                        })
+                                        .then(function(data) {
+                                            // Handle the response (e.g., save customer and payment method IDs)
+                                            location.href="{{ url_for('views.index', flash='Thanks for your purchase!') }}"
+                                            console.log(data);
+                                        })
+                                        .catch(function(error) {
+                                            // Handle any errors
+                                            console.error(error);
+                                        });
+                                    }
+                                });
+                        } else {
+                            // The checkbox is not checked, handle accordingly
+                            agreecondition_manager.innerHTML = "<h3>You must agree with conditions.</h3>";
+                            checkbox_manager.style.borderColor = "red";
+                            console.log("Checkbox is not checked.");
+                            setTimeout(function() {
+                                checkbox_manager.style.borderColor = "#00EE00";
+                                agreecondition_manager.innerHTML = "<h4 style=\"font-size: 80%;line-height: 67%;\">I agree with Business Conditions.</h4>";
+                            }, 2500)
+                        }
+                    });
+                });
+            
+            
+            </script>
+            
+            <script>
+                // Get a reference to the button element
+                const paymentButton_manager = document.getElementById('submit-button_manager');
+        
+                // Create a variable to track whether the button has been clicked
+                let isClicked = false;
+        
+                // Function to handle the button click
+                function handleClick() {
+                    if (!isClicked) {
+                        // Disable the button
+                        paymentButton.disabled = true;
+                        // Set the flag to true to prevent further clicks
+                        isClicked = true;
+        
+                        // Perform the payment processing or any other action here
+                        // You can make an API call to process the payment, show a success message, etc.
+                        // For example: alert('Payment processed successfully');
+                    }
+                }
+        
+                // Attach the handleClick function to the button's click event
+                paymentButton_manager.addEventListener('click', handleClick);
+            </script>
+
+
+            {% endif %}
+            {% endfor %}
+        </div>
+
+    </center>
+</div>
+
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends "base.html" %} {% block title %}DartsClub - Duel{% endblock %} {%
+  block content %}
+  <h1 align="center">
+    <div class="container-fluid pl-0 pr-0">
+      <div class="row justify-content-center mb-6">
+{% for gru in group.groupy %}
+
+{% if gru.id==duel[0][8]%}
+
+<button
+onclick="javascript:location.href='{{url_for('views.duel_view', season=season,groupz=gru.id,round=duel[0][9])}}';"
+class="btn4 btn-outline-dark mt-4 shadow-none"
+>
+BACK
+</button>
+{% endif %}
+{% endfor%}
+
+      </div>
+    </div>
+    <br />
+    <img
+      src="{{ url_for('static', filename='img/matchup.svg') }}"
+      class="filter-green"
+      width="220"
+    />
+  </h1>
+  <div class="container-fluid pl-2 pr-8 readinglazy">
+    <div class="row justify-content-center text-center">
+      {% for player in duel %}
+      <div valign="middle" align="center" class="col">
+        <form
+          method="POST"
+          id="updateResult[{{loop.index}}]"
+          action="javascript:;"
+        >
+          <input
+            type="hidden"
+            id="duel_id[{{loop.index}}]"
+            name="duel_id[{{loop.index}}]"
+            value="{{player[2]}}"
+          />
+          <input
+            type="hidden"
+            id="user_duel_id[{{loop.index}}]"
+            name="user_duel_id[{{loop.index}}]"
+            value="{{player[1]}}"
+          />
+          {% if not user.id in [player[1], adminz[0], adminz[1], seas.user_id] %} {% set conf2 = "opacity:0.5;" %}{% else %}{% set conf2=
+            "opacity:1;" %} {% endif %}
+          {% if player[9]!=roundz.id %}{% set disabled = "disabled" %} {% endif %}
+          {% if not user.id in [player[1], adminz[0], adminz[1], seas.user_id] %}  {% set
+          disabled= "disabled" %}{% set conf= "btn-result" %}{% else %}{% set conf=
+          "btn-result" %} {% endif %}
+          <select
+            {{disabled}}
+            class="custom-select"
+            id="user_duel_result[{{loop.index}}]"
+            id="user_duel_result[{{loop.index}}]"
+            name="user_duel_result[{{loop.index}}]"
+            style="height: 140px;{{conf2}}"
+          >
+            {% for o in range(7) %} {% if player[3] == o %}
+            <option value="{{o}}" selected>{{o}}</option>
+            {% else %}
+            <option value="{{o}}">{{o}}</option>
+            {% endif %} {% endfor %}
+          </select>
+          <!-- <input
+            class="form-control form-control-lg resultscore"
+            type="number"
+            id="user_duel_result[{{loop.index}}]"
+            name="user_duel_result[{{loop.index}}]"
+            autocomplete="off"
+            value="{{player[2]}}"
+            style="height: 140px;"
+          /> -->
+          <h1 id="player-name-result[{{loop.index}}]">
+            {{player[0] | upper | replace("_"," ")}}
+          </h1>
+          <button
+            type="submit"
+            {{disabled}}
+            class="{{conf}} btn-outline-dark mt-4 btn-block shadow-none text-center"
+            onClick="updateDuel2({{loop.index}})"
+            id="updateDuelButton[{{loop.index}}]"
+          >
+            SUBMIT
+          </button>
+          <br />
+          <div class="conntainer mt-20">
+            <div class="row justify-content-center pt-20">
+              <form method="POST" id="checkForm[{{loop.index}}]">
+                <br />
+                <input
+                  type="hidden"
+                  id="duel[{{loop.index}}]"
+                  name="duel[{{loop.index}}]"
+                  value="{{player[2]}}"
+                />
+                <input
+                  type="hidden"
+                  id="player[{{loop.index}}]"
+                  name="player[{{loop.index}}]"
+                  value="{{player[1]}}"
+                />
+                {% if player[9]!=roundz.id %}{% set disabled = "disabled" %} {% endif %}
+                {% if not user.id in [player[1], adminz[0], adminz[1], seas.user_id] %} {% set
+                  disabled = "disabled" %} {% endif %} {% if player[6] == 'false' or
+                player[6] == null or player[6] == '' %} {% set ch = "unchecked"
+                %}{% set confirm = "confirm" %} {% else %} {% set ch = "checked"
+                %} {% set confirm = "" %} {% endif %}
+                <center>
+                <input
+                  type="checkbox"
+                  class="form-control-check"
+                  {{ch}}
+                  {{disabled}}
+                  id="checked[{{loop.index}}]"
+                  name="checked[{{loop.index}}]"
+                  value="{{player[6]}}"
+                  onClick="updateDuel({{loop.index}})"
+                />
+                </center>
+              </form>
+            </div>
+         
+            <div style="{{conf2}}" id="confirmed[{{loop.index}}]">
+              <h4>
+                {{confirm}}
+              </h4>
+            </div>
+          </div>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  
+  {% endblock %}

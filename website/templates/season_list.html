@@ -1,0 +1,40 @@
+{% extends 'base.html' %} {% block title %}
+  DartsClub - Season
+{% endblock %} {% block content %}
+  <h1 align="center"><img src="{{ url_for('static', filename = 'img/seasons.svg') }}" class="filter-green" width="290" /></h1>
+  {% if seasons %}
+    <div class="container readinglazy" align="center">
+      <div class="row" style="display:block;max-width:320px; text-align: center;">
+        {% for season in seasons %}
+          <div valign="middle" align="center" class="col-12">
+            <form method="POST">
+              <input type="hidden" id="season_id" name="season_id" value="{{ season.id }}" />
+
+              <button id="season_id_button" name="season_id_button" type="submit" class="btn btn-outline-dark btn-block shadow-none" value="go">{{ season.name }}</button>
+            </form>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% else %}
+    <div class="container">
+      <div class="row">
+        <div class="col">
+          <h1>NO SEASON YET</h1>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+  <br>
+  {% if user.id in [adminz[0], adminz[1]] %}
+  <div class="container readinglazy" align="center">
+    <div class="row" style="display:block;max-width:320px; text-align: center;">
+        <div class="col">
+          <form method="POST">
+            <button style="font-size: 150%;padding: 0px;margin: 4px;" id="season_add" name="season_add" type="submit" class="btn btn-demo btn-block shadow-none" value="11">+ New Season</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

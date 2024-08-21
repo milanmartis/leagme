@@ -1,0 +1,194 @@
+{% extends "base.html" %} {% block title %}User Page{% endblock %} {% block
+content %}
+<br />
+
+<div class="container readinglazy" align="center">
+  <div class="row" style="display:block;max-width:320px; text-align: center;">
+    <div valign="middle" align="center"  class="col-12">
+      <img
+        src="{{ url_for('static', filename='img/my-account.svg') }}"
+        width="250"
+        class="filter-green"
+      />
+
+
+      <form method="POST" action="{{ url_for('auth.user_details') }}">
+        <h3 align="center"></h3>
+        <div class="form-group">
+          
+          
+          
+          <h1 style="margin-top:-15px;margin-bottom:15px;">
+            <p style="font-size: 80%;font-weight:700;opacity:0.5;margin-bottom:0px;">
+            User Id
+            </p>
+            {{user.email }}
+          </h1>
+        </div>
+        <div class="form-group">
+          <input
+            type="hidden"
+            id="useride"
+            name="useride"
+            value="{{user.id}}"
+          />
+          <!-- <label for="first_name">Nick Name</label> -->
+          <input
+            type="text"
+            class="form-control"
+            autocomplete="off"
+            maxlength="10"
+            id="first_name_update"
+            name="first_name_update"
+            placeholder="User name"
+            value="{{ user.first_name }}"
+          />
+        </div>
+        <div class="form-group">
+          <!-- <label for="password_old">Old Password</label> -->
+          <input
+            type="password"
+            class="form-control"
+            id="password_old"
+            name="password_old"
+            placeholder="Old Password"
+            value=""
+          />
+        </div>
+        <div class="form-group">
+          <!-- <label for="password1">New Password</label> -->
+          <input
+            type="password"
+            class="form-control"
+            id="password1"
+            name="password1"
+            placeholder="New Password"
+            value=""
+          />
+        </div>
+        <div class="form-group">
+          <!-- <label for="password2">New Password (Confirm)</label> -->
+          <input
+            type="password"
+            class="form-control"
+            id="password2"
+            name="password2"
+            placeholder="New Password (Confirm)"
+            value=""
+          />
+        </div>
+        <br />
+        <button type="submit" id="account_button" class="btn-demo btn-outline-dark btn-block" onclick="javascript:spinner();document.getElementById('account_button').style.color='#00EE00';">
+          SUBMIT
+          <div class="loader">
+            <div class="loading">
+            </div>
+          </div>
+        </button>
+      </form>
+    </div>
+    <div class="col-12 justify-content-center text-center">
+      <br>
+
+
+
+
+      {% include 'pricing.html' %}
+
+
+<!--
+
+  
+  <h1></h1>
+  
+          {% for card in cards %}
+          <div class="inputcard">
+            ...{{ card.card_number[-4:] }} ({{ card.expiration_date }})
+            
+          </div>
+          {% endfor %}
+          
+        -->
+  <div style="display: none;">
+
+    <h2>Add Pay Cards</h2>
+    <form id="payment-form">
+      <label for="card-number" class="btn-user">Card number</label><br>
+      <input type="text" id="card-number" required>
+      <br>
+      <label for="expiration-date" class="btn-user">Expiry date</label><br>
+      <input type="text" id="expiration-date" required >
+      <br>
+      <br>
+      <button class="btn-main" type="submit">Save</button>
+    </form>
+    
+    
+    
+  </div>
+  <br>
+  <br>
+      <h6>
+        <a class="btn2 nav-item nav-link" href="{{ url_for('auth.logout') }}">LOGOUT</a>
+      </h6>
+    </div>
+
+    <!-- <div align="center" class="col-sm-6 pt-20 align-self-center">
+      <img
+        src="{{ url_for('static', filename='img/aim.svg') }}"
+        width="94%"
+        class="filter-green"
+      />
+    </div> -->
+  </div>
+    <div class="row" style="display:block;max-width:320px; text-align: center;">
+      <div class="col-12 justify-content-center text-center">
+        <br>
+
+      <!--  <br>
+        <h6>
+          <a class="btn2 nav-item nav-link" href="{{ url_for('views.business_conditions') }}">Business Conditions</a>
+        </h6>
+      -->
+      </div>
+  </div>
+
+  
+</div>
+<!--
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('payment-form');
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+  
+      const cardNumber = document.getElementById('card-number').value;
+      const expirationDate = document.getElementById('expiration-date').value;
+  
+      fetch('/user/add_card', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cardNumber,
+          expirationDate,
+        }),
+      })
+      .then(response => response.json())
+      .then(data => {
+                // Obsluha úspešného pridania karty
+                console.log('Karta úspešne pridaná:', data);
+                window.location.reload(); // Znovunačítať stránku
+              })
+              .catch(error => {
+                // Obsluha chyby
+                console.error('Chyba pri pridaní karty:', error);
+              });
+            });
+          });
+        </script>
+      -->
+
+{% endblock %}

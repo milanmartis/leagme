@@ -1,0 +1,268 @@
+{% extends "base.html" %} {% block title %}DartsClub - Standings{% endblock %} {% block
+  content %}
+
+  {% if seas.season_type == 1 %}
+  <h1 align="center">
+    <img
+      src="{{ url_for('static', filename='img/standings.svg') }}"
+      class="filter-green"
+      width="260"
+    />
+  </h1>
+  <h2>{{seas.name}}</h2>
+  {% if data_show_table %}
+  <div class="container readinglazy" align="center">
+    <div class="row" style="display:block;max-width:320px; text-align: center;">
+        <div
+          id="carouselTabs"
+          class="carousel slide"
+          data-bs-ride="carousel" data-bs-touch="true" data-bs-interval="false"
+        >
+            <center>
+              <div class="carousel-indicators">
+                {% if data_show_table|length == 1 %}
+                {%endif%}
+                {% if data_show_table|length > 1 %}
+                <button type="button" class="btn text active" data-bs-target="#carouselTabs" data-bs-slide-to="0" aria-current="true" aria-label="Slide 1">A</button>
+                {%endif%}
+                {% if data_show_table|length == 2 %}
+                <button class="btn text" data-bs-target="#carouselTabs" data-bs-slide-to="1" aria-label="Slide 2">B</button>
+                {%endif%}
+                {% if data_show_table|length > 1 and data_show_table|length !=2 %}
+                <button class="btn text" data-bs-target="#carouselTabs" data-bs-slide-to="1" aria-label="Slide 2">B1</button>
+                {%endif%}
+                {% if data_show_table|length > 2 %}
+                <button class="btn text" data-bs-target="#carouselTabs" data-bs-slide-to="2" aria-label="Slide 3">B2</button>
+                {%endif%}
+                {% if data_show_table|length == 4 %}
+                <button class="btn text" data-bs-target="#carouselTabs" data-bs-slide-to="3" aria-label="Slide 4">C</button>
+                {%endif%}
+                {% if data_show_table|length > 3 and data_show_table|length !=4 %}
+                <button class="btn text" data-bs-target="#carouselTabs" data-bs-slide-to="3" aria-label="Slide 4">C1</button>
+                {%endif%}
+                {% if data_show_table|length > 4 %}
+                <button class="btn text" data-bs-target="#carouselTabs" data-bs-slide-to="4" aria-label="Slide 5">C2</button>
+                {%endif%}
+                {% if data_show_table|length > 5 %}
+                <button class="btn text" data-bs-target="#carouselTabs" data-bs-slide-to="5" aria-label="Slide 6">C3</button>
+                {%endif%}
+                {% if data_show_table|length > 6 %}
+                <button class="btn text" data-bs-target="#carouselTabs" data-bs-slide-to="6" aria-label="Slide 7">C4</button>
+                {%endif%}
+              </div>
+            </center>
+
+            <div class="carousel-inner w-100"  style="align-items: center;">
+              {% for data12 in data_show_table %}
+              {% set de = data_name_tabz %}
+              {% if not user.id in [adminz[0], adminz[1]] %}
+              {% set user_groupz = user_group.id %} 
+              {% else %} 
+              {% set user_groupz = 18 %} {% endif %}
+    
+              {% set list1 = de %}
+              {% set list1len =  loop.index0 %}  
+              <!-- <div class="carousel-item {% if list1[list1len].id == user_groupz %}active{% endif %}" > -->
+
+              <div class="carousel-item {% if loop.index == 1 %}active{% endif %}" style="align-items: center;height: fit-content;" >
+    
+                <table class="table" style="display:block;position:relative;" id="datas">
+                  <thead style="margin-bottom:5px;">
+                    <tr>
+                      <th scope="col"></th>
+                      <th scope="col"></th>
+                      <th scope="col" style="width: 15px;" title="Game Played">G</th>
+                      <th scope="col" style="width: 15px;">W</th>
+                      <th scope="col" style="width: 15px;">L</th>
+                      <th scope="col" style="width: 35px;">Legs</th>
+                      <th scope="col" style="width: 15px; text-align: center;">+/-</th>
+                      <th scope="col" style="width: 15px;">P</th>
+                    </tr>
+                  </thead>
+    
+                  {% for i in data12 %} {% for j in i %}
+    
+                  <tr>
+                    <!-- <tr onclick="javascript:location.href='myduels.html'"> -->
+                    <td class="tab-others">
+                      {{ loop.index }}
+                    </td>
+                    
+                    {% for k in j %}
+                    {% if loop.index == 1 %}
+                    <td class="tab-name">{{ k | upper }}</td>
+                    {% else %}
+                    {% if not loop.index == 7 %}
+                    <td class="tab-others">{{ k | upper }}</td>
+                    {% else %}
+                    <td class="tab-points">{{ k | upper }}</td>
+                    {% endif %}{% endif %} {% endfor %}
+
+                    {% if (list1[list1len].shorts == 'A' ) and (loop.revindex == 2 or loop.last == true) %} <td class="tab-others2"><i class="fa fa-arrow-down" style="color:#0ca00c"></i></td> {% endif %}
+                    {% if (list1[list1len].shorts == 'B1' or list1[list1len].shorts == 'B2') and loop.last == true %} <td class="tab-others2"><i class="fa fa-arrow-down" style="color:#0ca00c"></i></td> {% endif %}
+                    {% if loop.index0 == 0 and (list1[list1len].shorts == 'B1' or list1[list1len].shorts == 'B2') %} <td class="tab-others2"><i class="fa fa-arrow-up" style="color:#0ca00c"></i></td> {% endif %}
+                    {% if (loop.index0 == 0 or loop.index0 == 1) and (list1[list1len].shorts == 'C1') %} <td class="tab-others2"><i class="fa fa-arrow-up" style="color:#0ca00c"></i></td> {% endif %}
+                    {% if (loop.index0 == 0) and (list1[list1len].shorts == 'C2') %} <td class="tab-others2"><i class="fa fa-arrow-up" style="color:#0ca00c"></i></td> {% endif %}
+                    <!-- {% if loop.index0 == 0 or loop.index0 == 1 and (list1[list1len].shorts == 'C1') %} <td class="tab-others"><i class="fa fa-arrow-up" style="color:blue"></i></td> {% endif %} -->
+                    
+                  </tr>
+                  {% endfor %} {% endfor %}
+                </table>
+              </div>
+              {% endfor %}
+            </div>
+        </div>
+    </div>
+  
+    <div class="row" style="display:block;max-width:320px; text-align: center;">
+        <h1 align="center">
+          <img
+            src="{{ url_for('static', filename='img/all.svg') }}"
+            class="filter-green"
+            width="180"
+          />
+        </h1>        <table class="table" id="datas" style="align-items: center; max-width: 420px;">
+          <thead>
+            <tr>
+              <th scope="col"></th>
+              <th scope="col"></th>
+              <th scope="col" style="width: 15px;" title="Game Played">G</th>
+              <th scope="col" style="width: 15px;">W</th>
+              <th scope="col" style="width: 15px;">L</th>
+              <th scope="col" style="width: 35px;">Legs</th>
+              <th scope="col" style="width: 15px; text-align: center;">+/-</th>
+              <th scope="col" style="width: 15px;">P</th>
+            </tr>
+          </thead>
+          {% for dall in dataAll %} {% for e in dall %} {% for d in e %} {% if
+          loop.index % 4 == 0 or loop.index % 5 == 0%} {% set fallingout =
+          "#2d2d2d" %} {% else %} {% set fallingout = "transparent" %} {% endif %}
+          <tr>
+            <td class="tab-others">{{ loop.index }}</td>
+  
+            {% for a in d %} 
+            {% if loop.index == 1 %}
+            <td class="tab-name">{{ a | upper }}</td>
+            {% else %}
+            {% if not loop.index == 7 %}
+            <td class="tab-others">{{ a | upper }}</td>
+            {% else %}
+            <td class="tab-points">{{ a | upper }}</td>
+            {% endif %}{% endif %} {% endfor %}
+          </tr>
+          {% endfor %} {% endfor %} {% endfor %}
+        </table>
+    </div>
+  
+  </div>
+  {% else %}
+  <div class="container">
+    <div class="row">
+      <div class="col">
+        <h1>NO DATA YET</h1>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% endif %}
+
+
+
+
+  {% if seas.season_type == 2 %}
+  <h1 align="center">
+    <img
+      src="{{ url_for('static', filename='img/tournament.svg') }}"
+      class="filter-green"
+      width="260"
+    />
+  </h1>
+  <h2>{{seas.name}}</h2>
+  <h1 class="title"></h1>
+
+  <div class="wrapper" style="overflow-x: auto;">
+  
+      <div class="brackets" >
+      </div>
+  
+  </div>
+
+  <style scoped>
+    .container-brackets .round .match .player{
+      color:#00EE00;
+      font-size: 90%;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+  </style>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      // Nastavenie cesty k vašej Flask route
+        var seasonId = '{{ seas.id }}';
+        var roundId = '{{ round.id }}';
+        var url = `/tournament/season/${seasonId}/round/${roundId}`;
+    
+        $.ajax({
+            url: url,
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+              //alert(data.length);
+                // Dáta boli úspešne načítané
+                var new_ret = data;
+                var rounds = new_ret;
+                
+                var titles = [];
+                for (var i = 1; i <= new_ret.length - 1; i++) {
+                  // Check if the current round is the quarter finals round
+                  if (i === new_ret.length - 3) {
+                      titles.push('Quarter Finals');
+                  }
+                  // Check if the current round is the semi finals round
+                  else if (i === new_ret.length - 2) {
+                      titles.push('Semi Finals');
+                  }
+                  // Check if the current round is the final round
+                  else if (i === new_ret.length - 1) {
+                      titles.push('Final');
+                  }
+                  // For all other rounds, just push 'Round ' + i
+                  else {
+                      titles.push('Round ' + i);
+                  }
+                }
+
+              // Optionally, add "Champion" at the end if desired
+              if (new_ret.length > 0) {
+                  titles.push('Champion');
+              }
+                
+                // Inicializácia pluginu pre zobrazenie turnaja s načítanými dátami
+                $(".brackets").brackets({
+                    titles: titles,
+                    rounds: rounds,
+                    color_title: '#00EE00',
+                    border_color: '#00EE00',
+                    color_player: '#00EE00',
+                    bg_player: 'black',
+                    color_player_hover: 'black',
+                    bg_player_hover: '#00EE00',
+                    border_radius_player: '10px',
+                    border_radius_lines: '10px',
+                });
+    
+            },
+            error: function(xhr, status, error) {
+                // V prípade chyby
+                console.error("Error loading tournament data:", error);
+            }
+        });
+    });
+    </script>
+
+
+  {% endif %}
+
+
+  {% endblock %}
+  

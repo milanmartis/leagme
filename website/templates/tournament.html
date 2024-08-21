@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>.: Brackets :.</title>
+</head>
+<body>
+<h1 class="title">.: Brackets :.</h1>
+
+<div class="wrapper">
+
+    <div class="brackets">
+    </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/jquery-1.11.3.js') }}"></script>
+<script src="{{ url_for('static', filename='js/brackets.min.js') }}"></script>
+
+<script>
+
+    var rounds;
+
+    
+    
+    var new_ret = {{ new_ret_json | safe }};
+    var rounds = new_ret;
+    
+    var titles = [];
+    for (var i = 1; i <= new_ret.length - 1; i++) {
+        titles.push('Ronda ' + i);
+    }
+    
+    // Prípadne pridáme "Champion", ak to chcete na konci
+    if (new_ret.length > 0) {
+        titles.push('Champion');
+    }
+    //var titles = ['Ronda 1', 'Ronda 2', 'Ronda 3', 'Ronda 4', 'Ronda 5'];
+    
+
+
+    ;(function($){
+
+        $(".brackets").brackets({
+            titles: titles,
+            rounds: rounds,
+            color_title: 'black',
+            border_color: '#00F',
+            color_player: 'black',
+            bg_player: 'white',
+            color_player_hover: 'white',
+            bg_player_hover: 'blue',
+            border_radius_player: '10px',
+            border_radius_lines: '10px',
+        });
+
+    })(jQuery);
+</script>
+
+</body>
+</html>

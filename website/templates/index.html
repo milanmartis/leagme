@@ -1,0 +1,77 @@
+{% extends 'base.html' %} {% block title %}
+  DartsClub
+{% endblock %} {% block content %}
+<br>
+<center>
+    <img
+    src="{{ url_for('static', filename='img/logo-head.svg') }}"
+    class="filter-green"
+    width="273"
+  />
+</center>
+<br>
+
+  <center><h3 class="neon-text" style="font-size: 140%; font-weight: 800;">OPEN</h3></center>
+  <h1 style="margin-top: -40px;" align="center"><img src="{{ url_for('static', filename = 'img/seasons.svg') }}" class="filter-green" width="200" /></h1>
+  {% if seasons %}
+    <div class="container readinglazy" align="center">
+      <div class="row" style="display:block;max-width:320px; text-align: center;">
+        {% for season in seasons %}
+          <div valign="middle" align="center" class="col-12">
+            {% if season.visible == true %}
+            {% if season.open == true %}
+            <a href="{{ url_for('views.home', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none">{{ season.name }}</a>
+            {% else %}
+            <a href="{{ url_for('views.season_manager', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none">{{ season.name }}</a>
+            {% endif %}
+            {% else %}
+            {% if season.open == true %}
+            <a href="{{ url_for('views.home', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none" style="opacity:0.6;">{{ season.name }}</a>
+            {% else %}
+            <a href="{{ url_for('views.season_manager', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none" style="opacity:0.6;">{{ season.name }}</a>
+            {% endif %}
+
+            {% endif %}
+
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% else %}
+    <div class="container">
+      <div class="row">
+        <div class="col">
+          <h1>NO SEASON YET</h1>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <br>
+  <br>
+  {% if not user.authenticated %}
+
+<h4><a class="btn-demo btn-outline-dark btn-block" href="login">Login</a>
+<a class="btn-demo btn-outline-dark btn-block" href="register">Join Us</a></h4>
+{% endif %}
+
+  <br>
+  <br>
+  {% for role in user.roles %}
+    {% if role.name in ('Admin', 'Manager') and user.stripe_subscription_id%}
+    {% if loop.index0 == 0%}
+    <div class="container readinglazy" align="center">
+        <div class="row" style="display:block;max-width:320px; text-align: center;">
+            <div class="col">
+              <form method="POST">
+                <button style="font-size: 150%;padding: 0px;margin: 4px;" id="season_add" name="season_add" type="submit" class="btn btn-demo btn-block shadow-none" value="11">+Season</button>
+                <button style="font-size: 150%;padding: 0px;margin: 4px;" onclick="location.href='{{ url_for('views.tournament_new') }}';" type="button" class="btn btn-demo btn-block shadow-none">+Draw</button>
+              </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+  {% endfor %}
+
+{% endblock %}

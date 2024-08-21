@@ -1,0 +1,62 @@
+{% if user.id %}
+<h1 align="center">
+    <img
+      src="{{ url_for('static', filename='img/my-duels.svg') }}"
+      class="filter-green"
+      width="200"
+    />
+  </h1>
+  {% for duell in duels %} 
+              
+  <div class="container readinglazy" align="center">
+    <div class="row" style="display:block;max-width:320px; text-align: center;">
+      {% for duel in duell %} 
+      {% if not user.id in [duel.useride[0].user_id,
+        duel.useride[1].user_id, adminz[0], adminz[1]] %} {% set disabled =
+        "disabled" %} {% else %} {% set disabled = "" %} {% endif %} {% if 'true' ==
+        duel.checking[0].checked and 'true' == duel.checking[1].checked %} {% set
+        checked = "btn btn-outline-dark btn-block shadow-none" %} {% else %} {% set
+        checked = "btn2 btn-outline-dark btn-block shadow-none" %} {% endif %}
+
+  
+      <div valign="middle" align="center"  class="col-12">
+        <form method="POST" action="javascript:;">
+          <input type="hidden" id="duelz" name="duelz" value="{{duel.duel_id}}" />
+          <button id="location_href_season/{{season}}/duel/{{duel.duel_id}}" name="location_href_season/{{season}}/duel/{{duel.duel_id}}" onclick="locationHref('season/{{season}}/duel/{{duel.duel_id}}')" type="submit" {{disabled}} class="{{checked}}">
+            <div class="row">
+                  <div class="col-5" style="text-align: right;padding: 0px; margin: 0px;">
+                    
+                    {{duel.player[0].first_name | upper }}
+                  </div>
+                  <div class="col-2" style="text-align: center;padding: 0px; margin: 0px;">
+                    
+                   {{duel.result_[0].result}} : {{duel.result_[1].result}} 
+  
+                  </div>
+                  <div class="col-5" style="text-align: left;padding: 0px; margin: 0px;">
+                   {{duel.player[1].first_name | upper}}
+  
+                  </div>
+            </div>
+          </button>
+        </form>
+      </div>
+  
+      {% endfor %}
+      
+      
+      
+      
+    </div>
+  </div>
+  {% endfor %}
+  </div>
+{% else %}
+<div class="container">
+  <div class="row">
+    <div class="col">
+      <h1>NO DUELS YET</h1>
+    </div>
+  </div>
+</div>
+{% endif %}

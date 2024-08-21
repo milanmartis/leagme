@@ -1,0 +1,463 @@
+{% extends "base.html" %} {% block title %}DartsClub - Season{% endblock %} {%
+  block content %}
+  {% set lang = 0 %}
+
+  <style>
+
+    
+    .countdown-container {
+      display: flex;
+      justify-content: space-around;
+      max-width: 240px;
+      padding: 3px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    }
+    
+    .countdown-el {
+      text-align: center;
+    }
+    
+    .big-text {
+      font-size: 22px;
+      margin: 0;
+    }
+    
+    /* Add some spacing between the number and the label */
+    .countdown-el span {
+      color:antiquewhite;
+      opacity: 0.4;
+      display: block;
+      font-size: 12px;
+      margin-top: 5px;
+    }
+    
+    /* If you want the blocks to be responsive */
+    
+    
+  </style>
+
+
+  <h1 align="center">
+    <img
+    src="{{ url_for('static', filename='img/rounds.svg') }}"
+    class="filter-green"
+    width="250"
+    /><br>
+  {% if seasons %}
+  <h2>{{seasons[0][0].name}}</h2>
+  {% else %}
+  <h2>{{seas.name}}</h2>
+  {% endif %}
+  
+
+</h1>
+{% if seas %}
+{% if seasons %}
+<div class="container readinglazy" align="center">
+  <div class="row" style="display:block;max-width:320px; text-align: center;">
+    {% for season in seasons %}
+    {% set num = season[1].open %}
+    {% if season[1].open == true or seasons|length == 1 %}
+    {%if season[1].open == true %}
+    {% set ifactive = "Active" %}
+    {%else%}
+    {% set ifactive = "Inactive" %}
+    {%endif%}
+    <div valign="middle" align="center"  class="col-12" style="{% if num == false %}opacity:0.5;{% endif %}">
+      <form method="POST">
+        <input type="hidden" id="season" name="season" value="{{season[0].id}}" />
+        <input type="hidden" id="round" name="round" value="{{season[1].id}}" />
+        <button
+          id="season_round"
+          name="season_round"
+          type="submit"
+          class="btn-reverse btn-outline-dark btn-block shadow-none"
+        >
+         {{ifactive}} Round #{{loop.revindex}}
+
+        </button>
+      </form>
+    </div>
+
+    {% endif %}    
+
+    {% endfor %}
+    {%if seasons|length > 1 %}
+    <div id="showHistoryRounds" class="btn" style="margin-bottom:20px;margin-top:22px;width:211px;" onclick="toggleDivHistoryRounds()">Show History Rounds +</div>
+    {%endif%}
+    <div id="hiddenDivHistory" style="display: none;">
+      {% for season in seasons %}
+      {% if season[1].open == false %}
+      {% set num = season[1].open %}
+  
+      <div valign="middle" align="center"  class="col-12" style="{% if num == false %}opacity:0.5;{% endif %}">
+        <form method="POST">
+          <input type="hidden" id="season" name="season" value="{{season[0].id}}" />
+          <input type="hidden" id="round" name="round" value="{{season[1].id}}" />
+          <button
+            id="season_round"
+            name="season_round"
+            type="submit"
+            class="btn btn-outline-dark btn-block shadow-none"
+          >
+           Round #{{loop.revindex}}
+  
+          </button>
+        </form>
+      </div>
+  
+      
+      {% endif %}    
+      {% endfor %}  
+      </div>
+
+  </div>
+</div>
+{% else %}
+<div class="container">
+  <div class="row">
+    <div class="col">
+      <h1>NO ROUNDS YET</h1>
+    </div>
+  </div>
+</div>
+<br>
+{% endif %}
+<!-- PLAYERS IN SEASON - ADD / DELETE -->
+{% if players|length==0 %}
+<br>
+<h4>{{dic.no_active_players_text[lang]}}</h4>
+{% else %}
+<br>
+{% if players|length == 1 %}{% set text_reg_pl = 'registered player' %}{% else %}{% set text_reg_pl = 'registered players' %}{% endif %}
+<h4>{{players|length}} {{text_reg_pl}}</h4>
+{% endif %}
+{% if players_wait|length > 0 %}
+<div id="showPlayersList" class="btn" style="margin-bottom:20px;margin-top:2px;width:211px;" onclick="toggleDiv()">Show Players List +</div>
+{%endif%}
+<div id="hiddenDiv" style="display: none;">
+{% for player in players_wait %}
+{% set role = user.roles[0] %}
+{% if (user.id==player.id or user.id in [adminz[0],adminz[1], seas.user_id] or role.name in ('Admin')) and user.stripe_subscription_id|length > 4 %}{% set dis = '' %}{% set dis2 = 'opacity:1;' %}{% else %}{% set dis = 'disabled' %}{% set dis2 = 'opacity:0;' %}{% endif %}
+<div id="playerin{{loop.index}}" class="container readinglazy" align="center">
+  
+
+    <div class="row" style="display:block;max-width:320px; text-align: center;">
+      <div class="col">
+        <button 
+        {{dis}}
+          type="submit" 
+          id="playerout" 
+          name="playerout" 
+          class="btn btn-sm" 
+          style="text-transform: uppercase;" 
+          onclick="javascript:getOutPlyer({{season}},{{player.id}},{{loop.index}});" 
+          value="{{player.id}}">
+          {{player.first_name}}
+          <i class="fa fa-trash-o" style="{{dis2}}float:right;font-size:18px;padding-top:3px;padding-right:9px;"></i>
+        </button>
+        
+      </div>
+    </div>
+  </div>
+
+<div
+class="modal fade"
+id="playerout-delete{{loop.index}}"
+tabindex="-1"
+role="dialog"
+aria-labelledby="deleteModalLabel"
+aria-hidden="true"
+>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h1 class="modal-title">Remove player?</h1>
+      <br>
+        <form
+          action="javascript:;"
+          method="POST"
+        >
+          <button onclick="javascript:getOutPlyerDelete({{season}},{{player.id}},{{loop.index}});" class="btn2 btn-sm" style="font-weight: 700;padding-left: 10px;padding-right: 10px;padding-top: 4px;"  type="submit" value="OK" />REMOVE</button>
+        </form>
+        <button onclick="" style="font-weight: 700;" type="button" class="btn3 btn-sm" data-bs-dismiss="modal">
+          NO
+        </button>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+</div>
+
+
+
+
+
+
+
+<br>
+ <!--<font style="color:yellow;opacity:0.7;">{{'Waiting for the first round'}}   </font>-->
+{% if players|length>=seas.min_players and players|length % seas.no_group == 0 %}
+{% else %}
+<div class="container readinglazy" align="center">
+  <div class="row" style="display:block;max-width:320px; text-align: center;">
+    <div class="col">
+      <form method="POST">
+        <button disabled style="font-size: 150%;padding: 0px;margin: 4px;" type="submit" class="btn btn-demo btn-block shadow-none" value="11">
+          <h4 style="color:#010101">
+            {% if seas.min_players>players_wait|length %}{{ seas.min_players - players_wait|length }}{%endif%}
+            {% if seas.min_players<players_wait|length %}
+            {% for i in range(players_wait|length, players_wait|length + seas.no_group) if i % seas.no_group == 0 %}
+            {{ i - players_wait|length }}
+            {% endfor %}
+            {%endif%}
+
+            players left to next round</h4></button>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  {% endif %}
+  
+<br>
+
+
+
+{% endif %}
+
+{% if not user in players_wait and user.stripe_subscription_id|length > 4 %}
+<div class="container readinglazy" align="center">
+  <div class="row" style="display:block;max-width:320px; text-align: center;">
+    <div class="col">
+      <form method='POST' action="">
+        <button type="submit" id="add_player_to_season" name="add_player_to_season" class="btn btn-reverse" value="{{season}}">+ Join this {{season_type_name}}</button>
+      </form>
+      <br>
+    </div>
+  </div>
+</div>
+{% else %}
+{%if user.stripe_subscription_id|length < 4%}
+<div class="container readinglazy" align="center">
+  <div class="row" style="display:block;max-width:320px; text-align: center;">
+    <div class="col">
+      <form method='POST' action="">
+        <a href="{{ url_for('auth.user_details') }}" class="btn btn-reverse">Subscribe to join</a>
+      </form>
+      <br>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
+
+{% if season.open == true %}
+
+
+
+<div class="container">
+  {% else %}
+  <!--
+    <div class="container">
+      <div class="row">
+        <div class="col">
+          <h1>SEASON DOESN'T EXIST</h1>
+        </div>
+      </div>
+    </div>
+  -->
+  
+  {% endif %}
+  <center>
+    {% if rounds_open|length > 0 %}
+    <div class="round-time-counting">
+    <h3 style="opacity: 0.5;">Time Left</h3>
+
+      <div class="countdown-container" id="countdown">
+        <div class="countdown-el days-c">
+          <h3 class="big-text" id="days">00</h3>
+          <span>day</span>
+        </div>
+        <div class="countdown-el hours-c">
+          <h3 class="big-text" id="hours">00</h3>
+          <span>hour</span>
+        </div>
+      <div class="countdown-el mins-c">
+        <h3 class="big-text" id="minutes">00</h3>
+        <span>min</span>
+      </div>
+      <div class="countdown-el secs-c">
+        <h3 class="big-text" id="seconds">00</h3>
+        <span>sec</span>
+      </div>
+    </div>
+    <h4 style="max-width: 260px;">You must complete all duels before the time limit expires. The results will not be changed after that</h4>
+  </div>
+      
+      
+      
+      
+      
+      <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+          // Váš server by mal poskytnúť koncový dátum vo formáte 'YYYY-MM-DD HH:MM:SS'
+          //var endDate = "{{ '2023-12-31' }}";
+          var endDate = "{{ end_date }}";
+          // Konvertujeme koncový dátum na objekt dátumu JavaScriptu
+          var end = new Date(endDate);
+          
+          var countdown = function() {
+            var now = new Date();
+            var remainingTime = end - now;
+            
+            if (remainingTime >= 0) {
+              var secondsDivElement = document.getElementById("seconds");
+              var hoursDivElement = document.getElementById("hours");
+              var minutesDivElement = document.getElementById("minutes");
+              var daysDivElement = document.getElementById("days");
+              
+              
+              var seconds = Math.floor((remainingTime / 1000) % 60);
+              var minutes = Math.floor((remainingTime / 1000 / 60) % 60);
+              var hours = Math.floor((remainingTime / (1000 * 60 * 60)) % 24);
+              var days = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
+                  
+                  secondsDivElement.innerHTML = seconds; // Ak chcete nastaviť HTML obsah
+                  hoursDivElement.innerHTML = hours; // Ak chcete nastaviť HTML obsah
+                  minutesDivElement.innerHTML = minutes; // Ak chcete nastaviť HTML obsah
+                  daysDivElement.innerHTML = days; // Ak chcete nastaviť HTML obsah
+                  
+                  // Aktualizácia DOM každú sekundu
+                  //   $('#countdown').text(days + "d |" + hours + "h |" + minutes + "m |" + seconds + "s");
+                } else {
+                  $('#countdown').text("Current round is closed");
+                  clearInterval(interval);
+                }
+            };
+            
+            var interval = setInterval(countdown, 1000);
+          });
+    </script>
+
+    
+
+    {% endif %}
+  </center>
+  {% set role = user.roles[0] %}
+
+  {% if players|length>=seas.min_players and players|length % seas.no_group == 0 and 
+    role.name in ('Admin') and (rounds_open|length == 0) or ((manager != none) 
+    and role.name in ('Manager')) and players|length>=seas.min_players and players|length % seas.no_group == 0 and (rounds_open|length == 0)%}
+  <div class="col-12">
+    <div class="container">
+
+      <form method="POST">
+        <div align="center">
+          <input
+          type="hidden"
+            id="ide_season"
+            name="ide_season"
+            value="{{seas.id}}"
+            />
+            <br>
+            <button
+            id="ide_season_button"
+            name="ide_season_button"
+            type="submit"
+            class="btn-demo btn-outline-dark btn-block shadow-none"
+            onclick="showLoader()"
+            >
+            
+            <!-- <i class="fa fa-circle-o-notch fa-spin"></i> -->
+            <font style="font-size: 90%;">{{'Create New Round'}}</font>
+          </button>
+
+
+
+        </div>
+      </form>
+      
+      
+      {% else %}
+
+
+      
+      
+      
+      
+      {% endif %}
+
+            {% if role.name in ('Admin') or ((manager != none) and role.name in ('Manager'))  %}
+
+
+            <br>
+            <a href="{{ url_for('views.season_players', season=season) }}" class="btn-demo btn-outline-dark btn-block shadow-none"
+            >
+            
+            <!-- <i class="fa fa-circle-o-notch fa-spin"></i> -->
+            <font style="font-size: 90%;">{{'Manage ' + season_type_name + ' Players'}}</font>
+          </a>
+         
+          </div>
+          
+         </div>
+         <br>
+         <center>
+
+          {% if season_type==1 %}
+      <button onclick="javascript:location.href='{{ url_for('views.update_season', season=season) }}';" class="btn btn-sm createforms2" />Edit</button>
+      {% endif %}
+      {% if season_type==2 %}
+      <button onclick="javascript:location.href='{{ url_for('views.update_tournament', season=season) }}';" class="btn btn-sm createforms2" />Edit</button>
+      {% endif %}
+    
+      <button onclick="if(confirm('Are you sure you delete all data of this this season?')){javascript:location.href='{{ url_for('views.season_delete', season=season) }}';}" class="btn btn-sm createforms2">Disable</button>
+
+         </center>
+         
+  
+
+         {% endif %}
+
+
+
+</div>
+
+  <div
+  class="modal fade"
+  id="season-delete"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="deleteModalLabel"
+  aria-hidden="true"
+  >
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h1 class="modal-title">Delete „{{seas.name}}“?</h1>
+       <br>
+        <form
+          action="{{ url_for('views.season_delete', season=season) }}"
+          method="POST"
+        >
+          <button class="btn2 btn-sm" style="font-weight: 700;padding-left: 10px;padding-right: 10px;padding-top: 4px;"  type="submit" value="OK" />DELETE</button>
+        </form>
+        <button style="font-weight: 700;" type="button" class="btn3 btn-sm" data-bs-dismiss="modal">
+          NO
+        </button>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
