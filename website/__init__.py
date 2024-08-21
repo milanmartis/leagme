@@ -46,7 +46,7 @@ def create_app():
     SESSION_COOKIE_SAMESITE='None',  # Povoliť posielanie cookie cez domény
     )
     
-    app.config['SECRET_KEY'] = "hiuyyy8y8y8yy88y8yn8y8nyn86"
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
     # app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("SQLALCHEMY_DATABASE_URI")
     app.config['SQLALCHEMY_POOL_SIZE'] = 10
     app.config['SQLALCHEMY_MAX_OVERFLOW'] = 5
