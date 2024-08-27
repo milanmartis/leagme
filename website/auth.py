@@ -7,6 +7,8 @@ from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import InputRequired, Length, ValidationError
 # from flask_bcrypt import Bcrypt
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_dance.contrib.google import make_google_blueprint, google
+from flask_dance.consumer import oauth_authorized
 
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
@@ -31,6 +33,14 @@ load_dotenv()
 # )
 
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
+
+# Definícia Google blueprintu musí byť pred použitím v dekorátore
+google_blueprint = make_google_blueprint(
+    client_id=os.getenv("GOOGLE_CLIENT_ID"),
+    client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+    redirect_to="auth.google_login",
+    scope=["profile", "email"]
+)
 
 
 @auth.route('/login', methods=['GET', 'POST'])
@@ -76,15 +86,22 @@ def login():
     return render_template("users/login.html", user=current_user)
 
 
-@auth.route("/login/google")
+@auth.route('/login/google', methods=['GET', 'POST'])
 def google_login():
     if not google.authorized:
-        return redirect(url_for("google.login"))
+        return redirect(url_for('google.login'))  # Presmeruje na Google OAuth login page
+
     resp = google.get("/oauth2/v2/userinfo")
-    assert resp.ok, resp.text
+    if not resp.ok:
+        flash("Failed to fetch user info from Google.", category="error")
+        return redirect(url_for("auth.login"))
+
     user_info = resp.json()
+
+    # Získanie emailu z používateľských údajov
     email = user_info["email"]
 
+    # Skontrolujte, či používateľ už existuje v DB
     user = User.query.filter_by(email=email).first()
 
     if user:
@@ -92,8 +109,16 @@ def google_login():
         flash("Logged in successfully with Google!", category="success")
         return redirect(url_for("views.index"))
     else:
-        flash("User not found. Please register first.", category="error")
-        return redirect(url_for("auth.register"))
+        # Vytvor nového používateľa
+        new_user = User(email=email)
+        db.session.add(new_user)
+        db.session.commit()
+        login_user(new_user)
+        flash("Account created and logged in successfully with Google!", category="success")
+        return redirect(url_for("views.index"))
+
+    # Ak niečo zlyhá, vráť sa na login stránku
+    return redirect(url_for("auth.login"))
 
 
 
@@ -114,6 +139,40 @@ def google_login_callback():
         flash("Google login failed. Please try again.", category="error")
         return redirect(url_for("auth.login"))
     return redirect(url_for("auth.google_login"))
+
+
+@oauth_authorized.connect_via(google_blueprint)
+def google_logged_in(blueprint, token):
+    if not token:
+        flash("Failed to log in with Google.", category="error")
+        return False
+
+    resp = blueprint.session.get("/oauth2/v2/userinfo")
+    if not resp.ok:
+        flash("Failed to fetch user info from Google.", category="error")
+        return False
+
+    google_info = resp.json()
+    google_user_id = google_info["id"]
+    email = google_info["email"]
+    name = google_info["name"]
+
+    # Find or create user
+    user = User.query.filter_by(email=email).first()
+    if user is None:
+        hashed_password = bcrypt.generate_password_hash("random_password").decode("utf-8")
+        user = User(
+            email=email,
+            first_name=name,
+            google_id=google_user_id,
+            password=hashed_password
+        )
+        db.session.add(user)
+        db.session.commit()
+
+    login_user(user)
+    flash("Successfully signed in with Google.", category="success")
+    return False
 
 
 
