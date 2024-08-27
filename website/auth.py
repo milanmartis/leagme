@@ -8,9 +8,6 @@ from wtforms.validators import InputRequired, Length, ValidationError
 # from flask_bcrypt import Bcrypt
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from flask_dance.contrib.google import make_google_blueprint, google
-from flask_dance.consumer import oauth_authorized
-
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, PasswordField, SubmitField, BooleanField, SelectField, SelectMultipleField, IntegerField, RadioField, TextAreaField
@@ -34,49 +31,6 @@ load_dotenv()
 # )
 
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
-
-
-google_blueprint = make_google_blueprint(
-    client_id=os.getenv("GOOGLE_CLIENT_ID"),
-    client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
-    redirect_to="auth.google_login",
-    scope=["profile", "email"]
-)
-app.register_blueprint(google_blueprint, url_prefix="/login")
-
-
-@oauth_authorized.connect_via(google_blueprint)
-def google_logged_in(blueprint, token):
-    if not token:
-        flash("Failed to log in with Google.", category="error")
-        return False
-
-    resp = blueprint.session.get("/oauth2/v2/userinfo")
-    if not resp.ok:
-        flash("Failed to fetch user info from Google.", category="error")
-        return False
-
-    google_info = resp.json()
-    google_user_id = google_info["id"]
-    email = google_info["email"]
-    name = google_info["name"]
-
-    # Find or create user
-    user = User.query.filter_by(email=email).first()
-    if user is None:
-        hashed_password = bcrypt.generate_password_hash("random_password").decode("utf-8")
-        user = User(
-            email=email,
-            first_name=name,
-            google_id=google_user_id,
-            password=hashed_password
-        )
-        db.session.add(user)
-        db.session.commit()
-
-    login_user(user)
-    flash("Successfully signed in with Google.", category="success")
-    return False
 
 
 @auth.route('/login', methods=['GET', 'POST'])

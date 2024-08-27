@@ -29,6 +29,16 @@ mail = Mail()
 
 def create_app():
     app = Flask(__name__)
+    from flask_dance.contrib.google import make_google_blueprint, google
+    from flask_dance.consumer import oauth_authorized
+    
+    google_blueprint = make_google_blueprint(
+    client_id=os.getenv("GOOGLE_CLIENT_ID"),
+    client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+    redirect_to="auth.google_login",
+    scope=["profile", "email"]
+    )
+    app.register_blueprint(google_blueprint, url_prefix="/login")
     
     @app.errorhandler(OperationalError)
     def handle_operational_error(e):
@@ -90,7 +100,43 @@ def create_app():
     #         url = request.url.replace('http://', 'https://', 1)
     #         return redirect(url, code=301)
 
+
+
     from .models import User, Note, Groupz, Duel
+    
+    
+    @oauth_authorized.connect_via(google_blueprint)
+    def google_logged_in(blueprint, token):
+        if not token:
+            flash("Failed to log in with Google.", category="error")
+            return False
+
+        resp = blueprint.session.get("/oauth2/v2/userinfo")
+        if not resp.ok:
+            flash("Failed to fetch user info from Google.", category="error")
+            return False
+
+        google_info = resp.json()
+        google_user_id = google_info["id"]
+        email = google_info["email"]
+        name = google_info["name"]
+
+        # Find or create user
+        user = User.query.filter_by(email=email).first()
+        if user is None:
+            hashed_password = bcrypt.generate_password_hash("random_password").decode("utf-8")
+            user = User(
+                email=email,
+                first_name=name,
+                google_id=google_user_id,
+                password=hashed_password
+            )
+            db.session.add(user)
+            db.session.commit()
+
+        login_user(user)
+        flash("Successfully signed in with Google.", category="success")
+        return False
 
     @login_manager.user_loader
     def load_user(user_id):
