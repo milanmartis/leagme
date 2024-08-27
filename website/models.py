@@ -172,6 +172,7 @@ class Season(db.Model):
     winner_points = db.Column(db.Integer)
     visible = db.Column(db.Boolean(), default=False)
     season_type = db.Column(db.Integer)
+    season_end_round = db.Column(db.Integer)
     # sport_id = db.Column(db.Integer, db.ForeignKey('sport.id'))
     # sport = db.relationship('Sport', backref='sportseasons') 
     

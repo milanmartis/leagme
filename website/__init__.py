@@ -46,7 +46,7 @@ def create_app():
     SESSION_COOKIE_SAMESITE='None',  # Povoliť posielanie cookie cez domény
     )
     
-    app.config['SECRET_KEY'] = "conn.SECRET_KEY"
+    app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
     # app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("SQLALCHEMY_DATABASE_URI")
     app.config['SQLALCHEMY_POOL_SIZE'] = 10
     app.config['SQLALCHEMY_MAX_OVERFLOW'] = 5
@@ -54,7 +54,7 @@ def create_app():
     app.config['SQLALCHEMY_POOL_RECYCLE'] = 3600
 
     # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(DB_NAME, 'database.db')
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://superadmin:bezpecne_heslo@localhost/darts'
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("SQLALCHEMY_DATABASE_URI")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config['MAIL_SERVER'] = os.environ.get("MAIL_SERVER")
     app.config['MAIL_PORT'] = os.environ.get("MAIL_PORT")

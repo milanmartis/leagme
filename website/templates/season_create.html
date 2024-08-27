@@ -73,6 +73,21 @@
                     {{ form.winner_points(class="form-control form-control-lg createforms") }}
                 {% endif %}
             </div>
+
+            <div class="form-group">
+                {{ form.season_end_round.label(class="form-control-label createforms") }}
+                {% if form.season_end_round.errors %}
+                    {{ form.season_end_round(class="form-control form-control-lg is-invalid", placeholder="YYYY-MM-DD HH:MM:SS") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.season_end_round.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.season_end_round(class="form-control form-control-lg createforms", placeholder="YYYY-MM-DD HH:MM:SS") }}
+                {% endif %}
+            </div>
+
             <div class="form-group">
                 {{ form.open.label(class="form-control-label createforms") }}
                 {% if form.open.errors %}
@@ -101,7 +116,7 @@
             </div>
             <input type="hidden" id="season_type" name="season_type" value="1">
 
-           <!--
+      
 
                <div class="form-group">
                    {{ form.season_from.label(class="form-control-label") }}
@@ -116,7 +131,7 @@
                     {{ form.season_from(class="datepicker form-control form-control-lg") }}
                     {% endif %}
                 </div>
-            -->
+     
 
 <br>
         </fieldset>

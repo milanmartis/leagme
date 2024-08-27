@@ -1470,11 +1470,12 @@ def season_manager(season):
     order = db.session.query(Order.produc_id, Order.stripe_subscription_id == current_user.stripe_subscription_id).first()
     products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
     orders = Order.query.filter(Order.user_id==current_user.id).filter(Order.stripe_subscription_id==current_user.stripe_subscription_id).all()
-    print(order)
+    # print(order)
+    end_date = last_day.strftime('%Y-%m-%d %H:%M:%S')
     
     # print(last_day.strftime('%Y-%m-%d %H:%M:%S'))
     # end_date=last_day.strftime('%Y-%m-%d %H:%M:%S')
-    return render_template("season.html", season_type=season_type.season_type, season_type_name=season_type_name,products=products, orders=orders, order=order, rounds_open=rounds_open, manager=manager, end_date=last_day.strftime('%Y-%m-%d %H:%M:%S'), players_wait=players_wait, players=players, seas=seas, groupz=groupz, dic=dic, season=season, seasons=rounds, user=current_user, adminz=adminz)
+    return render_template("season.html", season_type=season_type.season_type, season_type_name=season_type_name,products=products, orders=orders, order=order, rounds_open=rounds_open, manager=manager, end_date=end_date, players_wait=players_wait, players=players, seas=seas, groupz=groupz, dic=dic, season=season, seasons=rounds, user=current_user, adminz=adminz)
 
 
 def create_new_season(season):
@@ -1589,6 +1590,7 @@ class NewSeason(FlaskForm):
     no_group = IntegerField('Players in group (2 - 20)', validators=[DataRequired(), NumberRange(min=2, max=20, message="blah")])
     winner_points = IntegerField('Points for win (1 - 5)', validators=[DataRequired(), NumberRange(min=1, max=5, message="blah")])
     season_from = DateTimeLocalField('Break Point')
+    season_end_round = DateTimeLocalField('Break Point')
     # season_to = DateTimeLocalField('Break Point')
     open = BooleanField('Open')
     visible = BooleanField('Visible')

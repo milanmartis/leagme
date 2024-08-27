@@ -386,13 +386,13 @@ def cancel_subscription():
 
         user = User.query.get(current_user.id)
         user.stripe_subscription_id = ''
-        # db.session.commit()
         
         # Update orders (assuming this should be a loop or query, not a direct update)
         orders = Order.query.filter(Order.user_id == current_user.id).all()
         for order in orders:
             order.storno = True
         
+        db.session.commit()
 
         # You can also update your database to reflect the canceled subscription
         # For example, mark the subscription as canceled in your database
@@ -414,63 +414,78 @@ def make_order():
         payment_method_id = data['payment_method_id']
         user_id = data['user_id']
         product_id = data['product_id']
-        quantity = data['quantity']
-        amount = data['amount']
+        amount = data['amount']  # Toto by mal byť price_id, ak používate Stripe pre predplatné
         role_name = data['role_name']
-        
-        # Create a Stripe Customer with the provided email
-        # customer = stripe.Customer.create(email=email)
-        # customer_id = customer.id
 
-        # # Attach a payment method (card) to the customer
-        # payment_method = stripe.PaymentMethod.attach(
-        #     payment_method_id,
-        #     customer=customer.id,
-        # )
+        # Vytvorenie Stripe zákazníka
+        customer = stripe.Customer.create(
+            email=email,
+            payment_method=payment_method_id,
+            invoice_settings={
+                'default_payment_method': payment_method_id,
+            },
+        )
 
-        # # Set the default payment method for the customer
-        # stripe.Customer.modify(
-        #     customer.id,
-        #     invoice_settings={'default_payment_method': payment_method.id},
-        # )
+        # Vytvorenie predplatného
+        subscription = stripe.Subscription.create(
+            customer=customer.id,
+            items=[{'price': amount}],  # Použite price_id, nie konkrétnu sumu
+            expand=['latest_invoice.payment_intent']  # Zabezpečí, že payment_intent bude dostupný
+        )
 
-        # # Create a Subscription
-        # subscription = stripe.Subscription.create(
-        #     customer=customer.id,
-        #     items=[{'price': amount}],
-        #     default_payment_method=payment_method.id,
-        # )
-        # print(subscription)
-        
-        # subscription = subscription.id
-        subscription = random.randint(100000000000, 1000000000000)
-        new_order = Order(produc_id=product_id, quantity=1, amount=1, user_id=current_user.id,stripe_subscription_id=subscription)
-        db.session.add(new_order)
-        
-        user = User.query.get(user_id)  # Replace user_id with the user's ID
-        role = Role.query.filter_by(name=role_name).first()  # Replace 'desired_role_name' with the role name
-        if role:
-            user.roles.append(role)
-            db.session.commit()
-       
-        user_sub = User.query.get(current_user.id)
-        user_sub.stripe_subscription_id = subscription
-        db.session.commit()
-        
-        
-        # flash("Thanks for your purchase.", category="success")
+        payment_intent = subscription.latest_invoice.payment_intent
 
-        # return redirect(url_for('views.index'))
-        # return redirect(url_for('views.index'))
+        if payment_intent.status == 'requires_action':
+            # Platba vyžaduje 3D Secure overenie
+            return jsonify({
+                'requires_action': True,
+                'payment_intent_client_secret': payment_intent.client_secret,
+                'subscription_id': subscription.id,
+                'product_id': product_id,
+                'role_name': role_name
+            })
 
+        if payment_intent.status == 'succeeded':
+            # Platba bola úspešná bez potreby 3D Secure overenia
+            save_order_to_database(user_id, product_id, subscription.id, role_name)
+            flash("Thanks for your purchase.", category="success")
+            return jsonify({'subscription_id': subscription.id})
 
-        return jsonify({'customer_id': subscription, 'payment_method_id': subscription})
-
+    except stripe.error.CardError as e:
+        return jsonify({'error': str(e)}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
 
+def save_order_to_database(user_id, product_id, subscription_id, role_name):
+    # Vytvorenie novej objednávky
+    new_order = Order(produc_id=product_id, quantity=1, amount=1, user_id=user_id, stripe_subscription_id=subscription_id)
+    db.session.add(new_order)
 
+    # Pridanie roly užívateľovi
+    user = User.query.get(user_id)
+    role = Role.query.filter_by(name=role_name).first()
+    if role:
+        user.roles.append(role)
+        user.stripe_subscription_id = subscription_id
+    db.session.commit()
+
+
+@auth.route('/user/save_order', methods=['POST'])
+@login_required
+def save_order():
+    try:
+        data = request.json
+        user_id = data['user_id']
+        product_id = data['product_id']
+        subscription_id = data['subscription_id']
+        role_name = data['role_name']
+
+        save_order_to_database(user_id, product_id, subscription_id, role_name)
+        return jsonify({'success': True})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
 
 
 @auth.route('/account', methods=['GET', 'POST'])
