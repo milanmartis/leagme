@@ -84,6 +84,7 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(150), unique=True)
     password = db.Column(db.String(150))
     first_name = db.Column(db.String(150))
+    google_id = db.Column(db.String(100), unique=True)
 
     orderz = db.Column(db.Integer)
     notes = db.relationship('Note')
