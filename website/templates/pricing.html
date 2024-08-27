@@ -256,7 +256,8 @@
                                                 email: '{{ user.email }}',
                                                 user_id: '{{ user.id }}',
                                                 product_id: 45,
-                                                amount: 'price_1O3mUNKr9xveA3fnrbgksmcF',
+                                                //amount: 'price_1O3mUNKr9xveA3fnrbgksmcF',
+                                                amount: 'price_1O3vq1Kr9xveA3fnavSwPRzO',
                                                 role_name: 'Player'
                                             }),
                                         })
@@ -459,7 +460,8 @@
                                             user_id: '{{ user.id }}',
                                             product_id: 46,
                                             quantity: 1,
-                                            amount: 'price_1O3mVDKr9xveA3fnIf7pWB3U',
+                                            //amount: 'price_1O3mVDKr9xveA3fnIf7pWB3U',
+                                            amount: 'price_1O3vryKr9xveA3fnqYnskbdW',
                                             role_name: 'Manager'
                                         }),
                                     })
@@ -507,36 +509,7 @@
                                                         });
                                                     }
                                                 });
-                                        } else {
-                                            // No 3D Secure needed, save order immediately
-                                            fetch('/user/save_order', {
-                                                method: 'POST',
-                                                headers: {
-                                                    'Content-Type': 'application/json',
-                                                },
-                                                body: JSON.stringify({
-                                                    user_id: '{{ user.id }}',
-                                                    product_id: data.product_id,
-                                                    subscription_id: data.subscription_id,
-                                                    role_name: data.role_name
-                                                }),
-                                            })
-                                            .then(function(response) {
-                                                return response.json();
-                                            })
-                                            .then(function(data) {
-                                                if (data.success) {
-                                                    alert('Payment succeeded');
-                                                    location.href = "{{ url_for('views.index', flash='Thanks for your purchase!') }}";
-                                                } else {
-                                                    alert('Failed to save order. Please contact support.');
-                                                }
-                                            })
-                                            .catch(function(error) {
-                                                console.error('Fetch error:', error);
-                                                alert('There was an error processing your request. Please try again.');
-                                            });
-                                        }
+                                        } 
                                     })
                                     .catch(function(error) {
                                         console.error('Fetch error:', error);
