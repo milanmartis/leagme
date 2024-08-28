@@ -994,7 +994,7 @@ def tournament_new():
 
 @views.route('/season/new', methods=['GET', 'POST'])
 @login_required
-@roles_required('Admin','Manager','Player')
+@roles_required('Admin','Manager')
 # @roles_required('Admin')
 def season_new():
     
@@ -1025,7 +1025,6 @@ def season_new():
 
 @views.route('/season/delete/<season>', methods=['GET', 'POST'])
 @login_required
-# @roles_required('Admin','Manager','Player')
 @roles_required('Admin','Manager')
 def season_delete(season):
   
