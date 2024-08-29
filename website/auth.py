@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, session, current_app, jsonify
 from .models import User, Season, PaymentCard, Product, Order, PaymentMethod, Role
-from . import db, bcrypt
+from . import db, bcrypt, argon2
 from flask_login import login_user, login_required, logout_user, current_user
 from flask_security.utils import login_user  # Importujte správne login_user z Flask-Security-too
 
@@ -16,6 +16,8 @@ from website import mail
 from sqlalchemy.exc import IntegrityError
 import stripe
 import boto3
+from flask_argon2 import Argon2
+import uuid
 import random
 import os
 from datetime import datetime
@@ -146,10 +148,14 @@ def logout():
 @auth.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        email = request.form.get('email', None)
-        first_name = request.form.get('first_name', None)
-        password1 = request.form.get('password1', None)
-        password2 = request.form.get('password2', None)
+        email = request.form.get('email', '').strip()
+        first_name = request.form.get('first_name', '').strip()
+        password1 = request.form.get('password1', '').strip()
+        password2 = request.form.get('password2', '').strip()
+
+        if not email or not first_name or not password1 or not password2:
+            flash('All fields are required.', category='error')
+            return render_template("users/sign_up.html", user=current_user)
 
         user = User.query.filter_by(email=email).first()
         nickname = User.query.filter(User.first_name.ilike(first_name)).first()
@@ -159,24 +165,29 @@ def register():
         elif nickname:
             flash("User name already exists.", category="error")
         elif len(email) < 4:
-            flash("Email must be greater than 3 chars", category="error")
+            flash("Email must be greater than 3 characters.", category="error")
         elif len(first_name) < 2:
-            flash("First Name must be greater than 1 char", category="error")
+            flash("First Name must be greater than 1 character.", category="error")
         elif password1 != password2:
-            flash("Passwords don't match", category="error")
+            flash("Passwords don't match.", category="error")
         elif len(password1) < 7:
-            flash("Passwords must be at least 7 chars", category="error")
+            flash("Password must be at least 7 characters long.", category="error")
         else:
-            hashed_password = bcrypt.generate_password_hash(password1).decode('utf-8')
-            new_user = User(email=email, first_name=first_name, password=hashed_password)
+            # Generate the fs_uniquifier using UUID
+            fs_uniquifier = str(uuid.uuid4())
+
+            # Use Argon2 to hash the password
+            hashed_password = argon2.generate_password_hash(password1).decode('utf-8')
+            new_user = User(email=email, first_name=first_name, password=hashed_password, fs_uniquifier=fs_uniquifier)
+
             db.session.add(new_user)
             db.session.commit()
+
             send_confirm_email(new_user)
-            flash("Account created. Check your email to confirm account.", category="success")
+            flash("Account created. Check your email to confirm your account.", category="success")
             return redirect(url_for('auth.login'))
 
     return render_template("users/sign_up.html", user=current_user)
-
 
 class RequestResetForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()], render_kw={"placeholder": "Email"})

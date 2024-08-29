@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 import os
 from functools import wraps
 from werkzeug.local import LocalProxy
+from flask_argon2 import Argon2
 
 # Load environment variables
 load_dotenv()
@@ -21,7 +22,7 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 bcrypt = Bcrypt()
 mail = Mail()
-
+argon2 = Argon2()
 def create_app():
     app = Flask(__name__)
 
@@ -50,6 +51,7 @@ def create_app():
     # Initialize extensions with app
     db.init_app(app)
     bcrypt.init_app(app)
+    argon2.init_app(app)
     mail.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)
