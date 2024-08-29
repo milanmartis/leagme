@@ -144,7 +144,6 @@ def logout():
 
 
 
-
 @auth.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -177,7 +176,7 @@ def register():
             fs_uniquifier = str(uuid.uuid4())
 
             # Use Argon2 to hash the password
-            hashed_password = argon2.generate_password_hash(password1).decode('utf-8')
+            hashed_password = argon2.generate_password_hash(password1)  # Removed .decode('utf-8')
             new_user = User(email=email, first_name=first_name, password=hashed_password, fs_uniquifier=fs_uniquifier)
 
             db.session.add(new_user)
@@ -188,6 +187,10 @@ def register():
             return redirect(url_for('auth.login'))
 
     return render_template("users/sign_up.html", user=current_user)
+
+
+
+
 
 class RequestResetForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()], render_kw={"placeholder": "Email"})
