@@ -1,124 +1,134 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, session, app, jsonify
+from flask import Blueprint, render_template, request, flash, redirect, url_for, session, current_app, jsonify
 from .models import User, Season, PaymentCard, Product, Order, PaymentMethod, Role
 from . import db, bcrypt
 from flask_login import login_user, login_required, logout_user, current_user
+from flask_security.utils import login_user  # Importujte správne login_user z Flask-Security-too
+
+from flask_security import current_user, Security, SQLAlchemyUserDatastore, roles_accepted
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import InputRequired, Length, ValidationError
-# from flask_bcrypt import Bcrypt
+from wtforms.validators import InputRequired, Length, ValidationError, DataRequired, Email, EqualTo, StopValidation
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_dance.contrib.google import make_google_blueprint, google
 from flask_dance.consumer import oauth_authorized
-
-from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileAllowed
-from wtforms import StringField, PasswordField, SubmitField, BooleanField, SelectField, SelectMultipleField, IntegerField, RadioField, TextAreaField
-from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, StopValidation
-auth = Blueprint('auth', __name__)
-import datetime
-from flask import url_for, current_app
 from flask_mail import Message
 from website import mail
-from sqlalchemy.exc import IntegrityError  # Importujte pre zachytávanie chýb pri vkladaní do databázy
+from sqlalchemy.exc import IntegrityError
 import stripe
 import boto3
 import random
 import os
+from datetime import datetime
 from dotenv import load_dotenv
+print("Stav používateľa po prihlásení:", current_user)
+print("****************************qqq**********************")
+# Načítanie environmentálnych premenných
 load_dotenv()
-# s3 = boto3.client(
-#     's3', region_name='eu-north-1',
-#     aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
-#     aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY")
-# )
+from flask_security.utils import hash_password, verify_and_update_password
+from functools import wraps
+def roles_required(*roles):
+    """Dekorátor, ktorý kontroluje, či má používateľ aspoň jednu z požadovaných rolí."""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                # Ak používateľ nie je prihlásený, presmeruje ho na prihlasovaciu stránku
+                flash("You need to be logged in to access this page.", "warning")
+                return redirect(url_for('auth.login'))
+            
+            # Skontroluje, či má používateľ aspoň jednu z požadovaných rolí
+            if not any(role.name in roles for role in current_user.roles):
+                flash("You do not have permission to access this page.", "danger")
+                return redirect(url_for('views.index'))
 
+            # Ak má používateľ povolenie, vykoná funkciu
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+# Stripe konfigurácia
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 
+# Inicializácia Blueprintu
+auth = Blueprint('auth', __name__)
+# auth = Blueprint('auth', __name__, url_prefix='/auth')  # Ensure unique name and url_prefix
+
 # Definícia Google blueprintu musí byť pred použitím v dekorátore
-google_blueprint = make_google_blueprint(
-    client_id=os.getenv("GOOGLE_CLIENT_ID"),
-    client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
-    redirect_to="auth.google_login",
-    scope=["profile", "email"]
-)
 
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
-
     if request.method == 'POST' and request.form.get('email'):
         email = request.form.get('email')
         password = request.form.get('password')
 
-        user = User.query.filter_by(email=email).first()
-        
-        
-        
+        stmt = db.select(User).where(User.email == email)
+        user = db.session.scalar(stmt)
+
         if user:
-            if user.confirm==False:
+            if not user.confirm:
                 flash('Your account is not activated. Please, confirm it by email!', category='error')
+                return render_template("users/login.html", user=current_user)
             else:
-                if user and bcrypt.check_password_hash(user.password, password):
-                    user.authenticated = True
-                    db.session.add(user)
+                if verify_and_update_password(password, user):
+                    # Update login data
+                    user.last_login_at = user.current_login_at
+                    user.current_login_at = datetime.utcnow()
+                    user.last_login_ip = user.current_login_ip
+                    user.current_login_ip = request.remote_addr
+                    user.login_count += 1
+                    user.active = True
+                    user.authenticated = True  # Set authenticated to True
                     db.session.commit()
-                    session.permanent = True
-                    session['logged_in'] = True
-                    session["name"] = email
-
                     login_user(user, remember=True)
+                    flash('Logged in successfully!', category='success')
                     next_page = request.args.get('next')
-
-                    flash('Logged in successfuly!', category='success')
-
-
-                    # return redirect(url_for("views.home"))
                     return redirect(next_page) if next_page else redirect(url_for('views.index'))
                 else:
-                    flash('Sorry, but you could not log in.', category='error')
-
-                
+                    flash('Incorrect password.', category='error')
+                    return render_template("users/login.html", user=current_user)
         else:
-            flash('Sorry, but you could not log in.', category='error')
+            flash('User does not exist.', category='error')
+            return render_template("users/login.html", user=current_user)
+
+    return render_template("users/login.html", user=current_user, segment='login')
 
 
 
-    return render_template("users/login.html", user=current_user)
 
 
-@auth.route('/login/google', methods=['GET', 'POST'])
+@auth.route('/login/google')
 def google_login():
-    if not google.authorized:
-        return redirect(url_for('google.login'))  # Presmeruje na Google OAuth login page
+    # if not google.authorized:
+    #     return redirect(url_for('google.login'))
 
     resp = google.get("/oauth2/v2/userinfo")
     if not resp.ok:
-        flash("Failed to fetch user info from Google.", category="error")
-        return redirect(url_for("auth.login"))
+        flash("Failed to fetch user info from Google.", "error")
+        return redirect(url_for('security.login'))
 
     user_info = resp.json()
-
-    # Získanie emailu z používateľských údajov
     email = user_info["email"]
 
-    # Skontrolujte, či používateľ už existuje v DB
     user = User.query.filter_by(email=email).first()
-
     if user:
-        login_user(user)
-        flash("Logged in successfully with Google!", category="success")
-        return redirect(url_for("views.index"))
-    else:
-        # Vytvor nového používateľa
-        new_user = User(email=email)
-        db.session.add(new_user)
+        user.last_login_at = user.current_login_at
+        user.current_login_at = datetime.utcnow()
+        user.last_login_ip = user.current_login_ip
+        user.current_login_ip = request.remote_addr
+        user.login_count += 1
         db.session.commit()
-        login_user(new_user)
-        flash("Account created and logged in successfully with Google!", category="success")
-        return redirect(url_for("views.index"))
+        login_user(user)
+        flash("Logged in successfully with Google!", "success")
+        return redirect(url_for('home'))
 
-    # Ak niečo zlyhá, vráť sa na login stránku
-    return redirect(url_for("auth.login"))
+    new_user = User(email=email, first_name=user_info["name"])
+    db.session.add(new_user)
+    db.session.commit()
+    login_user(new_user)
+    flash("Account created and logged in successfully with Google!", "success")
+    return redirect(url_for('home'))
+
+
 
 
 
@@ -132,91 +142,40 @@ def logout():
 
 
 
-# Optional: Adding a route to handle Google OAuth login failures
-@auth.route("/login/google/callback")
-def google_login_callback():
-    if not google.authorized:
-        flash("Google login failed. Please try again.", category="error")
-        return redirect(url_for("auth.login"))
-    return redirect(url_for("auth.google_login"))
 
-
-@oauth_authorized.connect_via(google_blueprint)
-def google_logged_in(blueprint, token):
-    if not token:
-        flash("Failed to log in with Google.", category="error")
-        return False
-
-    resp = blueprint.session.get("/oauth2/v2/userinfo")
-    if not resp.ok:
-        flash("Failed to fetch user info from Google.", category="error")
-        return False
-
-    google_info = resp.json()
-    google_user_id = google_info["id"]
-    email = google_info["email"]
-    name = google_info["name"]
-
-    # Find or create user
-    user = User.query.filter_by(email=email).first()
-    if user is None:
-        hashed_password = bcrypt.generate_password_hash("random_password").decode("utf-8")
-        user = User(
-            email=email,
-            first_name=name,
-            google_id=google_user_id,
-            password=hashed_password
-        )
-        db.session.add(user)
-        db.session.commit()
-
-    login_user(user)
-    flash("Successfully signed in with Google.", category="success")
-    return False
-
-
-
-@auth.route('/register',  methods=['GET', 'POST'])
+@auth.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         email = request.form.get('email', None)
         first_name = request.form.get('first_name', None)
         password1 = request.form.get('password1', None)
         password2 = request.form.get('password2', None)
-        # season_id = request.form.get('season_id', None)
-        
-        # season = Season.query.filter_by(id=season).first()
+
         user = User.query.filter_by(email=email).first()
         nickname = User.query.filter(User.first_name.ilike(first_name)).first()
+
         if user:
-            flash('Email already exist.', category='error')
+            flash('Email already exists.', category='error')
         elif nickname:
-            flash("User name already exist.", category="error")
+            flash("User name already exists.", category="error")
         elif len(email) < 4:
             flash("Email must be greater than 3 chars", category="error")
         elif len(first_name) < 2:
-            flash("First Name must be greater than 1 chars", category="error")
+            flash("First Name must be greater than 1 char", category="error")
         elif password1 != password2:
-            flash("Passwords don\'t match", category="error")
+            flash("Passwords don't match", category="error")
         elif len(password1) < 7:
             flash("Passwords must be at least 7 chars", category="error")
         else:
             hashed_password = bcrypt.generate_password_hash(password1).decode('utf-8')
-
             new_user = User(email=email, first_name=first_name, password=hashed_password)
             db.session.add(new_user)
-            # new_user.seasony.append(season)
-
             db.session.commit()
             send_confirm_email(new_user)
-
-            # login_user(new_user, remember=True)
-
             flash("Account created. Check your email to confirm account.", category="success")
             return redirect(url_for('auth.login'))
-            # add user to database
-    return render_template("users/sign_up.html", user=current_user)
 
+    return render_template("users/sign_up.html", user=current_user)
 
 
 class RequestResetForm(FlaskForm):
@@ -269,10 +228,10 @@ def reset_token(token):
         return redirect(url_for('auth.reset_request'))
     form = ResetPasswordForm()
     if form.validate_on_submit():
-        hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
-        user.password = hashed_password
+        # Use hash_password to hash the new password with Argon2
+        user.password = hash_password(form.password.data)
         db.session.commit()
-        flash('Your password has been changed! You can login.', category="success")
+        flash('Your password has been changed! You can log in.', category="success")
         return redirect(url_for('auth.login'))
     return render_template('users/reset_token.html', title='Reset Password', form=form)
 

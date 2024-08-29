@@ -42,10 +42,30 @@ from psycopg2 import errors
 import datetime
 from datetime import datetime as dt
 from math import ceil, log2, log
+from functools import wraps
 
 from sqlalchemy.exc import IntegrityError  # Importujte pre zachytávanie chýb pri vkladaní do databázy
 
-    
+def roles_required(*roles):
+    """Dekorátor, ktorý kontroluje, či má používateľ aspoň jednu z požadovaných rolí."""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                # Ak používateľ nie je prihlásený, presmeruje ho na prihlasovaciu stránku
+                flash("You need to be logged in to access this page.", "warning")
+                return redirect(url_for('auth.login'))
+            
+            # Skontroluje, či má používateľ aspoň jednu z požadovaných rolí
+            if not any(role.name in roles for role in current_user.roles):
+                flash("You do not have permission to access this page.", "danger")
+                return redirect(url_for('views.index'))
+
+            # Ak má používateľ povolenie, vykoná funkciu
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+        
 views = Blueprint('views', __name__)
 
 adminz = [2]

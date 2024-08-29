@@ -1,4 +1,4 @@
-from flask import Flask, session, jsonify, flash, render_template, current_app
+from flask import Flask, session, jsonify, flash, render_template, current_app, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import OperationalError
 from flask_login import LoginManager, current_user
@@ -13,10 +13,10 @@ import os
 from functools import wraps
 from werkzeug.local import LocalProxy
 
-# Načítanie environmentálnych premenných
+# Load environment variables
 load_dotenv()
 
-# Inicializácia rozšírení
+# Initialize extensions
 db = SQLAlchemy()
 login_manager = LoginManager()
 bcrypt = Bcrypt()
@@ -25,33 +25,36 @@ mail = Mail()
 def create_app():
     app = Flask(__name__)
 
-    # Konfigurácia aplikácie
-    app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
+    # Application Configuration
+    app.config["DEBUG"] = True
+    app.config["SECRET_KEY"] = "pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw"
+    app.config["SECURITY_PASSWORD_SALT"] = "156043940537155509276282232127182067465"
+    app.config["SECURITY_TOTP_SECRETS"] = {"1": "TjQ9Qa31VOrfEzuPy4VHQWPCTmRzCnFzMKLxXYiZu9B"}
+    app.config["SECURITY_PASSWORD_HASH"] = "argon2"  # Set Argon2 as the default hash
+    app.config['SECURITY_CONFIRMABLE'] = True  # Enables email confirmation
+    app.config['SECURITY_REGISTERABLE'] = True  # Allows user registration
+    app.config['SECURITY_RECOVERABLE'] = True   # Enables password recovery
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("SQLALCHEMY_DATABASE_URI")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config['SQLALCHEMY_POOL_SIZE'] = 10
-    app.config['SQLALCHEMY_MAX_OVERFLOW'] = 5
-    app.config['SQLALCHEMY_POOL_TIMEOUT'] = 30
-    app.config['SQLALCHEMY_POOL_RECYCLE'] = 3600
     app.config['MAIL_SERVER'] = os.environ.get("MAIL_SERVER")
     app.config['MAIL_PORT'] = os.environ.get("MAIL_PORT")
     app.config['MAIL_USE_TLS'] = os.environ.get("MAIL_USE_TLS")
     app.config['MAIL_USERNAME'] = os.environ.get("MAIL_USERNAME")
     app.config['MAIL_PASSWORD'] = os.environ.get("MAIL_PASSWORD")
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)
-    app.config.update(
-        SESSION_COOKIE_SECURE=True,
-        SESSION_COOKIE_SAMESITE='None',
-    )
+    app.config['SESSION_COOKIE_SECURE'] = True
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=5)
 
-    # Inicializácia rozšírení s aplikáciou
+    # Initialize extensions with app
     db.init_app(app)
     bcrypt.init_app(app)
     mail.init_app(app)
-    login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
+    login_manager.init_app(app)
 
-    # Import a registrácia blueprintov
+    # Register Blueprints
     from .views import views
     from .auth import auth
     from .products import products
@@ -62,7 +65,9 @@ def create_app():
     app.register_blueprint(products, url_prefix='/')
     app.register_blueprint(errors)
 
-    # Registrácia Google OAuth blueprintu
+    # Google OAuth Blueprint
+    # Definícia Google blueprintu musí byť pred použitím v dekorátore
+
     google_blueprint = make_google_blueprint(
         client_id=os.getenv("GOOGLE_CLIENT_ID"),
         client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
@@ -71,28 +76,22 @@ def create_app():
     )
     app.register_blueprint(google_blueprint, url_prefix="/login")
 
-    # Inicializácia Flask-Security
-    from .models import User, Role
-    user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+    # Registrácia blueprintov
+    # from .auth import auth as auth_blueprint
+    # app.register_blueprint(auth_blueprint)
+    
+    
+    # Initialize Flask-Security
+    from .models import User, Role, user_datastore
     Security(app, user_datastore)
 
-    # Definícia ochrany rolí
+    # Role Protection Definition
     _security = LocalProxy(lambda: current_app.extensions['security'])
 
-    def roles_required(*roles):
-        def wrapper(fn):
-            @wraps(fn)
-            def decorated_view(*args, **kwargs):
-                if not current_user.is_authenticated:
-                    return _security._unauthorized_callback()
-                if any(current_user.has_role(role) for role in roles):
-                    return fn(*args, **kwargs)
-                else:
-                    return "nonononono"
-            return decorated_view
-        return wrapper
 
-    # Handler pre chyby databázy
+
+    
+    # Error Handler for Database Issues
     @app.errorhandler(OperationalError)
     def handle_operational_error(e):
         if "could not translate host name" in str(e):
@@ -100,7 +99,7 @@ def create_app():
             return render_template("errors/500.html"), 500
         return render_template("errors/500.html"), 500
 
-    # Funkcia na načítanie užívateľa
+    # User Loader Function for Flask-Login
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))

@@ -434,11 +434,11 @@ window.onload = function() {
         });
     });
 
-    window.addEventListener('beforeunload', function (e) {
-        if (formChanged) {
-            const confirmationMessage = 'You have unsaved changes. Are you sure you want to leave?';
-            e.returnValue = confirmationMessage; // For older browsers
-            return confirmationMessage; // For modern browsers
-        }
-    });
+    // window.addEventListener('beforeunload', function (e) {
+    //     if (formChanged) {
+    //         const confirmationMessage = 'You have unsaved changes. Are you sure you want to leave?';
+    //         e.returnValue = confirmationMessage; // For older browsers
+    //         return confirmationMessage; // For modern browsers
+    //     }
+    // });
 }
