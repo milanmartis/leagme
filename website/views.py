@@ -152,20 +152,23 @@ def home(season):
         Season).filter(Season.id == season).all()
     round = db.session.query(Groupz.round_id).filter(Groupz.season_id==season).order_by(Groupz.round_id.desc()).first()
     print(round)
-    user_group = db.session.query(Groupz).join(User.groupy).filter(User.id == current_user.id).filter(Groupz.season_id == Season.id).filter(Season.id == season).filter(Groupz.round_id == round[0]).first()
+    if round is not None:
+        user_group = db.session.query(Groupz).join(User.groupy).filter(User.id == current_user.id).filter(Groupz.season_id == Season.id).filter(Season.id == season).filter(Groupz.round_id == round[0]).first()
     
-    myduels_user = db.session.query(Groupz.id).join(User.groupy).filter(Groupz.season_id == Season.id).filter(
-        Season.id == season).filter(User.id.in_([current_user.id])).filter(Groupz.round_id == round[0]).all()
+    # myduels_user = db.session.query(Groupz.id).join(User.groupy).filter(Groupz.season_id == Season.id).filter(
+    #     Season.id == season).filter(User.id.in_([current_user.id])).filter(Groupz.round_id == round[0]).all()
 
-    players = User.query.all()
-    data_show_table = tabz.show_table(season, round, round[0])
-    data_all = tabz.show_table_all(season)
-    round = (db.session.query(Round.id)
-         .join(Season, Round.season_id == Season.id)
-         .filter(Season.id == season)
-         .order_by(Round.id.desc())
-         .first())
-    data_name_tabz = tabz.show_name_table(season, round[0])
+        players = User.query.all()
+        data_show_table = tabz.show_table(season, round, round[0])
+        data_all = tabz.show_table_all(season)
+        round = (db.session.query(Round.id)
+            .join(Season, Round.season_id == Season.id)
+            .filter(Season.id == season)
+            .order_by(Round.id.desc())
+            .first())
+        data_name_tabz = tabz.show_name_table(season, round[0])
+    else:
+        return redirect(url_for('views.season_manager', season=season))
 
     if request.method == "POST" and request.form.get("duelz"):
 
