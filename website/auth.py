@@ -22,9 +22,6 @@ import random
 import os
 from datetime import datetime
 from dotenv import load_dotenv
-print("Stav používateľa po prihlásení:", current_user)
-print("****************************qqq**********************")
-# Načítanie environmentálnych premenných
 load_dotenv()
 from flask_security.utils import hash_password, verify_and_update_password
 from functools import wraps

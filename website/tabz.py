@@ -18,61 +18,61 @@ def show_name_table(season, round):
     groups = db.session.query(Groupz).filter(Groupz.season_id == Season.id).filter(Season.id == season).filter(Groupz.round_id == round).all()
 
     # groups = ['A', 'B1', 'B2', 'C1', 'C2']
-    print(groups)
+    # print(groups)
     return groups
 
 
 ########################## SHOW TABLE IN GROUPS
-def show_table(season, groupz, round):
-    
-    # print(season)
-    # print(groupz)
+def show_table(season, round):
+
     valz = []
 
-    # total_games = func.sum(case(value=user_duel.c.checked = 'true', whens=user_duel.c.checked, else_= 0)).label("user_duel.addons")
-    c_duel = func.sum(case((user_duel.c.checked == 'true', 1), else_= 0)).label("c_duel")
-    s_points = func.sum(case((user_duel.c.checked == 'true', user_duel.c.points), else_= 0)).label("s_points")
-    s_result = func.sum(case((user_duel.c.checked == 'true', user_duel.c.result), else_= 0)).label("s_result")
-    s_against = func.sum(case((user_duel.c.checked == 'true', user_duel.c.against), else_= 0)).label("s_against")
-    # c_wins = func.sum(case((user_duel.c.points == 2, 1), else_= 0)).label("c_wins")
-    # c_loses = func.sum(case((user_duel.c.points == 0, 1),(user_duel.c.points == 1, 1), else_=0)).label("c_loses")
-    
-    c_wins = func.sum(case(
-        
-            (and_(
-                (user_duel.c.checked == 'true'),
-                or_(
-                    (user_duel.c.points == 2),
-                )
-            ), 1)
-        ,
-        else_ = 0
-    ))
+    # Definovanie agregovaných funkcií s podmienkami
+    c_duel = func.sum(case((user_duel.c.checked == 'true', 1), else_=0)).label("c_duel")
+    s_points = func.sum(case((user_duel.c.checked == 'true', user_duel.c.points), else_=0)).label("s_points")
+    s_result = func.sum(case((user_duel.c.checked == 'true', user_duel.c.result), else_=0)).label("s_result")
+    s_against = func.sum(case((user_duel.c.checked == 'true', user_duel.c.against), else_=0)).label("s_against")
 
-    c_loses = func.sum(case(
-        
-            (and_(
-                (user_duel.c.checked == 'true'),
-                or_(
-                    (user_duel.c.points == 0),
-                    (user_duel.c.points == 1)
-                )
-            ), 1)
-        ,
-        else_ = 0
-    ))
-    
+    c_wins = func.sum(
+        case(
+            (
+                and_(
+                    (user_duel.c.checked == 'true'),
+                    (user_duel.c.points == 2)
+                ), 1
+            ),
+            else_=0
+        )
+    ).label("c_wins")
+
+    c_loses = func.sum(
+        case(
+            (
+                and_(
+                    (user_duel.c.checked == 'true'),
+                    or_(
+                        (user_duel.c.points == 0),
+                        (user_duel.c.points == 1)
+                    )
+                ), 1
+            ),
+            else_=0
+        )
+    ).label("c_loses")
+
+    # Dotaz do databázy
     groups = db.session.query(
-        user_group.c.groupz_id,
-        User.first_name,
-        user_duel.c.user_id,
-                c_duel,
-                s_points,
-                s_result,
-                s_against,
-                c_wins,
-                c_loses
-                )\
+            user_group.c.groupz_id,
+            User.first_name,
+            user_duel.c.user_id,
+            Duel.id.label('duel_id'),  # Pridáme duel_id pre lepšiu kontrolu
+            c_duel,
+            s_points,
+            s_result,
+            s_against,
+            c_wins,
+            c_loses
+        )\
         .select_from(user_duel)\
         .join(User, user_duel.c.user_id == User.id)\
         .join(Duel, user_duel.c.duel_id == Duel.id)\
@@ -82,68 +82,35 @@ def show_table(season, groupz, round):
         .join(Round, Groupz.round_id == Round.id)\
         .filter(Season.id == season)\
         .filter(Round.id == round)\
-        .group_by(user_duel.c.user_id, user_group.c.groupz_id, User.first_name)\
+        .filter(Duel.round_id == round)\
+        .group_by(user_duel.c.user_id, user_group.c.groupz_id, User.first_name, Duel.id)\
         .all()
 
-
-        
-        # .filter(Groupz.id == groupz)\
-
-    # print('-----------------------------------')
-    # print(groups)
-    # print('-----------------------------------')
-
-    # connection = psycopg2.connect('postgresql://ynqryzyuztgqts:122f26414b20598848fc10a2703fd6da06650c06918c1a69e5e7249d59597271@ec2-34-194-40-194.compute-1.amazonaws.com:5432/d8jkicn6gvjnuh')
-    # cursor = connection.cursor()
-    # cursor.execute('''
-    # SELECT user_group.groupz_id, user.first_name, user_duel.result, user_duel.against, 
-    # user_duel.points, user_duel.checked, user.id,
-
-    # SUM(CASE WHEN user_duel.checked = 'true' THEN user_duel.addons ELSE 0 END) AS c_duel,
-    # SUM(CASE WHEN user_duel.checked = 'true' THEN user_duel.points ELSE 0 END) AS s_points,
-    # SUM(CASE WHEN user_duel.checked = 'true' THEN user_duel.result ELSE 0 END) AS s_result,
-    # SUM(CASE WHEN user_duel.checked = 'true' THEN user_duel.against ELSE 0 END) AS s_against,
-    # SUM(CASE WHEN user_duel.checked = 'true' AND user_duel.points = 2 THEN 1 ELSE 0 END) AS c_wins,
-    # SUM(CASE WHEN user_duel.checked = 'true' AND (user_duel.points = 0 OR user_duel.points = 1) THEN 1 ELSE 0 END) AS c_loses
-
-    # FROM duel
-    # INNER JOIN user ON user.id = user_duel.user_id
-    # INNER JOIN user_duel ON duel.id = user_duel.duel_id 
-    # INNER JOIN round ON round.id = duel.round_id AND duel.round_id = 2
-    # INNER JOIN user_group ON user_group.user_id = user.id
-    # INNER JOIN season ON season.id = duel.season_id 
-    # WHERE season.id = 1 AND user_group.groupz_id > 7 AND duel.id > 100
-    # GROUP BY user_duel.user_id, user_group.groupz_id, user_group.round_id
-    # ''')
-    # groups = cursor.fetchall()
-    # connection.commit()
-    # connection.close()
-
-
-    # print(groups)
-
-
+    # Zoskupenie výsledkov podľa 'groupz_id'
     result = {k: [*map(lambda v: v, values)]
               for k, values in groupby(sorted(groups, key=lambda x: x[0]), lambda x: x[0])
               }
-    # print(result)
 
-    # print(result)
-
+    # Spracovanie každej skupiny do DataFrame
     for group in result.values():
 
-        df = pd.DataFrame(group, columns=['duel_id', 'player', 'user_id','c_duel','s_points','s_result','s_against','c_wins','c_loses'])
-        # df = df.replace('?', np.NaN)
+        # Upravíme počet stĺpcov podľa počtu stĺpcov v 'group'
+        df = pd.DataFrame(group, columns=['groupz_id', 'player', 'user_id', 'duel_id', 'c_duel', 's_points', 's_result', 's_against', 'c_wins', 'c_loses'])
+
+        # Výpočet a agregácia údajov
         df['plusminus'] = df['s_result'] - df['s_against']
-        df = df.groupby(by="player", as_index=False)[["c_duel", "c_wins", "c_loses", "s_points", "s_result","s_against","plusminus"]].sum()
-        df = df.sort_values(['s_points','s_result','plusminus'], ascending=False)
-        # df['dif'] = df[['plus', 'minus']].agg('/'.join, axis=1)
-        df['plusminus2'] = df['s_result'].astype(str) +"/"+ df["s_against"].astype(str)
+        df = df.groupby(by="player", as_index=False)[["c_duel", "c_wins", "c_loses", "s_points", "s_result", "s_against", "plusminus"]].sum()
+
+        # Zoradenie výsledkov
+        df = df.sort_values(['s_points', 's_result', 'plusminus'], ascending=False)
+
+        # Vytvorenie nového stĺpca 'plusminus2'
+        df['plusminus2'] = df['s_result'].astype(str) + "/" + df["s_against"].astype(str)
+
+        # Výber konečných stĺpcov pre výstup
         df = df[['player', 'c_duel', 'c_wins', 'c_loses', 'plusminus2', 'plusminus', 's_points']]
 
-
-        # print(df)
-        der = df.to_string(index=False)
+        # Konverzia DataFrame na zoznam a pridanie do výstupu
         der = df.values.tolist()
         valz.append([der])
 
@@ -218,10 +185,6 @@ def show_table_all(season):
     df2['plusminus'] = df2['s_result'] - df2['s_against']
 
     df2 = df2.groupby(["player"], as_index=False)[["c_duel", "c_wins", "c_loses", "s_points", "s_result","s_against","plusminus"]].sum()
-    print('----------------')
-    print(df2)
-    print('----------------')
-
     df2 = df2.sort_values(['s_points','s_result','plusminus'], ascending=False)
     # df2.reset_index(drop=True)
     df2['plusminus2'] = df2['s_result'].astype(str) +"/"+ df2["s_against"].astype(str)

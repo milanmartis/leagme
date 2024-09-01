@@ -159,7 +159,7 @@ def home(season):
     #     Season.id == season).filter(User.id.in_([current_user.id])).filter(Groupz.round_id == round[0]).all()
 
         players = User.query.all()
-        data_show_table = tabz.show_table(season, round, round[0])
+        data_show_table = tabz.show_table(season, round[0])
         data_all = tabz.show_table_all(season)
         round = (db.session.query(Round.id)
             .join(Season, Round.season_id == Season.id)
