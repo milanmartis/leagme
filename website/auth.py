@@ -3,6 +3,7 @@ from .models import User, Season, PaymentCard, Product, Order, PaymentMethod, Ro
 from . import db, bcrypt, argon2
 from flask_login import login_user, login_required, logout_user, current_user
 from flask_security.utils import login_user  # Importujte správne login_user z Flask-Security-too
+from argon2.exceptions import VerifyMismatchError
 
 from flask_security import current_user, Security, SQLAlchemyUserDatastore, roles_accepted
 from flask_wtf import FlaskForm
@@ -25,6 +26,10 @@ from dotenv import load_dotenv
 load_dotenv()
 from flask_security.utils import hash_password, verify_and_update_password
 from functools import wraps
+from argon2 import PasswordHasher
+
+ph = PasswordHasher()
+
 def roles_required(*roles):
     """Dekorátor, ktorý kontroluje, či má používateľ aspoň jednu z požadovaných rolí."""
     def decorator(f):
@@ -62,6 +67,9 @@ def login():
 
         stmt = db.select(User).where(User.email == email)
         user = db.session.scalar(stmt)
+
+# $argon2id$v=19$m=65536,t=3,p=4$St7hUxOpI5tD94pxVfzzMQ$HTDMk7BqnpgX7PJtDpuWFEmsdtdfk48XnI4ST2cAkZo
+# $argon2id$v=19$m=65536,t=3,p=4$fk/pXYsxxlhLaW3tPYew9g$oYmSLjyfNhzvCreWHFZvdCKTgYdsDrlxvaLdO1ukvmA
 
         if user:
             if not user.confirm:
@@ -143,16 +151,21 @@ def logout():
 
 @auth.route('/register', methods=['GET', 'POST'])
 def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('views.index'))
+
     if request.method == 'POST':
         email = request.form.get('email', '').strip()
         first_name = request.form.get('first_name', '').strip()
         password1 = request.form.get('password1', '').strip()
         password2 = request.form.get('password2', '').strip()
 
+        # Skontrolujte, či sú všetky polia vyplnené
         if not email or not first_name or not password1 or not password2:
             flash('All fields are required.', category='error')
             return render_template("users/sign_up.html", user=current_user)
 
+        # Skontrolujte, či užívateľ alebo prezývka už existujú
         user = User.query.filter_by(email=email).first()
         nickname = User.query.filter(User.first_name.ilike(first_name)).first()
 
@@ -169,16 +182,17 @@ def register():
         elif len(password1) < 7:
             flash("Password must be at least 7 characters long.", category="error")
         else:
-            # Generate the fs_uniquifier using UUID
+            # Vygenerujte jedinečný identifikátor fs_uniquifier pomocou UUID
             fs_uniquifier = str(uuid.uuid4())
 
-            # Corrected: Use Argon2 to hash the password without decoding
-            hashed_password = argon2.generate_password_hash(password1)
+            # Použite Argon2 na hashovanie hesla
+            hashed_password = hash_password(password1)
             new_user = User(email=email, first_name=first_name, password=hashed_password, fs_uniquifier=fs_uniquifier)
 
             db.session.add(new_user)
             db.session.commit()
 
+            # Pošlite potvrdzovací e-mail novému používateľovi
             send_confirm_email(new_user)
             flash("Account created. Check your email to confirm your account.", category="success")
             return redirect(url_for('auth.login'))
@@ -317,7 +331,7 @@ def send_reset_email(user):
 def send_confirm_email(user):
     token = user.get_confirm_token()
     msg = Message('Confirm your register email',
-                  sender=('Darts Club', 'info@dartsclub.sk'),
+                  sender=('LeagMe.com', 'info@dartsclub.sk'),
                   recipients=[user.email])
     msg.html = f'''<center><h1>To confirm your email, click on the following link</h1>
 <br>
@@ -350,6 +364,8 @@ def send_confirm_email(user):
 
 
 
+    
+    
 def environment():
     """
     This is not how you want to handle environments in a real project,
@@ -554,47 +570,48 @@ def save_order():
 @auth.route('/account', methods=['GET', 'POST'])
 @login_required
 def user_details():
-
-    
     if request.method == 'POST':
-
         useride = request.form.get('useride')
-        # email = request.form.get('email')
         first_name = request.form.get('first_name_update')
-
         password_old = request.form.get('password_old')
         password1 = request.form.get('password1')
         password2 = request.form.get('password2')
+        
         user = User.query.get(useride)
         nickname = User.query.filter(User.first_name.like(first_name)).filter(User.first_name.notlike(current_user.first_name)).first()
 
         print(current_user.first_name)
-        if user == '':
-           flash('This user doesn\'t exist.', category='error')
+        
+        if not user:
+            flash('This user doesn\'t exist.', category='error')
         elif len(first_name) < 2:
             flash("First Name must be greater than 1 chars", category="error")
         elif nickname:
-            flash("User name already exist.", category="error")
+            flash("User name already exists.", category="error")
         else:
-            if password1 !='':
-                if not bcrypt.check_password_hash(user.password, password_old):
+            if password1 != '':
+                try:
+                    ph.verify(user.password, password_old)
+                    
+                    if password1 != password2:
+                        flash("New passwords don't match", category="error")
+                    elif password_old == password2:
+                        flash("New password must be different", category="error")
+                    elif len(password1) < 7:
+                        flash("New password must be at least 7 chars", category="error")
+                    else:
+                        # Hashovanie nového hesla pomocou argon2
+                        user.password = ph.hash(password1)
+                        user.first_name = first_name
+                        session["user_name"] = first_name
+
+                        db.session.commit()
+                        login_user(user, remember=True)
+
+                        flash("Account updated!", category="success")
+                        return redirect(url_for('auth.user_details'))
+                except VerifyMismatchError:
                     flash('Old password is not correct!', category='error')
-                elif password1 != password2:
-                    flash("New passwords don\'t match", category="error")
-                elif password_old == password2:
-                    flash("New password must be different", category="error")
-                elif len(password1) < 7:
-                    flash("New passwords must be at least 7 chars", category="error")
-                else:
-                    user.password = bcrypt.generate_password_hash(password1).decode('utf-8')
-                    user.first_name = first_name
-                    session["user_name"] = first_name
-
-                    db.session.commit()
-                    login_user(user, remember=True)
-
-                    flash("Account updated!", category="success")
-                    return redirect(url_for('auth.user_details'))
             else:
                 user.first_name = first_name
                 session["user_name"] = first_name
@@ -603,6 +620,15 @@ def user_details():
 
                 flash("Account updated!", category="success")
                 return redirect(url_for('auth.user_details'))
+
+    # return render_template('account.html', user=current_user)
+                return redirect(url_for('auth.user_details'))
+
+            
+            
+            
+            
+            
 
     # user_email = session.get('user_email')
     # user_id = session.get('user_id')

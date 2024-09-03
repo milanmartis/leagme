@@ -9,7 +9,6 @@
     width="250"
   />
 </h1>
-{{season_type}}
 {% if round|int >= 10 %}{% set roundno = round|int - 4 %}{% else %}{% set roundno = round %}{% endif %}
 <h6><a href="{{url_for('views.season_manager', season=season_obj.id)}}">{{season_obj.name}}</a> | Round #{{seas_no_r}}</h6>
 {% if groups %}

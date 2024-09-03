@@ -1,0 +1,42 @@
+{
+    "background_color": "#00EE00",
+    "description": "leagme-chat-tool",
+    "dir": "ltr",
+    "display": "standalone",
+    "name": "leagme.com",
+    "orientation": "portrait",
+    "scope": "/",
+    "short_name": "leagme",
+    "start_url": "/",
+    "theme_color": "#00EE00",
+    "categories": [
+      "entertainment"
+    ],
+    "screenshots": [],
+    "icons": [
+      {
+        "src": "https://leagme.com/static/img/maskable_icon.png",
+        "type": "image/png",
+        "sizes": "192x192",
+        "purpose": "maskable"
+      },
+      {
+        "src": "https://leagme.com/static/img/icon512x512.png",
+        "type": "image/png",
+        "sizes": "512x512",
+        "purpose": "any"
+      }
+    ],
+    "shortcuts": [
+      {
+        "name": "leagme.com",
+        "url": "https://leagme.com",
+        "description": "join"
+      }
+    ],
+    "id": "leagme-chat-tool",
+    "edge_side_panel": {
+      "preferred_width": 100
+    },
+    "prefer_related_applications": true
+  }

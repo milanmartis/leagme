@@ -1,0 +1,12 @@
+{% block content %}
+<script src="https://js.stripe.com/v3/"></script>
+
+{% if payment_method %}
+<h1>Your Payment Method</h1>
+<p>Card Brand: {{ payment_method.card.brand }}</p>
+<p>Card Last 4: **** **** **** {{ payment_method.card.last4 }}</p>
+<p>Expiry: {{ payment_method.card.exp_month }}/{{ payment_method.card.exp_year }}</p>
+{% else %}
+<!--<p>No payment method found.</p>-->
+{% endif %}
+{% endblock %}

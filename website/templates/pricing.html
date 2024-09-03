@@ -103,7 +103,7 @@
 
 <br>
 {% if user.stripe_subscription_id %}
-{% set subscribed22 = "disabled" %}
+{% set subscribed22 = "display:none"%}
 {% set subscribedstyle = 'opacity:0.3;' %}
 {% else %}
 {% set subscribed = "" %}
@@ -111,12 +111,12 @@
 {% endif %}
 
 <center>
-    <img src="{{ url_for('static', filename='img/pricing.svg') }}" class="filter-green" style="{{subscribedstyle}}" width="180" />
+    <img src="{{ url_for('static', filename='img/pricing.svg') }}" class="filter-green" style="{{subscribed22}}" width="180" />
     <div class="row">
         {% for product in products %}
         {% if loop.index0 == 0 %}
         <!-- ********** PLAYER PRODUCT ********** -->
-        <div class="col-sm-12" style="{{subscribedstyle}}">
+        <div class="col-sm-12" style="{{subscribed22}}">
             <div class="product-card">
                 <div class="product-name"><img src="{{ url_for('static', filename='img/'+ product['title']|lower +'.svg') }}" class="filter-green" width="100%" /></div>
 
@@ -127,10 +127,10 @@
                     <h1>{{ product['price']|round(0) }} €/m</h1>
                 </div>
 
-                <form id="payment-form-player" {{subscribed22}}>
+                <form id="payment-form-player" style="{{subscribed22}}">
                     <!-- Stripe Elements container -->
-                    <button {{subscribed22}} id="buynow_player" type="submit" class="btn-reverse" style="cursor: pointer;margin-left: 0px;margin-right: 5px;">Subscribe</button>
-                    <button {{subscribed22}} id="submit-button-player" type="submit" class="btn-reverse" style="display:none;cursor: pointer;margin-left: 0px;margin-right: 5px;">Submit Payment</button>
+                    <button  id="buynow_player" type="submit" class="btn-reverse" style="{{subscribed22}}; cursor: pointer;margin-left: 0px;margin-right: 5px;">Subscribe</button>
+                    <button  id="submit-button-player" type="submit" class="btn-reverse" style="display:none;cursor: pointer;margin-left: 0px;margin-right: 5px;">Submit Payment</button>
                     <div id="cardz-player">
                         <center><img src="{{ url_for('static', filename='img/paycards.svg') }}" width="180"></center>
                     </div>
@@ -264,7 +264,7 @@
         {% endif %}
         {% if loop.index0 == 1 %}
         <!-- ********** MANAGER PRODUCT ********** -->
-        <div class="col-sm-12" style="{{subscribedstyle}}">
+        <div class="col-sm-12" style="{{subscribed22}}">
             <div class="product-card">
                 <div class="product-name"><img src="{{ url_for('static', filename='img/'+ product['title']|lower +'.svg') }}" class="filter-green" width="100%" /></div>
 

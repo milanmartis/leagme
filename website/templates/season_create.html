@@ -114,8 +114,8 @@
         </div>
     </form>
 <br>
-{% if season %}
-    <button onclick="javascript:location.href='{{ url_for('views.season_manager', season=season) }}';" class="btn btn-sm createforms2" />Back</button>
-{% endif %}
+
+    <button onclick="javascript:location.href='{{ url_for('views.index') }}';" class="btn btn-sm createforms2" />Back</button>
+
 </div>
 {% endblock content %}

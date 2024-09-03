@@ -30,6 +30,7 @@ from random import sample
 from random import shuffle
 # import mysql.connector
 from . import conn
+from .utils import send_new_round_email
 import psycopg2
 import email
 from flask_wtf import FlaskForm
@@ -90,6 +91,13 @@ def is_power_of_two(form, field):
 @views.route('/', methods=['GET', 'POST'])
 # @login_required
 def index():
+    from py_vapid import Vapid
+
+    vapid = Vapid()
+    vapid.generate_keys()
+    print(f"Public Key: {vapid.public_key}")
+    print(f"Private Key: {vapid.private_key}")
+    
     if not current_user.is_authenticated:
         # Ak nie je používateľ prihlásený, presmerujte ho na prihlasovaciu stránku
         return redirect(url_for('auth.login'))
@@ -1451,6 +1459,14 @@ def season_manager(season):
         if season1 < 1:
             flash('There is a problem!', category='error')
         else:
+            emailz = db.session.query(User.email).join(user_season, user_season.c.user_id == User.id).filter(user_season.c.season_id == season1).all()
+
+            # Konverzia výsledku dotazu na jednoduchý zoznam e-mailov
+            email_list = [email[0] for email in emailz]
+
+            # Iterovanie cez zoznam e-mailov a odoslanie e-mailu každému používateľovi
+            for email in email_list:
+                send_new_round_email(email, "New Round Notification", season1)
             # pass
             # create_new_season(season1)
             print("********************")
@@ -1461,6 +1477,8 @@ def season_manager(season):
             if season_type.season_type==2:
                 generate_tournament_structure(season1)
             flash('New round was created!!!', category='success')
+            print("poslat email")
+            # send_new_round_email(,what,season)
             return redirect(url_for('views.season_manager', season=season1))
 
 

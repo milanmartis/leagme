@@ -1,0 +1,35 @@
+{% block content %}
+
+<div class="container">
+    <h1>Your Orders</h1>
+
+    {% if orders %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Product Name</th>
+                    <th>Quantity</th>
+                    <th>Amount</th>
+                    <th>Order Date</th>
+                    <th>Paid</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order, product_name in orders %}
+                    <tr>
+                        <td>{{ order.id }}</td>
+                        <td>{{ product_name }}</td>
+                        <td>{{ order.quantity }}</td>
+                        <td>${{ "%.2f" | format(order.amount) }}</td>
+                        <td>{{ order.order_date.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td>{{ 'Yes' if order.is_paid else 'No' }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No orders found.</p>
+    {% endif %}
+</div>
+{% endblock %}
