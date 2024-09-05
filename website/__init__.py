@@ -24,7 +24,7 @@ login_manager = LoginManager()
 bcrypt = Bcrypt()
 mail = Mail()
 argon2 = Argon2()
-socketio = SocketIO()
+# socketio = SocketIO()
 
 def create_app():
     app = Flask(__name__)
@@ -58,7 +58,7 @@ def create_app():
     mail.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)
-    socketio.init_app(app) 
+    # socketio.init_app(app) 
 
     # Register Blueprints
     from .views import views
@@ -112,31 +112,31 @@ def create_app():
     return app
 
 
-# Socket.IO Events
-@socketio.on('connect')
-def handle_connect():
-    print('Client connected')
-    emit('message', {'msg': 'Connected to server'})
+# # Socket.IO Events
+# @socketio.on('connect')
+# def handle_connect():
+#     print('Client connected')
+#     emit('message', {'msg': 'Connected to server'})
 
-@socketio.on('disconnect')
-def handle_disconnect():
-    print('Client disconnected')
+# @socketio.on('disconnect')
+# def handle_disconnect():
+#     print('Client disconnected')
 
-@socketio.on('join')
-def on_join(data):
-    username = data['username']
-    room = data['room']
-    join_room(room)
-    emit('message', {'msg': f'{username} has entered the room.'}, to=room)
+# @socketio.on('join')
+# def on_join(data):
+#     username = data['username']
+#     room = data['room']
+#     join_room(room)
+#     emit('message', {'msg': f'{username} has entered the room.'}, to=room)
 
-@socketio.on('leave')
-def on_leave(data):
-    username = data['username']
-    room = data['room']
-    leave_room(room)
-    emit('message', {'msg': f'{username} has left the room.'}, to=room)
+# @socketio.on('leave')
+# def on_leave(data):
+#     username = data['username']
+#     room = data['room']
+#     leave_room(room)
+#     emit('message', {'msg': f'{username} has left the room.'}, to=room)
 
-@socketio.on('send_message')
-def handle_send_message(data):
-    room = data['room']
-    emit('message', {'msg': data['msg']}, to=room)
+# @socketio.on('send_message')
+# def handle_send_message(data):
+#     room = data['room']
+#     emit('message', {'msg': data['msg']}, to=room)

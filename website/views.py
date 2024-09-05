@@ -91,12 +91,12 @@ def is_power_of_two(form, field):
 @views.route('/', methods=['GET', 'POST'])
 # @login_required
 def index():
-    from py_vapid import Vapid
+    # from py_vapid import Vapid
 
-    vapid = Vapid()
-    vapid.generate_keys()
-    print(f"Public Key: {vapid.public_key}")
-    print(f"Private Key: {vapid.private_key}")
+    # vapid = Vapid()
+    # vapid.generate_keys()
+    # print(f"Public Key: {vapid.public_key}")
+    # print(f"Private Key: {vapid.private_key}")
     
     if not current_user.is_authenticated:
         # Ak nie je používateľ prihlásený, presmerujte ho na prihlasovaciu stránku
