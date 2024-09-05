@@ -258,7 +258,27 @@
       $('.carousel-inner').height(maxHeight + 20);
     });
   </script>
-
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+  <script>
+      // Pripojenie k serveru Socket.IO
+      const socket = io();
+  
+      // Po pripojení na server
+      socket.on('connect', function() {
+          console.log('Connected to server');
+          socket.emit('join', { username: 'YourUsername', room: 'YourRoom' });
+      });
+  
+      // Po prijatí správy
+      socket.on('message', function(data) {
+          console.log(data.msg);
+      });
+  
+      // Odoslanie správy
+      function sendMessage(msg) {
+          socket.emit('send_message', { msg: msg, room: 'YourRoom' });
+      }
+  </script>
 
   </body>
 </html>

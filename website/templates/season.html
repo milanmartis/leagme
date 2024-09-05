@@ -1,4 +1,4 @@
-{% extends "base.html" %} {% block title %}DartsClub - Season{% endblock %} {%
+{% extends "base.html" %} {% block title %}LeagMe - Season{% endblock %} {%
   block content %}
   {% set lang = 0 %}
 
@@ -50,8 +50,8 @@
   <h2>{{seas.name}}</h2>
   {% endif %}
   
-
 </h1>
+<h5>{{season_author[0]}}</h5>
 {% if seas %}
 {% if seasons %}
 <div class="container readinglazy" align="center">
@@ -297,7 +297,7 @@ aria-hidden="true"
         <span>sec</span>
       </div>
     </div>
-    <h4 style="max-width: 260px;">You must complete all duels before the time limit expires. The results will not be changed afterward</h4>
+    <h4 style="max-width: 260px;">Complete all duels before the time limit. Results won't be changed afterward.</h4>
   </div>
       
       

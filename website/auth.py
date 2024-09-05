@@ -42,7 +42,7 @@ def roles_required(*roles):
             
             # Skontroluje, či má používateľ aspoň jednu z požadovaných rolí
             if not any(role.name in roles for role in current_user.roles):
-                flash("You do not have permission to access this page.", "danger")
+                flash("You don't have permission, make a subscription", "error")
                 return redirect(url_for('views.index'))
 
             # Ak má používateľ povolenie, vykoná funkciu

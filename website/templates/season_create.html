@@ -9,7 +9,7 @@
         {{ form.hidden_tag() }}
         <fieldset class="form-group">
             <div class="form-group">
-                {{ form.name.label(class="form-control-label createforms") }}
+                {{ form.name.label }}
                 {% if form.name.errors %}
                     {{ form.name(class="form-control form-control-lg is-invalid ") }}
                     <div class="invalid-feedback">
@@ -47,19 +47,7 @@
                     {{ form.no_group(class="form-control form-control-lg createforms ") }}
                 {% endif %}
             </div>
-            <div class="form-group">
-                {{ form.no_round.label(class="form-control-label createforms") }}
-                {% if form.no_round.errors %}
-                    {{ form.no_round(class="form-control form-control-lg is-invalid") }}
-                    <div class="invalid-feedback">
-                        {% for error in form.no_round.errors %}
-                            <span>{{ error }}</span>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    {{ form.no_round(class="form-control form-control-lg createforms") }}
-                {% endif %}
-            </div>
+
             <div class="form-group">
                 {{ form.winner_points.label(class="form-control-label createforms") }}
                 {% if form.winner_points.errors %}
@@ -115,7 +103,7 @@
     </form>
 <br>
 
-    <button onclick="javascript:location.href='{{ url_for('views.index') }}';" class="btn btn-sm createforms2" />Back</button>
+    <button onclick="javascript:location.href='{{ url_for('views.season_manager', season=season) }}';" class="btn btn-sm createforms2" />Back</button>
 
 </div>
 {% endblock content %}

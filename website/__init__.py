@@ -13,6 +13,7 @@ import os
 from functools import wraps
 from werkzeug.local import LocalProxy
 from flask_argon2 import Argon2
+from flask_socketio import SocketIO, emit, join_room, leave_room
 
 # Load environment variables
 load_dotenv()
@@ -23,6 +24,8 @@ login_manager = LoginManager()
 bcrypt = Bcrypt()
 mail = Mail()
 argon2 = Argon2()
+socketio = SocketIO()
+
 def create_app():
     app = Flask(__name__)
 
@@ -48,13 +51,14 @@ def create_app():
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=5)
 
-    # Initialize extensions with app
+
     db.init_app(app)
     bcrypt.init_app(app)
     argon2.init_app(app)
     mail.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)
+    socketio.init_app(app) 
 
     # Register Blueprints
     from .views import views
@@ -67,8 +71,7 @@ def create_app():
     app.register_blueprint(products, url_prefix='/')
     app.register_blueprint(errors)
 
-    # Google OAuth Blueprint
-    # Definícia Google blueprintu musí byť pred použitím v dekorátore
+
 
     google_blueprint = make_google_blueprint(
         client_id=os.getenv("GOOGLE_CLIENT_ID"),
@@ -107,3 +110,33 @@ def create_app():
         return User.query.get(int(user_id))
 
     return app
+
+
+# Socket.IO Events
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
+    emit('message', {'msg': 'Connected to server'})
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('Client disconnected')
+
+@socketio.on('join')
+def on_join(data):
+    username = data['username']
+    room = data['room']
+    join_room(room)
+    emit('message', {'msg': f'{username} has entered the room.'}, to=room)
+
+@socketio.on('leave')
+def on_leave(data):
+    username = data['username']
+    room = data['room']
+    leave_room(room)
+    emit('message', {'msg': f'{username} has left the room.'}, to=room)
+
+@socketio.on('send_message')
+def handle_send_message(data):
+    room = data['room']
+    emit('message', {'msg': data['msg']}, to=room)

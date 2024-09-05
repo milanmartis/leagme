@@ -44,7 +44,7 @@ import datetime
 from datetime import datetime as dt
 from math import ceil, log2, log
 from functools import wraps
-
+from py_vapid import Vapid
 from sqlalchemy.exc import IntegrityError  # Importujte pre zachytávanie chýb pri vkladaní do databázy
 
 def roles_required(*roles):
@@ -54,12 +54,12 @@ def roles_required(*roles):
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
                 # Ak používateľ nie je prihlásený, presmeruje ho na prihlasovaciu stránku
-                flash("You need to be logged in to access this page.", "warning")
+                flash("Please log in", "warning")
                 return redirect(url_for('auth.login'))
             
             # Skontroluje, či má používateľ aspoň jednu z požadovaných rolí
             if not any(role.name in roles for role in current_user.roles):
-                flash("You do not have permission to access this page.", "danger")
+                flash("You don't have permission, make a subscription", "error")
                 return redirect(url_for('views.index'))
 
             # Ak má používateľ povolenie, vykoná funkciu
@@ -1039,7 +1039,7 @@ def season_new():
     
         ## season_from=form.season_from.data, 
         if not season:
-                new_season = Season(name=form.name.data, no_round=form.no_round.data, no_group=form.no_group.data, 
+                new_season = Season(name=form.name.data, no_group=form.no_group.data, 
                                     winner_points=form.winner_points.data, open=form.open.data, user_id=current_user.id, min_players=form.min_players.data,season_type=season_type)
                 db.session.add(new_season)
                 db.session.commit()
@@ -1063,7 +1063,7 @@ def season_delete(season):
     if season:
         db.session.delete(season)
         db.session.commit()
-        flash("Season has been deleted.", category="success")
+        flash("Selected season have been deleted.", category="success")
         seasons = db.session.query(Season).all()
         # seasons = db.session.query(Season).filter(Season.open==True).all()
         return redirect(url_for('views.index', seasons=seasons, user=current_user, adminz=adminz))
@@ -1174,10 +1174,10 @@ def season_players(season):
 # @roles_required('Admin')
 def get_user_seasons(season):
     # results = db.session.execute(user_season.select().order_by(user_season.c.orderz.asc())).fetchall()
-    results = db.session.query(user_season.c.user_id, user_season.c.season_id, User.first_name, user_season.c.orderz).join(Season, Season.id==user_season.c.season_id).join(User, User.id==user_season.c.user_id).filter(user_season.c.season_id==season).order_by(user_season.c.orderz.asc()).all()
+    results = db.session.query(user_season.c.user_id, user_season.c.season_id, User.first_name, user_season.c.orderz, Season.no_group).join(Season, Season.id==user_season.c.season_id).join(User, User.id==user_season.c.user_id).filter(user_season.c.season_id==season).order_by(user_season.c.orderz.asc()).all()
 
     # Convert rows to list of dictionaries before jsonifying
-    user_seasons_list = [{"user_id": row[0], "season_id": row[1], "season_first_date": row[2], "orderz": row[3]} for row in results]
+    user_seasons_list = [{"user_id": row[0], "season_id": row[1], "season_first_date": row[2], "orderz": row[3], "no_group": row[4]} for row in results]
     return jsonify(user_seasons_list)
 
 @views.route('/season/update_order', methods=['POST'])
@@ -1313,7 +1313,7 @@ def update_season(season):
     if form.validate_on_submit():
         season.name = form.name.data
         season.min_players = form.min_players.data
-        season.no_round = form.no_round.data
+        # season.no_round = form.no_round.data
         season.no_group = form.no_group.data
         season.winner_points = form.winner_points.data
         season.season_from = form.season_from.data
@@ -1323,13 +1323,13 @@ def update_season(season):
         db.session.commit()
 
         
-        flash('Your Season has been updated!', 'success')
+        flash('Your Season have been updated!', 'success')
         return redirect(url_for('views.season_manager', season=season.id))
     
     elif request.method == 'GET':
         form.name.data = season.name
         form.min_players.data = season.min_players
-        form.no_round.data = season.no_round
+        # form.no_round.data = season.no_round
         form.no_group.data = season.no_group
         form.winner_points.data = season.winner_points
         form.season_from.data = season.season_from
@@ -1362,7 +1362,7 @@ def update_tournament(season):
         db.session.commit()
 
         
-        flash('Your Tournament has been updated!', 'success')
+        flash('Your Tournament have been updated!', 'success')
         return redirect(url_for('views.season_manager', season=season.id))
     
     elif request.method == 'GET':
@@ -1515,7 +1515,8 @@ def season_manager(season):
     
     # print(last_day.strftime('%Y-%m-%d %H:%M:%S'))
     # end_date=last_day.strftime('%Y-%m-%d %H:%M:%S')
-    return render_template("season.html", season_type=season_type.season_type, season_type_name=season_type_name,products=products, orders=orders, order=order, rounds_open=rounds_open, manager=manager, end_date=end_date, players_wait=players_wait, players=players, seas=seas, groupz=groupz, dic=dic, season=season, seasons=rounds, user=current_user, adminz=adminz)
+    season_author = db.session.query(User.first_name).join(Season).filter(Season.user_id == User.id).filter(Season.id==season).first()
+    return render_template("season.html", season_author=season_author,season_type=season_type.season_type, season_type_name=season_type_name,products=products, orders=orders, order=order, rounds_open=rounds_open, manager=manager, end_date=end_date, players_wait=players_wait, players=players, seas=seas, groupz=groupz, dic=dic, season=season, seasons=rounds, user=current_user, adminz=adminz)
 
 
 def create_new_season(season):
@@ -1626,7 +1627,7 @@ class NewSeason(FlaskForm):
             DataRequired(), 
             NumberRange(min=2, max=10, message="Please enter a whole number between 2 and 10."), is_integer
         ])    
-    no_round = IntegerField('Rounds (min 1 - max 10)', validators=[DataRequired(), NumberRange(min=1, max=10, message="blah")])
+    # no_round = IntegerField('Rounds (min 1 - max 10)', validators=[DataRequired(), NumberRange(min=1, max=10, message="blah")])
     no_group = IntegerField('Players in group (2 - 20)', validators=[DataRequired(), NumberRange(min=2, max=20, message="blah")])
     winner_points = IntegerField('Points for win (1 - 5)', validators=[DataRequired(), NumberRange(min=1, max=5, message="blah")])
     season_from = DateTimeLocalField('Break Point')

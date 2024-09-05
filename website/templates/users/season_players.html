@@ -46,7 +46,7 @@
     <img
     src="{{ url_for('static', filename='img/logo-head.svg') }}"
     class="filter-green"
-    width="250"
+    width="200"
     />
 </center><br>
     {% if seasons %}
@@ -77,6 +77,11 @@
     <div style="margin-top: 11px; padding: 14px;border:0px solid #00EE00;" id="userSearchResults"></div>
 
 </form>
+
+<br>
+
+    <button onclick="javascript:location.href='{{ url_for('views.season_manager', season=season) }}';" class="btn btn-sm createforms2" />Back</button>
+
 <script>
     $(document).ready(function() {
         $('#userSearch').on('input', async function() {
@@ -143,25 +148,47 @@
         });
 
         function refreshTable() {
-            var classs='';
             $.get('/season/{{season}}/get_user_seasons', function(data) {
-                //alert(data);
                 var tbody = $("#userSeasonTable tbody");
                 tbody.empty();
-                data.forEach(function(item) {
-                    if(item.orderz % 5 === 0){classs="draggable-row";}else{classs="draggable-row";}
-                    var row = `<tr style="width:269px;padding-bottom:5px;" class="${classs}" data-user-id="${item.user_id}" data-season-id="${item.season_id}">                        
-                        <td style="width:33px;padding-bottom:5px;">${item.orderz}</td><td style="width:203px;padding-bottom:5px;">${item.season_first_date}</td>
-                        <td style="width:33px;padding-bottom:5px;"><button style="margin-right:20px;" class="btn-reverse delete-btn">x</button></td>
-                    </tr>`;
-                    var newRow = $(row); // Konvertujte riadok na jQuery objekt
-                    newRow.hide(); // Skryte nový riadok pred fadeIn()
+                
+                // Získajte hodnotu no_group z prvého riadku (predpokladám, že je rovnaká pre všetky riadky)
+                var noGroupValue = data.length > 0 ? data[0].no_group : 0;
+        
+                // Pre každý záznam vo výsledkoch
+                data.forEach(function(item, index) {
+                    // Predvolená trieda pre každý riadok
+                    var classs = "draggable-row";
+                    var borderBottomStyle = "";
+        
+                    // Ak je no_group nastavený a tento riadok je násobkom hodnoty no_group, pridajte červený border-bottom
+                    if (noGroupValue > 0 && (index + 1) % noGroupValue === 0) {
+                        borderBottomStyle = "border-bottom: 1px solid #00EE00;";
+                    }
+        
+                    // Vytvorenie HTML riadku s nastavenými štýlmi
+                    var row = `
+                        <tr style="width:269px;padding-bottom:5px; ${borderBottomStyle}" class="${classs}" data-user-id="${item.user_id}" data-season-id="${item.season_id}">
+                            <td style="width:33px;padding-bottom:5px;">${item.orderz}</td>
+                            <td style="width:203px;padding-bottom:5px;">${item.season_first_date}</td>
+                            <td style="width:33px;padding-bottom:5px;">
+                                <button style="margin-right:20px;" class="btn-reverse delete-btn">x</button>
+                            </td>
+                        </tr>`;
+        
+                    // Konvertovanie riadku na jQuery objekt a jeho postupné zobrazenie
+                    var newRow = $(row);
+                    newRow.hide();
                     tbody.append(newRow);
-                    newRow.fadeIn(); // Použite fadeIn() na zobrazenie nového riadku
+                    newRow.fadeIn();
                 });
+        
+                // Inicializácia triediteľnosti tabuľky
                 tbody.sortable({
                     update: function(event, ui) {
                         var data = [];
+        
+                        // Pre každý riadok v tabuľke získanie dátových atribútov
                         tbody.find("tr").each(function(index) {
                             data.push({
                                 user_id: $(this).data("user-id"),
@@ -169,6 +196,8 @@
                                 orderz: index
                             });
                         });
+        
+                        // Odoslanie aktualizovaných dát na server
                         $.ajax({
                             type: 'POST',
                             url: '/season/update_order',
@@ -177,13 +206,15 @@
                             dataType: 'json',
                             success: function(response) {
                                 console.log(response);
-                                refreshTable();
+                                refreshTable(); // Opätovné načítanie tabuľky po úspešnej aktualizácii
                             }
                         });
                     }
                 }).disableSelection();
             });
         }
+        
+        
 
         refreshTable();
 
@@ -238,6 +269,7 @@ aria-hidden="true"
     </div>
   </div>
 </div>
+
 </div>
 <script>
     document.getElementById('addUserToSeasonButton').addEventListener('click', async function() {

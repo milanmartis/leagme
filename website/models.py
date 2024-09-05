@@ -128,6 +128,7 @@ class Round(db.Model):
     season_id = db.Column(db.Integer, db.ForeignKey('season.id', ondelete="CASCADE"))
     round_start = db.Column(db.DateTime(timezone=True), default=func.now())
     open = db.Column(db.Boolean(), default=True)
+    duration = db.Column(db.Integer)
 
 class Season(db.Model):
     __tablename__ = 'season'
