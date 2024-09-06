@@ -262,9 +262,7 @@
   <script>
       // Pripojenie k serveru Socket.IO
       //const socket = io();
-      const socket = io('wss://leagme.com', {
-        transports: ['websocket']
-    });
+      const socket = io('wss://leagme.com', {transports: ['websocket'] });
     
     socket.on('disconnect', () => {
         console.log('Disconnected from server, attempting to reconnect...');
@@ -274,7 +272,7 @@
       // Po pripojení na server
       socket.on('connect', function() {
           console.log('Connected to server');
-          socket.emit('join', { username: , room: 'YourRoom' });
+          socket.emit('join', { username:  'YourUsername', room: 'YourRoom' });
       });
   
       // Po prijatí správy
