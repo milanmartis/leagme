@@ -16,6 +16,8 @@ from flask_argon2 import Argon2
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from celery import Celery
 from redis import Redis
+from flask_session import Session
+
 # Load environment variables
 load_dotenv()
 
@@ -28,6 +30,7 @@ argon2 = Argon2()
 # celery = Celery()
 
 socketio = SocketIO()
+
 
 def create_app():
     app = Flask(__name__)
