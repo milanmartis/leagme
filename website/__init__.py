@@ -15,7 +15,7 @@ from werkzeug.local import LocalProxy
 from flask_argon2 import Argon2
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from celery import Celery
-
+from redis import Redis
 # Load environment variables
 load_dotenv()
 
@@ -48,6 +48,10 @@ def create_app():
     app.config['MAIL_USE_TLS'] = os.environ.get("MAIL_USE_TLS")
     app.config['MAIL_USERNAME'] = os.environ.get("MAIL_USERNAME")
     app.config['MAIL_PASSWORD'] = os.environ.get("MAIL_PASSWORD")
+    app.config['SESSION_TYPE'] = 'redis'
+    app.config['SESSION_PERMANENT'] = False
+    app.config['SESSION_USE_SIGNER'] = True
+    app.config['SESSION_REDIS'] = Redis(host='localhost', port=6379)
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)
     app.config['SESSION_COOKIE_SECURE'] = True
     app.config['SESSION_COOKIE_HTTPONLY'] = True
