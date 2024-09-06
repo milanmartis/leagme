@@ -14,6 +14,7 @@ from functools import wraps
 from werkzeug.local import LocalProxy
 from flask_argon2 import Argon2
 from flask_socketio import SocketIO, emit, join_room, leave_room
+from celery import Celery
 
 # Load environment variables
 load_dotenv()
@@ -24,6 +25,8 @@ login_manager = LoginManager()
 bcrypt = Bcrypt()
 mail = Mail()
 argon2 = Argon2()
+# celery = Celery()
+
 # socketio = SocketIO()
 
 def create_app():
@@ -58,6 +61,8 @@ def create_app():
     mail.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)
+    # celery.init_app(app, broker='redis://localhost:6379/0')
+
     # socketio.init_app(app) 
 
     # Register Blueprints

@@ -296,7 +296,7 @@ def confirm_token(token):
 def send_reset_email(user):
     token = user.get_reset_token()
     msg = Message('Password Reset Request',
-                  sender=('Darts Club', 'info@dartsclub.sk'),
+                  sender=('LeagMe.com', 'info@dartsclub.sk'),
                   recipients=[user.email])
     msg.html = f'''<center><h1>To reset your password, click on the following button</h1>
 <br>
@@ -333,7 +333,7 @@ def send_confirm_email(user):
     msg = Message('Confirm your register email',
                   sender=('LeagMe.com', 'info@dartsclub.sk'),
                   recipients=[user.email])
-    msg.html = f'''<center><h1>To confirm your email, click on the following link</h1>
+    msg.html = f'''<center><h1>To confirm your account, click on the following link</h1>
 <br>
 <br>
 <a style="
