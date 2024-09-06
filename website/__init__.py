@@ -34,7 +34,7 @@ def create_app():
 
     # Application Configuration
     app.config["DEBUG"] = True
-    app.config["SECRET_KEY"] = "pf9Wkove4IKEAXvy-cQkeDPhv9Cb3Ag-wyJILbq_dFw"
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
     app.config["SECURITY_PASSWORD_SALT"] = "156043940537155509276282232127182067465"
     app.config["SECURITY_TOTP_SECRETS"] = {"1": "TjQ9Qa31VOrfEzuPy4VHQWPCTmRzCnFzMKLxXYiZu9B"}
     app.config["SECURITY_PASSWORD_HASH"] = "argon2"  # Set Argon2 as the default hash
