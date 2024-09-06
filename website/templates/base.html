@@ -262,7 +262,9 @@
   <script>
       // Pripojenie k serveru Socket.IO
       //const socket = io();
-      const socket = io('https://leagme.com', { transports: ['websocket'] });
+      //const socket = io('https://leagme.com', { transports: ['websocket'] });
+      var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port)
+
 
       // Po pripojení na server
       socket.on('connect', function() {

@@ -36,7 +36,7 @@ def create_app():
     app = Flask(__name__)
 
     # Application Configuration
-    app.config["DEBUG"] = True
+    app.config["DEBUG"] = False
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
     app.config["SECURITY_PASSWORD_SALT"] = "156043940537155509276282232127182067465"
     app.config["SECURITY_TOTP_SECRETS"] = {"1": "TjQ9Qa31VOrfEzuPy4VHQWPCTmRzCnFzMKLxXYiZu9B"}
