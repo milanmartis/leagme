@@ -14,8 +14,8 @@ from functools import wraps
 from werkzeug.local import LocalProxy
 from flask_argon2 import Argon2
 from flask_socketio import SocketIO, emit, join_room, leave_room
-from celery import Celery
 from redis import Redis
+from celery import Celery
 from flask_session import Session
 
 # Load environment variables
@@ -27,10 +27,24 @@ login_manager = LoginManager()
 bcrypt = Bcrypt()
 mail = Mail()
 argon2 = Argon2()
-# celery = Celery()
-
 socketio = SocketIO()
 
+# Konfigurácia Celery
+def make_celery(app):
+    celery = Celery(
+        app.import_name,
+        broker='redis://elasticacheleagme-wb2hf0.serverless.eun1.cache.amazonaws.com:6379/0',  # Redis endpoint from ElastiCache
+        backend='redis://elasticacheleagme-wb2hf0.serverless.eun1.cache.amazonaws.com:6379/0'  # Redis as backend
+    )
+    celery.conf.update(app.config)
+
+    class ContextTask(celery.Task):
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return self.run(*args, **kwargs)
+
+    celery.Task = ContextTask
+    return celery
 
 def create_app():
     app = Flask(__name__)
@@ -54,13 +68,12 @@ def create_app():
     app.config['SESSION_TYPE'] = 'redis'
     app.config['SESSION_PERMANENT'] = False
     app.config['SESSION_USE_SIGNER'] = True
-    app.config['SESSION_REDIS'] = Redis(host='localhost', port=6379)
+    app.config['SESSION_REDIS'] = Redis(host='elasticacheleagme-wb2hf0.serverless.eun1.cache.amazonaws.com', port=6379)
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)
     app.config['SESSION_COOKIE_SECURE'] = True
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=5)
-
 
     db.init_app(app)
     bcrypt.init_app(app)
@@ -68,7 +81,9 @@ def create_app():
     mail.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)
-    # celery.init_app(app, broker='redis://localhost:6379/0')
+
+    # Initialize Celery
+    celery = make_celery(app)
 
     socketio.init_app(app) 
 
@@ -83,8 +98,6 @@ def create_app():
     app.register_blueprint(products, url_prefix='/')
     app.register_blueprint(errors)
 
-
-
     google_blueprint = make_google_blueprint(
         client_id=os.getenv("GOOGLE_CLIENT_ID"),
         client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
@@ -93,11 +106,6 @@ def create_app():
     )
     app.register_blueprint(google_blueprint, url_prefix="/login")
 
-    # Registrácia blueprintov
-    # from .auth import auth as auth_blueprint
-    # app.register_blueprint(auth_blueprint)
-    
-    
     # Initialize Flask-Security
     from .models import User, Role, user_datastore
     Security(app, user_datastore)
@@ -105,9 +113,6 @@ def create_app():
     # Role Protection Definition
     _security = LocalProxy(lambda: current_app.extensions['security'])
 
-
-
-    
     # Error Handler for Database Issues
     @app.errorhandler(OperationalError)
     def handle_operational_error(e):
@@ -122,7 +127,6 @@ def create_app():
         return User.query.get(int(user_id))
 
     return app
-
 
 # Socket.IO Events
 @socketio.on('connect')
