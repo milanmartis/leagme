@@ -28,6 +28,7 @@ bcrypt = Bcrypt()
 mail = Mail()
 argon2 = Argon2()
 socketio = SocketIO()
+celery = None  # Initialize as None and configure later
 
 def make_celery(app=None):
     app = app or create_app()
@@ -82,10 +83,11 @@ def create_app():
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)
 
-    # Initialize Celery
-    app.celery = make_celery(app)
+    # Initialize Celery after app is created
+    global celery
+    celery = make_celery(app)
 
-    socketio.init_app(app) 
+    socketio.init_app(app)
 
     # Register Blueprints
     from .views import views
