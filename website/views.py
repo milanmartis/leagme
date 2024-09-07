@@ -1480,8 +1480,8 @@ def season_manager(season):
             flash('New round was created!!!', category='success')
             print("poslat email")
             # send_new_round_email(,what,season)
-            for email in email_list:
-                send_new_round_email(email, "New Round Notification", season1)
+            # for email in email_list:
+            #     send_new_round_email(email, "New Round Notification", season1)
             return redirect(url_for('views.season_manager', season=season1))
 
 
