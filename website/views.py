@@ -1470,18 +1470,18 @@ def season_manager(season):
             # Iterovanie cez zoznam e-mailov a odoslanie e-mailu každému používateľovi
             # pass
             # create_new_season(season1)
-            print("********************")
-            print(season_type.season_type)
-            print("********************")
+            # print("********************")
+            # print(season_type.season_type)
+            # print("********************")
             if season_type.season_type==1:
                 create_new_season(season1)
             if season_type.season_type==2:
                 generate_tournament_structure(season1)
             flash('New round was created!!!', category='success')
-            print("poslat email")
+            # print("poslat email")
             # send_new_round_email(,what,season)
-            # for email in email_list:
-            #     send_new_round_email(email, "New Round Notification", season1)
+            for email in email_list:
+                send_new_round_email(email, "New Round Notification", season1)
             return redirect(url_for('views.season_manager', season=season1))
 
 
