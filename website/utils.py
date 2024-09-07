@@ -1,15 +1,13 @@
 import os
-import secrets
-# from PIL import Image
 from flask import url_for, current_app
 from flask_mail import Message
+from website import mail
 
-from website import mail, celery
-
+from website import celery
 
 @celery.task
-def send_new_round_email(user,what,season):
-    msg = Message('Your '+ what,
+def send_new_round_email(user, what, season):
+    msg = Message('Your ' + what,
                   sender=('LeagMe.com', 'info@dartsclub.sk'),
                   recipients=[user])
     msg.html = f'''<center><h1>YOUR NEW ROUND STARTED</h1>
@@ -39,7 +37,7 @@ def send_new_round_email(user,what,season):
     <h5>©4NOLIMIT. POWERED BY APPDESIGN.SK</h5>
     </center>
     '''
-    mail.send(msg)    
+    mail.send(msg)
 
 
 

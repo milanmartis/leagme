@@ -29,8 +29,8 @@ mail = Mail()
 argon2 = Argon2()
 socketio = SocketIO()
 
-# Konfigurácia Celery
-def make_celery(app):
+def make_celery(app=None):
+    app = app or create_app()
     celery = Celery(
         app.import_name,
         broker='redis://elasticacheleagme-wb2hf0.serverless.eun1.cache.amazonaws.com:6379/0',  # Redis endpoint from ElastiCache
@@ -83,7 +83,7 @@ def create_app():
     login_manager.init_app(app)
 
     # Initialize Celery
-    celery = make_celery(app)
+    app.celery = make_celery(app)
 
     socketio.init_app(app) 
 

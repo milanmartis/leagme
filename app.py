@@ -1,12 +1,12 @@
-from website import create_app, db, make_celery
+from website import create_app, db
 from flask_socketio import SocketIO
 
 # Vytvorenie aplikácie Flask
 app = create_app()
 socketio = SocketIO(app)
 
-# Inicializácia Celery
-celery = make_celery(app)
+# Používajte existujúci Celery z 'app'
+celery = app.celery
 
 if __name__ == '__main__':
     with app.app_context():
