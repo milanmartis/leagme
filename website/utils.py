@@ -4,10 +4,10 @@ import secrets
 from flask import url_for, current_app
 from flask_mail import Message
 
-from website import mail
+from website import mail, celery
 
 
-    
+@celery.task
 def send_new_round_email(user,what,season):
     msg = Message('Your '+ what,
                   sender=('LeagMe.com', 'info@dartsclub.sk'),
