@@ -11,7 +11,25 @@ html {
 
 }
 
-
+.dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-left: 2px;
+    border-radius: 50%;
+    background-color: gray; /* Štandardná farba bodky */
+    animation: blink 1s infinite; /* Efekt blikania */
+  }
+  
+  @keyframes blink {
+    0%, 100% {
+      background-color: gray;
+    }
+    50% {
+      background-color: red; /* Farba počas blikania */
+    }
+  }
+  
 .bum{
     margin-left: -20px;
 }

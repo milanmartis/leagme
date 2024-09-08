@@ -69,12 +69,16 @@ def create_app():
     app.config['SESSION_TYPE'] = 'redis'
     app.config['SESSION_PERMANENT'] = False
     app.config['SESSION_USE_SIGNER'] = True
-    app.config['SESSION_REDIS'] = Redis(host='elasticacheleagme-wb2hf0.serverless.eun1.cache.amazonaws.com', port=6379)
+    app.config['SESSION_REDIS'] = Redis(host=os.environ.get("SESSION_REDIS"), port=6379)
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)
     app.config['SESSION_COOKIE_SECURE'] = True
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=5)
+  # Celery konfigurácia
+    app.config['CELERY_BROKER_URL'] = os.environ.get("CELERY_BROKER_URL")
+    app.config['CELERY_RESULT_BACKEND'] = os.environ.get("CELERY_RESULT_BACKEND")
+
 
     db.init_app(app)
     bcrypt.init_app(app)

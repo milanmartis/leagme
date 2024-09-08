@@ -412,7 +412,7 @@ function toggleDivHistoryRounds() {
 
 function showLoader() {
   var button = document.getElementById('ide_season_button');
-  button.innerHTML = 'Creating new round';
+  button.innerHTML = '<i>creating new round...</i>';
   // Odošlite formulár tu, ak to robíte asynchrónne, inak formulár pokračuje v odosielaní.
 }
 
