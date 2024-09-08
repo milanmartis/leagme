@@ -385,7 +385,15 @@ aria-hidden="true"
         </div>
       </form>
       
-      
+      <script>
+        function showLoader() {
+          var button = document.getElementById('ide_season_button');
+          button.innerHTML = '<i>creating new round...</i>';
+          
+          // Odošlite formulár ručne
+          button.closest('form').submit();
+        }
+      </script>
       {% else %}
 
 
