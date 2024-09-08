@@ -410,12 +410,20 @@ function toggleDivHistoryRounds() {
 
 
 
+// function showLoader() {
+//   var button = document.getElementById('ide_season_button');
+//   button.innerHTML = '<i>creating new round...</i>';
+//   // Odošlite formulár tu, ak to robíte asynchrónne, inak formulár pokračuje v odosielaní.
+// }
 function showLoader() {
   var button = document.getElementById('ide_season_button');
   button.innerHTML = '<i>creating new round...</i>';
-  // Odošlite formulár tu, ak to robíte asynchrónne, inak formulár pokračuje v odosielaní.
-}
 
+  // Počkajte krátko, aby ste zabezpečili, že formulár sa odošle
+  setTimeout(function() {
+    button.form.submit();
+  }, 50);
+}
 
 
 
