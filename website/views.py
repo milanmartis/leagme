@@ -294,14 +294,14 @@ def calculate_rounds(num_players):
     """Vráti celkový počet kôl potrebných na dokončenie turnaja."""
     return int(ceil(log2(num_players)))
 
-@celery.task
+
 def create_new_round(season_id):
     new_round = Round(season_id=season_id, open=True)
     db.session.add(new_round)
     db.session.commit()
     return new_round
 
-@celery.task
+
 def generate_tournament_structure(season_id):
     players = db.session.query(User)\
         .join(user_season)\
@@ -313,6 +313,9 @@ def generate_tournament_structure(season_id):
     num_rounds = calculate_rounds(num_players)
 
     # Vytvorenie hlavnej Round pre celý turnaj
+    print("************************************OOO************************************")
+    print(season_id)
+    print("************************************OOO************************************")
     tournament_round = create_new_round(season_id)
 
     # Vytvorenie skupín pre každé kolo
@@ -1476,6 +1479,9 @@ def season_manager(season):
             if season_type.season_type==1:
                 create_new_season(season1)
             if season_type.season_type==2:
+                print("************************************www************************************")
+                print(season1)
+                print("************************************www************************************")
                 generate_tournament_structure(season1)
             flash('New round was created!!!', category='success')
             # print("poslat email")
@@ -1521,7 +1527,7 @@ def season_manager(season):
     season_author = db.session.query(User.first_name).join(Season).filter(Season.user_id == User.id).filter(Season.id==season).first()
     return render_template("season.html", season_author=season_author,season_type=season_type.season_type, season_type_name=season_type_name,products=products, orders=orders, order=order, rounds_open=rounds_open, manager=manager, end_date=end_date, players_wait=players_wait, players=players, seas=seas, groupz=groupz, dic=dic, season=season, seasons=rounds, user=current_user, adminz=adminz)
 
-@celery.task
+
 def create_new_season(season):
 
     # my_list_of_ids = [16, 17, 18, 19, 20]
