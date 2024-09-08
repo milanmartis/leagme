@@ -301,7 +301,7 @@ def create_new_round(season_id):
     db.session.commit()
     return new_round
 
-
+@celery.task
 def generate_tournament_structure(season_id):
     players = db.session.query(User)\
         .join(user_season)\
@@ -1476,12 +1476,11 @@ def season_manager(season):
             # print("********************")
             # print(season_type.season_type)
             # print("********************")
-            if season_type.season_type==1:
+            if season_type.season_type == 1:
+                print("Creating new season...")
                 create_new_season(season1)
-            if season_type.season_type==2:
-                print("************************************www************************************")
-                print(season1)
-                print("************************************www************************************")
+            elif season_type.season_type == 2:
+                print("Generating tournament structure...")
                 generate_tournament_structure(season1)
             flash('New round was created!!!', category='success')
             # print("poslat email")
