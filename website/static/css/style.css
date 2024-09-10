@@ -29,7 +29,7 @@ html {
       background-color: red; /* Farba počas blikania */
     }
   }
-  
+
 .bum{
     margin-left: -20px;
 }
@@ -1711,4 +1711,30 @@ ol.carousel-indicators li.active {
     border-radius: 5px;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
     text-align: center;
+}
+
+    /* Nastavte základný štýl pre riadky tabuľky */
+/* Štýl pre riadok tabuľky */
+tr.table-row {
+    display: table; /* Nastavte zobrazenie ako tabuľku */
+    border-radius: 10px;
+    width: 270px;
+    background-color: rgba(0, 238, 0, 0.15);
+    margin: 1px 0; /* Zvislé odsadenie medzi riadkami */
+    padding: 1px;
+    transition: background-color 0.3s ease; /* Prechod pre zmenu farby pozadia */
+    table-layout: fixed; /* Fixné rozloženie tabuľky pre rovnomerné rozdelenie buniek */
+}
+
+/* Štýl pre bunky tabuľky */
+td {
+    display: table-cell; /* Nastavte bunky ako tabuľkové bunky */
+    width: auto; /* Automatická šírka buniek */
+    padding: 5px;
+    text-align: left; /* Zarovnanie textu vľavo */
+}
+
+/* Hover efekt pre zmenu priehľadnosti pozadia */
+tr.table-row:hover {
+    background-color: rgba(0, 238, 0, 0.4); /* Zvýšená priehľadnosť pozadia pri hoverovaní */
 }

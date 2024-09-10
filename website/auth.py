@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, session, current_app, jsonify
+from flask import Blueprint, render_template, request, flash, redirect, url_for, session, current_app, jsonify, send_file
 from .models import User, Season, PaymentCard, Product, Order, PaymentMethod, Role
 from . import db, bcrypt, argon2
 from flask_login import login_user, login_required, logout_user, current_user
@@ -20,14 +20,17 @@ import boto3
 from flask_argon2 import Argon2
 import uuid
 import random
+import requests
+from website import mail, celery
+
 import os
 from datetime import datetime
 from dotenv import load_dotenv
 load_dotenv()
 from flask_security.utils import hash_password, verify_and_update_password
 from functools import wraps
+from io import BytesIO
 from argon2 import PasswordHasher
-
 ph = PasswordHasher()
 
 def roles_required(*roles):
@@ -567,6 +570,70 @@ def save_order():
         return jsonify({'success': False, 'error': str(e)}), 400
 
 
+
+
+@auth.route('/invoices', methods=['GET', 'POST'])
+@login_required
+@roles_required('Admin', 'Manager', 'Player')
+def get_invoices():
+    customer_email = current_user.email  # Načíta e-mail aktuálneho používateľa
+
+    try:
+        # Vyhľadajte zákazníka podľa e-mailu
+        customers = stripe.Customer.list(email=customer_email)
+
+        if len(customers.data) == 0:
+            return "Customer not found."
+
+        customer_id = customers.data[0].id  # Predpokladáme, že prvý výsledok je správny zákazník
+
+        # Získajte faktúry pre zákazníka
+        invoices = stripe.Invoice.list(customer=customer_id)
+
+        # Debug výstup pre kontrolu načítania faktúr
+        print("Invoices loaded:", invoices.data)
+
+        # Vráťte zoznam faktúr
+        return render_template('invoices.html', customer_email=customer_email, invoices=invoices.data)
+
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+@auth.route('/users/download_invoice/<invoice_id>', methods=['GET'])
+@login_required
+@roles_required('Admin', 'Manager', 'Player')
+def download_invoice(invoice_id):
+    try:
+        # Získajte faktúru podľa jej ID
+        invoice = stripe.Invoice.retrieve(invoice_id)
+
+        # Získajte URL faktúry vo formáte PDF
+        pdf_url = invoice.invoice_pdf
+
+        if not pdf_url:
+            return "PDF URL not available for this invoice."
+
+        # Stiahnite PDF faktúru pomocou requests
+        response = requests.get(pdf_url)
+
+        if response.status_code == 200:
+            # Načítajte PDF do pamäte
+            pdf_file = BytesIO(response.content)
+
+            # Pošlite súbor priamo používateľovi bez jeho uloženia na disk
+            return send_file(pdf_file, download_name=f'{invoice_id}.pdf', as_attachment=True)
+
+        return "Failed to download invoice PDF."
+
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
+
+
+
+
+
+@celery.task
 @auth.route('/account', methods=['GET', 'POST'])
 @login_required
 def user_details():
@@ -622,7 +689,7 @@ def user_details():
                 return redirect(url_for('auth.user_details'))
 
     # return render_template('account.html', user=current_user)
-                return redirect(url_for('auth.user_details'))
+                # return redirect(url_for('auth.user_details'))
 
             
             
@@ -662,11 +729,122 @@ def user_details():
     #         saved_cards.append('')
     
     products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
-    orders = Order.query.filter(Order.user_id==current_user.id).filter(Order.stripe_subscription_id==current_user.stripe_subscription_id).all()
+    orders = Order.query.filter(Order.user_id==current_user.id).all()
+    customer_email=current_user.email
+    try:
+        # Vyhľadajte všetkých zákazníkov podľa e-mailu
+        customers = stripe.Customer.list(email=customer_email)
+
+        if len(customers.data) == 0:
+            return "Customer not found."
+
+        all_invoices = []
+
+        # Načítanie všetkých faktúr pre každého zákazníka s rovnakou e-mailovou adresou
+        for customer in customers.data:
+            customer_id = customer.id
+            invoices = stripe.Invoice.list(customer=customer_id, limit=100)  # Nastavte vyšší limit
+
+            # Pridajte prvú stránku faktúr
+            all_invoices.extend(invoices.data)
+
+            # Načítajte ďalšie stránky
+            while invoices.has_more:
+                invoices = stripe.Invoice.list(customer=customer_id, limit=100, starting_after=invoices.data[-1].id)
+                all_invoices.extend(invoices.data)
+
+        # Pre každú faktúru načítajte položky a pridajte názov produktu (predmet faktúry)
+        for invoice in all_invoices:
+            detailed_invoice = stripe.Invoice.retrieve(invoice.id, expand=['lines.data'])
+            invoice['line_items'] = detailed_invoice.lines.data  # Pridajte položky faktúry do faktúry
+
+        # Debug výstup pre kontrolu načítania faktúr
+        print("Total invoices loaded:", len(all_invoices))
+
+        # Vráťte zoznam všetkých faktúr s položkami
+        # return render_template('invoices.html', customer_email=customer_email, invoices=all_invoices)
+
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        return f"An error occurred: {str(e)}"
+    
+    
+    
+    try:
+        # customer_email = current_user.email  # Získajte e-mail aktuálneho používateľa
+
+        # Vyhľadajte zákazníka podľa e-mailu
+        customers = stripe.Customer.list(email=customer_email)
+
+        if len(customers.data) == 0:
+            return "Customer not found."
+
+        customer_id = customers.data[0].id  # Predpokladáme, že prvý výsledok je správny zákazník
+
+        # Získajte uložené platobné metódy pre daného zákazníka
+        payment_methods = stripe.PaymentMethod.list(
+            customer=customer_id,
+            type="card"  # Môžete filtrovať podľa typu platobnej metódy, napr. "card"
+        )
+
+        # Vráťte zoznam platobných metód
+        # return render_template('payment.html', customer_email=customer_email, payment_methods=payment_methods.data)
+
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+    # orders = Order.query.filter(Order.user_id==current_user.id).filter(Order.stripe_subscription_id==current_user.stripe_subscription_id).all()
     #  customer=saved_cards,
 
-    return render_template("users/account.html", checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), orders=orders, products=products, user=current_user, cards=cards)
+    return render_template("users/account.html", checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), payment_methods=payment_methods.data, invoices=all_invoices, orders=orders, products=products, user=current_user, cards=cards)
 
+
+    
+@auth.route('/users/delete_payment_method/<payment_method_id>', methods=['GET'])
+@login_required
+@roles_required('Admin', 'Manager', 'Player')
+def delete_payment_method(payment_method_id):
+    try:
+        # Odpojte platobnú metódu od zákazníka
+        stripe.PaymentMethod.detach(payment_method_id)
+        return redirect(url_for('auth.user_details'))
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+    
+    
+@auth.route('/users/add_payment_method', methods=['GET', 'POST'])
+@login_required
+@roles_required('Admin', 'Manager', 'Player')
+def add_payment_method():
+    if request.method == 'POST':
+        try:
+            # Získajte údaje z formulára
+            payment_method_id = request.form['payment_method_id']
+            customer_email = current_user.email
+
+            # Vyhľadajte zákazníka podľa e-mailu
+            customers = stripe.Customer.list(email=customer_email)
+            if len(customers.data) == 0:
+                return "Customer not found."
+
+            customer_id = customers.data[0].id
+
+            # Pripojte novú platobnú metódu k zákazníkovi
+            stripe.PaymentMethod.attach(
+                payment_method_id,
+                customer=customer_id,
+            )
+
+            # Nastavte platobnú metódu ako predvolenú pre fakturáciu
+            stripe.Customer.modify(
+                customer_id,
+                invoice_settings={"default_payment_method": payment_method_id}
+            )
+
+            return redirect(url_for('auth.account'))
+
+        except Exception as e:
+            return f"An error occurred: {str(e)}"
+    return render_template('add_payment_method.html')
 
 
 @auth.route('/my-stats', methods=['GET', 'POST'])

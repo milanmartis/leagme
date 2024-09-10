@@ -1,0 +1,8 @@
+<!-- add_payment_method.html -->
+<form action="{{ url_for('auth.add_payment_method') }}" method="post">
+    <div class="form-group">
+        <label for="payment_method_id">Payment Method ID</label>
+        <input type="text" id="payment_method_id" name="payment_method_id" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Add Payment Method</button>
+</form>

@@ -13,7 +13,7 @@
         margin-bottom: 20px;
         border-radius: 22px;
         opacity: 0;
-        animation: fadeIn22 1s ease-in-out 1s forwards;
+        animation: fadeIn22 .3s ease-in-out .41s forwards;
     }
 
     @keyframes fadeIn22 {
@@ -77,8 +77,8 @@
     <div class="product-card">
         <h4 style="font-size: 80%;line-height:86%;padding:0px;margin-top:10px;">My current subscription</h4>
         <div class="product-name"><img src="{{ url_for('static', filename='img/'+ product['title']|lower +'.svg') }}" class="filter-green" width="100%" /></div>
-
-        {{user.stripe_subscription_id}}
+        
+        
         <form method="post" action="{{ url_for('auth.cancel_subscription') }}">
             <input type="hidden" name="subscription_id" value="{{user.stripe_subscription_id}}">
             <input type="hidden" name="produc_id" value="{{orders[0].produc_id}}">
@@ -86,6 +86,7 @@
         </form>
     </div>
 </div>
+
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -157,7 +158,6 @@
                 </center>
             </div>
         </div>
-
         <script>
             document.addEventListener("DOMContentLoaded", function () {
                 let paymentInProgress = false;

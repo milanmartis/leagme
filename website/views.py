@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify, flash, jsonify, redirect, url_for, session, current_app
+from flask import Blueprint, render_template, request, jsonify, flash, jsonify, redirect, url_for, session, current_app, send_file
 from flask_login import login_required, current_user
 from flask_security import roles_required
 import os
@@ -9,12 +9,14 @@ from . import db
 import json
 from sqlalchemy import func, or_
 from sqlalchemy import insert, update
+import stripe
 
 from . import tabz, duels, dictionary, mysql
 from datetime import datetime
 from itertools import combinations
 from sqlalchemy.inspection import inspect
 from flask_sqlalchemy import SQLAlchemy
+import requests
 
 import sqlite3
 from flask import jsonify
@@ -47,6 +49,9 @@ from functools import wraps
 from py_vapid import Vapid
 from sqlalchemy.exc import IntegrityError  # Importujte pre zachytávanie chýb pri vkladaní do databázy
 from website import mail, celery
+
+# Stripe konfigurácia
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 
 def roles_required(*roles):
     """Dekorátor, ktorý kontroluje, či má používateľ aspoň jednu z požadovaných rolí."""
@@ -1100,14 +1105,16 @@ def season_player_delete(player, season):
 
 
 
+
 @views.route('/pricing', methods=['GET', 'POST'])
 def pricing_list():
     
     
     products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
-    orders = Order.query.filter(Order.user_id==current_user.id).all()
+    orders3 = Order.query.filter(Order.user_id==current_user.id).all()
+    print(orders3)
 
-    return render_template("pricing.html", orders=orders, products=products, user=current_user, adminz=adminz)
+    return render_template("pricing.html", orders3=orders3, products=products, user=current_user, adminz=adminz)
 
 
 @views.route('/season', methods=['GET', 'POST'])

@@ -17,6 +17,7 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 from redis import Redis
 from celery import Celery
 from flask_session import Session
+import datetime
 
 # Load environment variables
 load_dotenv()
@@ -91,6 +92,7 @@ def create_app():
     global celery
     celery = make_celery(app)
 
+    # socketio.init_app(app)
     socketio.init_app(app, cors_allowed_origins="*", async_mode="gevent")
     # socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent")
 
@@ -121,6 +123,9 @@ def create_app():
     # Role Protection Definition
     _security = LocalProxy(lambda: current_app.extensions['security'])
 
+    @app.template_filter('datetimeformat')
+    def datetimeformat(value, format='%d/%m/%Y'):
+        return datetime.datetime.fromtimestamp(value).strftime(format)
     # Error Handler for Database Issues
     @app.errorhandler(OperationalError)
     def handle_operational_error(e):

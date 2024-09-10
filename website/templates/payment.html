@@ -1,12 +1,38 @@
-{% block content %}
-<script src="https://js.stripe.com/v3/"></script>
+<!-- payment_methods_partial.html -->
+<div class="col-sm-12">
 
-{% if payment_method %}
-<h1>Your Payment Method</h1>
-<p>Card Brand: {{ payment_method.card.brand }}</p>
-<p>Card Last 4: **** **** **** {{ payment_method.card.last4 }}</p>
-<p>Expiry: {{ payment_method.card.exp_month }}/{{ payment_method.card.exp_year }}</p>
-{% else %}
-<!--<p>No payment method found.</p>-->
-{% endif %}
-{% endblock %}
+    <h4>Stored Payment Methods</h4>
+    {% if payment_methods %}
+        <ul>
+        {% for method in payment_methods %}
+            <li>
+                <!-- Zobrazenie ikony pre typ karty -->
+                {% if method.card.brand == 'visa' %}
+                    <i style="font-size: 163%;" class="fab fa-cc-visa"></i>
+                {% elif method.card.brand == 'mastercard' %}
+                    <i style="font-size: 163%;" class="fab fa-cc-mastercard"></i>
+                {% elif method.card.brand == 'amex' %}
+                    <i style="font-size: 163%;" class="fab fa-cc-amex"></i>
+                {% elif method.card.brand == 'discover' %}
+                    <i style="font-size: 163%;" class="fab fa-cc-discover"></i>
+                {% else %}
+                    <i style="font-size: 163%;" class="fas fa-credit-card"></i>
+                {% endif %}
+                <!-- Zobrazenie posledných štyroch číslic a dátum exspirácie 
+                {{ method.card.brand | capitalize }} -->....... {{ method.card.last4 }} | {{ method.card.exp_month }}/{{ method.card.exp_year }}
+                
+                <!-- Tlačidlo na vymazanie karty -->
+                <a href="{{ url_for('auth.delete_payment_method', payment_method_id=method.id) }}" ><i class="fas fa-trash-alt pl-2" ></i></a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No payment methods found for this customer...</p>
+    {% endif %}
+
+    <!-- Tlačidlo na pridanie novej karty 
+    <a href="{{ url_for('auth.add_payment_method') }}" class="btn btn-primary">Add Payment Method</a>
+    -->
+
+
+</div>

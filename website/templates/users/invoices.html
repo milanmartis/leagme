@@ -1,0 +1,20 @@
+{% block content %}
+<div class="col-sm-12">
+    <p>Email: {{ customer_email }}</p>
+    <h4 style="font-size: 80%;line-height:86%;padding:0px;margin-top:10px;">Payment history</h4>
+    {% if invoices %}
+        <ul>
+        {% for invoice in invoices %}
+            <li>
+                Invoice ID: {{ invoice.id }}, 
+                Amount Due: {{ invoice.amount_due / 100 }} {{ invoice.currency.upper() }}, 
+                Status: {{ invoice.status }}
+                - <a href="/download_invoice/{{ invoice.id }}">Download PDF</a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No invoices found for this customer...</p>
+    {% endif %}
+</div>
+{% endblock %}

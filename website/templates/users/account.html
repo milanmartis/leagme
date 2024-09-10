@@ -91,9 +91,49 @@ content %}
       <br>
 
 
+      <div class="col-sm-12">
+        <!-- Inklúzia iných šablón -->
+          {% include 'pricing.html' %}
+      
+          <!-- Zahrnutie šablóny platobných metód -->
+          {% include 'payment.html' %}
+      </div>
 
 
-      {% include 'pricing.html' %}
+      <div class="col-sm-12">
+        <h4 style="font-size: 80%;line-height:86%;padding:0px;margin-top:10px;">Payment history</h4>
+        {% if invoices %}
+                {% for invoice in invoices %}
+
+                            <table border="1" cellpadding="5" cellspacing="0">
+           
+                                <tbody>
+                                    {% for item in invoice.line_items %}
+                                    <tr class="table-row">
+                                      <td style="width:40%;text-align: left; margin: 4x; padding: 8px; border-radius: 20px 0 0 20px;">
+                                          {{ item.description.split('×')[1].split('(')[0].strip() }}
+                                      </td>
+                                      <td style="text-align:center;margin:4px; padding: 8px;">
+                                          {{ invoice.created | datetimeformat }}
+                                      </td>
+                                      <td style="text-align:center;margin: 4px; padding: 8px;">
+                                          {{ item.amount / 100 }} €
+                                      </td>
+                                      <td style="text-align:right;margin-right: 8px; padding-right: 8px; border-radius: 0 20px 20px 0;">
+                                          <a href="users/download_invoice/{{ invoice.id }}" title="download invoice"><i class="fas fa-download"></i></a>
+                                      </td>
+                                    </tr>
+
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                {% endfor %}
+  
+    {% else %}
+        <p>No invoices found for this customer...</p>
+    {% endif %}
+    </div>
+
 
 
 <!--
