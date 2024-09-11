@@ -535,6 +535,17 @@ def update_duel2():
         duel = Duel.query.get(int(data[1]))
         season = Season.query.filter_by(id=duel.season_id).first()
         # calculating points
+        
+        # if int(data[0]) > int(data[3]):
+        #     points = int(season.winner_points)
+        #     points2 = 0
+        # if int(data[0]) < int(data[3]):
+        #     points2 = int(season.winner_points)
+        #     points = 0
+        # if int(data[0]) == int(data[3]):
+        #     points = 1
+        #     points2 = 1
+        
         if int(data[0]) == 6 and int(data[3]) <= 4:
             points = int(season.winner_points)
         elif int(data[0]) == 6 and int(data[3]) == 5:

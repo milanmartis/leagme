@@ -1,19 +1,13 @@
-{% extends "base.html" %} {% block title %}Login{% endblock %} {% block content
-%}
+{% extends "base.html" %} 
+{% block title %}Login{% endblock %} 
+{% block content %}
 
-<div
-  style="background: transparent !important;"
-  class="jumbotron vertical-center"
->
+<div style="background: transparent !important;" class="jumbotron vertical-center">
   <div class="container readinglazy" align="center">
     <div class="row" style="display:block;max-width:320px; text-align: center;">
-      <div valign="middle" align="center"  class="col-12">
+      <div valign="middle" align="center" class="col-12">
         <h1 align="center">
-          <img
-            src="{{ url_for('static', filename='img/login.svg') }}"
-            width="260"
-            class="filter-green"
-          />
+          <img src="{{ url_for('static', filename='img/login.svg') }}" width="260" class="filter-green" />
         </h1>
       </div>
 
@@ -21,59 +15,41 @@
         <form method="POST" action="{{ url_for('auth.login') }}">
           <h3 align="center" class="pt-4"></h3>
           <div class="form-group">
-            <!-- <label for="email">Email Address</label> -->
-            <input
-              type="email"
-              class="form-control"
-              id="email"
-              required
-              name="email"
-              placeholder="Email"
-              value="{{ request.form['email'] }}"
-            />
+            <input type="email" class="form-control" id="email" required name="email" placeholder="Email" value="{{ request.form['email'] }}" />
           </div>
 
           <div class="form-group">
-            <!-- <label for="password">Password</label> -->
-            <input
-              type="password"
-              class="form-control"
-              id="password"
-              required
-              name="password"
-              placeholder="Password"
-              value="{{ request.form['password'] }}"
-            />
-
+            <input type="password" class="form-control" id="password" required name="password" placeholder="Password" value="{{ request.form['password'] }}" />
           </div>
 
           <br />
-          <button
-            id="login_button"
-            type="submit"
-            class="btn-demo btn-outline-dark btn-block"
-            onclick="javascript:spinner();document.getElementById('login_button').style.color='#00EE00';"
-          >
+          <button id="login_button" type="submit" class="btn-demo btn-outline-dark btn-block" onclick="javascript:spinner();document.getElementById('login_button').style.color='#00EE00';">
             Login
             <div class="loader">
-              <div class="loading-login">
-              </div>
+              <div class="loading-login"></div>
             </div>
           </button>
-          
         </form>
-    
+
         <small class="text-muted ml-1">
           <a href="{{ url_for('auth.reset_request') }}">Forgot your password?</a>
-      </small>
-      
-<br>
-  <div class="col-12">
-    <h4><a href="register">Sign up</a></h4>
-  </div>
-  
-</div>
-</div>
+        </small>
+        
+        <br>
+
+        <!-- Tlačidlo na registráciu alebo prihlásenie cez Google -->
+        <a href="{{ url_for('auth.google_login') }}" class="btn btn-outline-primary btn-block mt-3">
+          
+          Register/Login with Google
+        </a>
+        
+        <br>
+        <div class="col-12">
+          <h4><a href="register">Sign up</a></h4>
+        </div>
+        
+      </div>
+    </div>
   </div>
 </div>
 

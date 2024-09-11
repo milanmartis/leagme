@@ -106,38 +106,58 @@ def login():
 
 
 
-@auth.route('/login/google')
-def google_login():
-    # if not google.authorized:
-    #     return redirect(url_for('google.login'))
 
-    resp = google.get("/oauth2/v2/userinfo")
+@auth.route('/login/google', methods=['GET', 'POST'])
+def google_login():
+    print("*********************||||||||||||||||||||*********************")
+    if not google.authorized:
+        return redirect(url_for('google.login'))  # Redirect to Google login if not authorized
+
+    # Fetch user info from Google API
+    resp = google.get("/oauth2/v2/userinfo")  # Try the v1 endpoint
     if not resp.ok:
         flash("Failed to fetch user info from Google.", "error")
+        print("Error details:", resp.text)  # Print detailed error for debugging
         return redirect(url_for('security.login'))
 
     user_info = resp.json()
-    email = user_info["email"]
+    email = user_info.get("email")
+    print(user_info)
 
+    # Check if email is retrieved correctly
+    if not email:
+        flash("Email not retrieved from Google. Please check your settings.", "error")
+        return redirect(url_for('auth.login'))
+
+    # Find or create a user in your local database
     user = User.query.filter_by(email=email).first()
     if user:
+        # Update user login information
         user.last_login_at = user.current_login_at
         user.current_login_at = datetime.utcnow()
         user.last_login_ip = user.current_login_ip
         user.current_login_ip = request.remote_addr
         user.login_count += 1
+        user.authenticated = True  # Označiť používateľa ako autentifikovaného
         db.session.commit()
         login_user(user)
         flash("Logged in successfully with Google!", "success")
-        return redirect(url_for('home'))
+        return redirect(url_for('views.index'))
 
-    new_user = User(email=email, first_name=user_info["name"])
+    # Create a new user if not found
+    new_user = User(
+        email=email, 
+        first_name=user_info.get("email"),
+        authenticated=True, 
+        confirm=True, 
+        active=True, 
+        fs_uniquifier=str(uuid.uuid4()) 
+    )
     db.session.add(new_user)
     db.session.commit()
     login_user(new_user)
     flash("Account created and logged in successfully with Google!", "success")
-    return redirect(url_for('home'))
-
+    return redirect(url_for('views.index'))
 
 
 

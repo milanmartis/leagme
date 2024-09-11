@@ -1,12 +1,12 @@
-from flask import Flask, session, jsonify, flash, render_template, current_app, redirect, url_for
+from flask import Flask, session, jsonify, flash, render_template, current_app, redirect, url_for, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import OperationalError
-from flask_login import LoginManager, current_user
+from flask_login import LoginManager, current_user, login_user, logout_user
 from flask_bcrypt import Bcrypt
 from flask_mail import Mail
-from datetime import timedelta
+from datetime import timedelta, datetime
 from flask_security import Security, SQLAlchemyUserDatastore
-from flask_dance.contrib.google import make_google_blueprint
+from flask_dance.contrib.google import make_google_blueprint, google
 from flask_dance.consumer import oauth_authorized
 from dotenv import load_dotenv
 import os
@@ -17,10 +17,12 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 from redis import Redis
 from celery import Celery
 from flask_session import Session
-import datetime
+
+import uuid
 
 # Load environment variables
 load_dotenv()
+# os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -76,10 +78,8 @@ def create_app():
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=5)
-  # Celery konfigurácia
     app.config['CELERY_BROKER_URL'] = os.environ.get("CELERY_BROKER_URL")
     app.config['CELERY_RESULT_BACKEND'] = os.environ.get("CELERY_RESULT_BACKEND")
-
 
     db.init_app(app)
     bcrypt.init_app(app)
@@ -88,14 +88,57 @@ def create_app():
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)
 
+    # Import models here to avoid circular import issues
+    from .models import User, Role, user_datastore
+
+    # Configure Google OAuth Blueprint
+    google_blueprint = make_google_blueprint(
+        client_id=os.getenv("GOOGLE_CLIENT_ID"),
+        client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+        redirect_to="views.index",  # Function to handle the redirection after login
+        scope=["openid", "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"]
+    )
+    app.register_blueprint(google_blueprint, url_prefix="/login")
+
+    # OAuth Authorized Handler
+    @oauth_authorized.connect_via(google_blueprint)
+    def google_logged_in(blueprint, token):
+        if not token:
+            flash("Failed to log in with Google.", category="error")
+            return False
+
+        resp = google.get("/oauth2/v1/userinfo")
+        if not resp.ok:
+            flash("Failed to fetch user info from Google.", category="error")
+            return False
+
+        user_info = resp.json()
+        user_email = user_info["email"]
+
+        # Check if user already exists
+        user = User.query.filter_by(email=user_email).first()
+        if not user:
+            # If not, create a new user
+            user = User(
+                email=user_email, 
+                first_name=user_info.get("email"),
+                authenticated=True, 
+                confirm=True, 
+                active=True, 
+                fs_uniquifier=str(uuid.uuid4()))
+            db.session.add(user)
+            db.session.commit()
+
+        login_user(user)
+        flash("Successfully signed in with Google.", category="success")
+        return redirect(url_for("views.index"))
+
     # Initialize Celery after app is created
     global celery
     celery = make_celery(app)
 
     # socketio.init_app(app)
     socketio.init_app(app, cors_allowed_origins="*", async_mode="gevent")
-    # socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent")
-
 
     # Register Blueprints
     from .views import views
@@ -108,16 +151,7 @@ def create_app():
     app.register_blueprint(products, url_prefix='/')
     app.register_blueprint(errors)
 
-    google_blueprint = make_google_blueprint(
-        client_id=os.getenv("GOOGLE_CLIENT_ID"),
-        client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
-        redirect_to="auth.google_login",
-        scope=["profile", "email"]
-    )
-    app.register_blueprint(google_blueprint, url_prefix="/login")
-
     # Initialize Flask-Security
-    from .models import User, Role, user_datastore
     Security(app, user_datastore)
 
     # Role Protection Definition
@@ -125,7 +159,8 @@ def create_app():
 
     @app.template_filter('datetimeformat')
     def datetimeformat(value, format='%d/%m/%Y'):
-        return datetime.datetime.fromtimestamp(value).strftime(format)
+        return datetime.fromtimestamp(value).strftime(format)
+    
     # Error Handler for Database Issues
     @app.errorhandler(OperationalError)
     def handle_operational_error(e):
@@ -140,32 +175,3 @@ def create_app():
         return User.query.get(int(user_id))
 
     return app
-
-# Socket.IO Events
-@socketio.on('connect')
-def handle_connect():
-    print('Client connected')
-    emit('message', {'msg': 'Connected to server'})
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    print('Client disconnected')
-
-@socketio.on('join')
-def on_join(data):
-    username = data['username']
-    room = data['room']
-    join_room(room)
-    emit('message', {'msg': f'{username} has entered the room.'}, to=room)
-
-@socketio.on('leave')
-def on_leave(data):
-    username = data['username']
-    room = data['room']
-    leave_room(room)
-    emit('message', {'msg': f'{username} has left the room.'}, to=room)
-
-@socketio.on('send_message')
-def handle_send_message(data):
-    room = data['room']
-    emit('message', {'msg': data['msg']}, to=room)
