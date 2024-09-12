@@ -176,6 +176,13 @@
 
   <!-- JavaScript pro ovládání vyskakovacího okna -->
   <script>
+
+
+    document.addEventListener("DOMContentLoaded", function() {
+      if (document.cookie.indexOf("cookie_consent=accepted") === -1) {
+          document.getElementById("cookie-popup").style.display = "block";
+      }
+  });
       // Funkce pro přijetí všech souborů cookie a zavření vyskakovacího okna
       function acceptAllCookies() {
           // Uložíme informaci o souhlasu do souboru cookie na 365 dní (nastavit podle potřeby)
