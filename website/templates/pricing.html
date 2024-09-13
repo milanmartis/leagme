@@ -80,6 +80,7 @@
         
         
         <form method="post" action="{{ url_for('auth.cancel_subscription') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="subscription_id" value="{{user.stripe_subscription_id}}">
             <input type="hidden" name="produc_id" value="{{orders[0].produc_id}}">
             <button id="cancelsubscription" class="btn-reverse" type="submit" style="cursor: pointer;margin-left: 0px;margin-right: 5px;">Cancel Subscription</button>
@@ -88,15 +89,6 @@
 </div>
 
 
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const cancelsubscription = document.getElementById("cancelsubscription");
-
-        cancelsubscription.addEventListener("click", function () {
-            // Logic for cancelling the subscription
-        });
-    });
-</script>
 
 {% endif %}
 {% endif %}
@@ -129,6 +121,8 @@
                 </div>
 
                 <form id="payment-form-player" style="{{subscribed22}}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
                     <!-- Stripe Elements container -->
                     <button  id="buynow_player" type="submit" class="btn-reverse" style="{{subscribed22}}; cursor: pointer;margin-left: 0px;margin-right: 5px;">Subscribe</button>
                     <button  id="submit-button-player" type="submit" class="btn-reverse" style="display:none;cursor: pointer;margin-left: 0px;margin-right: 5px;">Submit Payment</button>
@@ -158,6 +152,9 @@
                 </center>
             </div>
         </div>
+        <script>
+            const csrfToken = "{{ csrf_token() }}";  // Získa CSRF token pomocou Jinja2
+          </script>
         <script>
             document.addEventListener("DOMContentLoaded", function () {
                 let paymentInProgress = false;
@@ -209,11 +206,13 @@
                                         method: 'POST',
                                         headers: {
                                             'Content-Type': 'application/json',
+                                            'X-CSRFToken': csrfToken
                                         },
                                         body: JSON.stringify({
                                             payment_method_id: paymentMethodId,
                                             email: '{{ user.email }}',
                                             user_id: '{{ user.id }}',
+                                            customer_id: '{{ user.stripe_customer_id }}', // Zahrnutie customer_id
                                             product_id: 45,
                                             amount: 'price_1O3vq1Kr9xveA3fnavSwPRzO',
                                             role_name: 'Player'
@@ -278,6 +277,8 @@
                 </div>
 
                 <form id="payment-form-manager" {{subscribed22}}>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
                     <button {{subscribed22}} id="buynow_manager" type="submit" class="btn-reverse" style="cursor: pointer;margin-left: 0px;margin-right: 5px;">Subscribe</button>
                     <button {{subscribed22}} id="submit-button-manager" type="submit" class="btn-reverse" style="display:none;cursor: pointer;margin-left: 0px;margin-right: 5px;">Submit Payment</button>
                     <div id="cardz-manager">
@@ -358,6 +359,7 @@
                                         method: 'POST',
                                         headers: {
                                             'Content-Type': 'application/json',
+                                            'X-CSRFToken': csrfToken
                                         },
                                         body: JSON.stringify({
                                             payment_method_id: paymentMethodId,

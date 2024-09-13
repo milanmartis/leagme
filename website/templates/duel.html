@@ -31,6 +31,7 @@ BACK
           id="updateResult[{{loop.index}}]"
           action="javascript:;"
         >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input
             type="hidden"
             id="duel_id[{{loop.index}}]"
@@ -89,6 +90,7 @@ BACK
             <div class="row justify-content-center pt-20">
               <form method="POST" id="checkForm[{{loop.index}}]">
                 <br />
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input
                   type="hidden"
                   id="duel[{{loop.index}}]"

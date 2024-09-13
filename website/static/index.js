@@ -4,6 +4,7 @@
   // /season/delete-player/<player>/<season>
 
 
+  const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
 
 function getOutPlyer(season, player, index){
@@ -57,6 +58,9 @@ function getOutPlyerDelete(season, player, index){
   $.ajax({
      url: "/season/delete-player/" + player + "/" + season,
      type: "POST",
+     headers: {
+      'X-CSRFToken': csrfToken
+     },
      data: {season_delete_ide: season},  // Uistite sa, že táto dáta sú správne očakávané na serveri
      success: function(response) {
        if(response.status === 'success') {
@@ -92,6 +96,9 @@ document.body.addEventListener('dblclick',function(e){
 async function deleteNote(noteId) {
   await fetch('/delete-note', {
     method: 'POST',
+    headers: {
+     'X-CSRFToken': csrfToken
+  },
     body: JSON.stringify({ noteId: noteId }),
   }).then((_res) => {
     // window.location.href = "/";
@@ -107,6 +114,9 @@ async function updateDuel(looopindex) {
   duel = document.getElementById('duel[' + looopindex + ']')
   await fetch('/update-duel', {
     method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken
+  },
     body: JSON.stringify({
       duelCheck: inputs.checked + ',' + duel.value + ',' + player.value,
     }),
@@ -141,6 +151,9 @@ async function updateRound() {
   round_id = document.getElementById('round_id')
   await fetch('/season/'+season_id.value+'/update-round/'+round_id.value+'', {
     method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken
+  },
     body: JSON.stringify({
       duelCheck: inputs.checked + ',' + season_id.value + ',' + round_id.value,
     }),
@@ -173,6 +186,9 @@ async function viewGroup(season, group, round) {
 
   await fetch('/login', {
     method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken
+  },
     // body: JSON.stringify({ noteId: noteId }),
   }).then((_res) => {
     setTimeout(function(){
@@ -201,6 +217,9 @@ async function locationHref(url) {
   
   await fetch('/login', {
     method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken
+  },
     // body: JSON.stringify({ noteId: noteId }),
   }).then((_res) => {
     setTimeout(function(){
@@ -274,6 +293,9 @@ async function updateDuel2(looopindex) {
 
   await fetch('/update-duel2', {
     method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken
+  },
     body: JSON.stringify({
       duelResult:
         result.value +
@@ -321,6 +343,9 @@ async function chooseGroup(looopindex) {
 
   await fetch('/season/' + seasons.value + '/group/' + grno.value + '', {
     method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken
+  },
     body: JSON.stringify({
       groupList: grno.value + ',' + grname.value + ',' + seasons.value,
     }),
@@ -335,6 +360,9 @@ async function chooseGroup(looopindex) {
 async function deleteDuel(duelId) {
   await fetch('/delete-duel', {
     method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken
+  },
     body: JSON.stringify({ duelId: duelId }),
   }).then((_res) => {
     // window.location.href = "/";

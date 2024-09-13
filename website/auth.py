@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, session, current_app, jsonify, send_file
 from .models import User, Season, PaymentCard, Product, Order, PaymentMethod, Role
-from . import db, cache, bcrypt, argon2
+from . import db, bcrypt, argon2
 from flask_login import login_user, login_required, logout_user, current_user
 from flask_security.utils import login_user  # Importujte správne login_user z Flask-Security-too
 from argon2.exceptions import VerifyMismatchError
@@ -507,6 +507,23 @@ def cancel_subscription():
         return str(e)
 
 
+
+
+@auth.route('/handle_payment_error', methods=['POST'])
+def handle_payment_error():
+    try:
+        data = request.json
+        error_message = data.get('error_message')
+
+        # Flash the error message
+        flash(f'Payment failed: {error_message}', 'error')
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"Error handling payment error: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
+
 @auth.route('/user/make_order', methods=['POST'])
 @login_required
 def make_order():
@@ -650,58 +667,6 @@ def download_invoice(invoice_id):
 
 
 
-@auth.route('/account/stripe_data', methods=['GET'])
-@login_required
-def get_stripe_data():
-    customer_email = current_user.email
-    cache_key = f"stripe_data_{customer_email}"  # Cache key based on user's email
-
-    # Initialize stripe_data variable
-    stripe_data = cache.get(cache_key)
-    print(f"Cache data for key {cache_key}: {stripe_data}")  # Debugging output
-
-    if stripe_data is None:  # Check if cache is empty
-        print('Cache is empty, fetching data from Stripe...')  # Debugging output
-        stripe_data = {}
-        try:
-            # Fetch customer details from Stripe
-            customers = stripe.Customer.list(email=customer_email)
-            print(f"Fetched customers from Stripe: {customers}")  # Debugging output
-
-            if len(customers.data) == 0:
-                print(f"No customers found for email: {customer_email}")  # Debugging output
-                return jsonify({"error": "Customer not found."}), 404
-
-            customer_id = customers.data[0].id
-
-            # Fetch invoices from Stripe
-            invoices = stripe.Invoice.list(customer=customer_id, limit=100)
-            all_invoices = invoices.data
-            print(f"Fetched {len(all_invoices)} invoices for customer {customer_id}")  # Debugging output
-
-            # Fetch payment methods from Stripe
-            payment_methods = stripe.PaymentMethod.list(customer=customer_id, type="card")
-            print(f"Fetched {len(payment_methods.data)} payment methods for customer {customer_id}")  # Debugging output
-
-            # Add invoices and payment methods to response data
-            stripe_data['invoices'] = all_invoices
-            stripe_data['payment_methods'] = payment_methods.data
-
-            # Store data in cache for 5 minutes (300 seconds)
-            cache.set(cache_key, stripe_data, timeout=300)
-            print(f"Data cached with key {cache_key}")  # Debugging output
-
-        except Exception as e:
-            print(f"Error fetching data from Stripe: {str(e)}")  # Debugging output
-            return jsonify({"error": str(e)}), 500
-
-    else:
-        print(f"Cache hit for key {cache_key}, returning cached data.")  # Debugging output
-
-    # Return stripe data
-    return jsonify(stripe_data)
-
-
 
 @celery.task
 @auth.route('/account', methods=['GET', 'POST'])
@@ -758,128 +723,72 @@ def user_details():
                 flash("Account updated!", category="success")
                 return redirect(url_for('auth.user_details'))
 
-    # return render_template('account.html', user=current_user)
-                # return redirect(url_for('auth.user_details'))
-
-            
-            
-            
-            
-            
-
-    # user_email = session.get('user_email')
-    # user_id = session.get('user_id')
-    # user_name = session.get('user_name')
-
-    # dict_log = {
-    #     'id': user_id, 
-    #     'first_name': user_name, 
-    #     'email': user_email,
-    # }
+    # Stránka sa načíta bez Stripe dát
     cards = PaymentCard.query.filter(PaymentCard.user_id==current_user.id).all()
-   
-    # order = Order.query.filter(Order.user_id == current_user.id).all()
-    
-    
-    # order = Order.query.with_entities(
-    #     Order.stripe_subscription_id,
-    #     # Add other columns you need here
-    # ).filter(Order.user_id == current_user.id).group_by(Order.stripe_subscription_id).all()
-        
-        
-    orderz = db.session.query(Order.stripe_subscription_id).filter(Order.user_id == current_user.id).group_by(Order.stripe_subscription_id).first()
-
-    # saved_cards = []
-    # for order in orderz:
-    #     stripe_subscription_id = order[0]
-    #     if stripe_subscription_id is not None:
-    #         customer = stripe.Customer.retrieve(str(stripe_subscription_id))
-    #         saved_cards.append(customer)
-    #     else:
-    #         saved_cards.append('')
-    
     products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
     orders = Order.query.filter(Order.user_id==current_user.id).all()
-    customer_email=current_user.email
-    # try:
-    #     # Vyhľadajte všetkých zákazníkov podľa e-mailu
-    #     customers = stripe.Customer.list(email=customer_email)
 
-    #     if len(customers.data) == 0:
-    #         return "Customer not found."
+    return render_template("users/account.html", checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), user=current_user, cards=cards, products=products, orders=orders)
 
-    #     all_invoices = []
-
-    #     # Načítanie všetkých faktúr pre každého zákazníka s rovnakou e-mailovou adresou
-    #     for customer in customers.data:
-    #         customer_id = customer.id
-    #         invoices = stripe.Invoice.list(customer=customer_id, limit=100)  # Nastavte vyšší limit
-
-    #         # Pridajte prvú stránku faktúr
-    #         all_invoices.extend(invoices.data)
-
-    #         # Načítajte ďalšie stránky
-    #         while invoices.has_more:
-    #             invoices = stripe.Invoice.list(customer=customer_id, limit=100, starting_after=invoices.data[-1].id)
-    #             all_invoices.extend(invoices.data)
-
-    #     # Pre každú faktúru načítajte položky a pridajte názov produktu (predmet faktúry)
-    #     for invoice in all_invoices:
-    #         detailed_invoice = stripe.Invoice.retrieve(invoice.id, expand=['lines.data'])
-    #         invoice['line_items'] = detailed_invoice.lines.data  # Pridajte položky faktúry do faktúry
-
-    #     # Debug výstup pre kontrolu načítania faktúr
-    #     print("Total invoices loaded:", len(all_invoices))
-
-    #     # Vráťte zoznam všetkých faktúr s položkami
-    #     # return render_template('invoices.html', customer_email=customer_email, invoices=all_invoices)
-
-    # except Exception as e:
-    #     print(f"An error occurred: {str(e)}")
-    #     return f"An error occurred: {str(e)}"
-    
-    
-    
-    # try:
-    #     # customer_email = current_user.email  # Získajte e-mail aktuálneho používateľa
-
-    #     # Vyhľadajte zákazníka podľa e-mailu
-    #     customers = stripe.Customer.list(email=customer_email)
-
-    #     if len(customers.data) == 0:
-    #         return "Customer not found."
-
-    #     customer_id = customers.data[0].id  # Predpokladáme, že prvý výsledok je správny zákazník
-
-    #     # Získajte uložené platobné metódy pre daného zákazníka
-    #     payment_methods = stripe.PaymentMethod.list(
-    #         customer=customer_id,
-    #         type="card"  # Môžete filtrovať podľa typu platobnej metódy, napr. "card"
-    #     )
-
-    #     # Vráťte zoznam platobných metód
-    #     # return render_template('payment.html', customer_email=customer_email, payment_methods=payment_methods.data)
-
-    # except Exception as e:
-    #     return f"An error occurred: {str(e)}"
-    # orders = Order.query.filter(Order.user_id==current_user.id).filter(Order.stripe_subscription_id==current_user.stripe_subscription_id).all()
-    #  customer=saved_cards,
-
-    return render_template("users/account.html", checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), orders=orders, products=products, user=current_user, cards=cards)
-
-
-    
-@auth.route('/users/delete_payment_method/<payment_method_id>', methods=['GET'])
+@auth.route('/delete_payment_method', methods=['POST'])
 @login_required
-@roles_required('Admin', 'Manager', 'Player')
-def delete_payment_method(payment_method_id):
+def delete_payment_method():
+    data = request.get_json()
+    payment_method_id = data.get('payment_method_id')
     try:
-        # Odpojte platobnú metódu od zákazníka
+        # Odstránenie platobnej metódy zo Stripe
         stripe.PaymentMethod.detach(payment_method_id)
-        return redirect(url_for('auth.user_details'))
+        return jsonify({'success': True})
     except Exception as e:
-        return f"An error occurred: {str(e)}"
+        print(f"Error deleting payment method: {str(e)}")  # Debugging output
+        return jsonify({'success': False, 'error': str(e)}), 500
     
+@auth.route('/account/stripe_data', methods=['GET'])
+@login_required
+def get_stripe_data():
+    customer_email = current_user.email
+    try:
+        # Vyhľadajte všetkých zákazníkov podľa e-mailu
+        customers = stripe.Customer.list(email=customer_email)
+
+        if len(customers.data) == 0:
+            return jsonify({"error": "Customer not found."}), 404
+
+        all_invoices = []
+        all_payment_methods = []
+
+        # Prejdeme všetkých zákazníkov so zadaným e-mailom
+        for customer in customers.data:
+            customer_id = customer.id
+
+            # Načítanie faktúr pre každého zákazníka
+            invoices = stripe.Invoice.list(customer=customer_id, limit=100, expand=['data.lines'])
+            all_invoices.extend(invoices.data)
+
+            # Načítanie všetkých strán faktúr (ak je viac než 100)
+            while invoices.has_more:
+                invoices = stripe.Invoice.list(customer=customer_id, limit=100, starting_after=invoices.data[-1].id, expand=['data.lines'])
+                all_invoices.extend(invoices.data)
+
+            # Načítanie platobných metód pre každého zákazníka
+            payment_methods = stripe.PaymentMethod.list(customer=customer_id, type="card")
+            all_payment_methods.extend(payment_methods.data)
+
+        # Pripraviť odpoveď so Stripe dátami
+        stripe_data = {
+            'invoices': [invoice.to_dict() for invoice in all_invoices],
+            'payment_methods': [pm.to_dict() for pm in all_payment_methods]
+        }
+
+        return jsonify(stripe_data)
+
+    except Exception as e:
+        print(f"Error fetching data from Stripe: {str(e)}")  # Debugging output
+        return jsonify({"error": str(e)}), 500
+
+
+    
+
     
 @auth.route('/users/add_payment_method', methods=['GET', 'POST'])
 @login_required

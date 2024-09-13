@@ -66,6 +66,7 @@
     {%endif%}
     <div valign="middle" align="center"  class="col-12" style="{% if num == false %}opacity:0.5;{% endif %}">
       <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" id="season" name="season" value="{{season[0].id}}" />
         <input type="hidden" id="round" name="round" value="{{season[1].id}}" />
         <button
@@ -93,6 +94,7 @@
   
       <div valign="middle" align="center"  class="col-12" style="{% if num == false %}opacity:0.5;{% endif %}">
         <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" id="season" name="season" value="{{season[0].id}}" />
           <input type="hidden" id="round" name="round" value="{{season[1].id}}" />
           <button
@@ -180,6 +182,7 @@ aria-hidden="true"
           action="javascript:;"
           method="POST"
         >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button onclick="javascript:getOutPlyerDelete({{season}},{{player.id}},{{loop.index}});" class="btn2 btn-sm" style="font-weight: 700;padding-left: 10px;padding-right: 10px;padding-top: 4px;"  type="submit" value="OK" />REMOVE</button>
         </form>
         <button onclick="" style="font-weight: 700;" type="button" class="btn3 btn-sm" data-bs-dismiss="modal">
@@ -207,6 +210,7 @@ aria-hidden="true"
   <div class="row" style="display:block;max-width:320px; text-align: center;">
     <div class="col">
       <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button disabled style="font-size: 150%;padding: 0px;margin: 4px;" type="submit" class="btn btn-demo btn-block shadow-none" value="11">
           <h4 style="color:#010101">
             {% if seas.min_players>players_wait|length %}{{ seas.min_players - players_wait|length }}{%endif%}
@@ -235,6 +239,7 @@ aria-hidden="true"
   <div class="row" style="display:block;max-width:320px; text-align: center;">
     <div class="col">
       <form method='POST' action="">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" id="add_player_to_season" name="add_player_to_season" class="btn btn-reverse" value="{{season}}">+ Join this {{season_type_name}}</button>
       </form>
       <br>
@@ -247,6 +252,7 @@ aria-hidden="true"
   <div class="row" style="display:block;max-width:320px; text-align: center;">
     <div class="col">
       <form method='POST' action="">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <a href="{{ url_for('auth.user_details') }}" class="btn btn-reverse">Subscribe to join</a>
       </form>
       <br>
@@ -360,6 +366,7 @@ aria-hidden="true"
     <div class="container">
 
       <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div align="center">
           <input
           type="hidden"
@@ -457,6 +464,7 @@ aria-hidden="true"
           action="{{ url_for('views.season_delete', season=season) }}"
           method="POST"
         >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn2 btn-sm" style="font-weight: 700;padding-left: 10px;padding-right: 10px;padding-top: 4px;"  type="submit" value="OK" />DELETE</button>
         </form>
         <button style="font-weight: 700;" type="button" class="btn3 btn-sm" data-bs-dismiss="modal">

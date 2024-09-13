@@ -15,18 +15,14 @@
         <div class="form-group">
           <h1 style="margin-top:-15px;margin-bottom:15px;">
             <p style="font-size: 80%;font-weight:700;opacity:0.5;margin-bottom:0px;">
-            User Id
+              User Id
             </p>
             {{user.email }}
           </h1>
         </div>
         <div class="form-group">
-          <input
-            type="hidden"
-            id="useride"
-            name="useride"
-            value="{{user.id}}"
-          />
+          <input type="hidden" id="useride" name="useride" value="{{user.id}}" />
+          <!-- <label for="first_name">Nick Name</label> -->
           <input
             type="text"
             class="form-control"
@@ -39,34 +35,16 @@
           />
         </div>
         <div class="form-group">
-          <input
-            type="hidden"
-            class="form-control"
-            id="password_old"
-            name="password_old"
-            placeholder="Old Password"
-            value=""
-          />
+          <!-- <label for="password_old">Old Password</label> -->
+          <input type="hidden" class="form-control" id="password_old" name="password_old" placeholder="Old Password" value="" />
         </div>
         <div class="form-group">
-          <input
-            type="hidden"
-            class="form-control"
-            id="password1"
-            name="password1"
-            placeholder="New Password"
-            value=""
-          />
+          <!-- <label for="password1">New Password</label> -->
+          <input type="hidden" class="form-control" id="password1" name="password1" placeholder="New Password" value="" />
         </div>
         <div class="form-group">
-          <input
-            type="hidden"
-            class="form-control"
-            id="password2"
-            name="password2"
-            placeholder="New Password (Confirm)"
-            value=""
-          />
+          <!-- <label for="password2">New Password (Confirm)</label> -->
+          <input type="hidden" class="form-control" id="password2" name="password2" placeholder="New Password (Confirm)" value="" />
         </div>
         <br />
         <button type="submit" id="account_button" class="btn-demo btn-outline-dark btn-block" onclick="javascript:spinner();document.getElementById('account_button').style.color='#00EE00';">
@@ -83,78 +61,199 @@
 
       <div class="col-sm-12">
         <!-- Inklúzia iných šablón -->
-          {% include 'pricing.html' %}
+        {% include 'pricing.html' %}
       
-          <!-- Zahrnutie šablóny platobných metód -->
-          {% include 'payment.html' %}
-      </div>
 
-      <div class="col-sm-12">
-        <h4 style="font-size: 80%; line-height:86%; padding:0px; margin-top:10px;">Payment history</h4>
-        <div id="invoice-container">
-          <p>Loading invoices...</p>
-        </div>
       </div>
+      <div class="col-sm-12 justify-content-center align-items-center">
+        <h4>Stored Payment Methods</h4>
+        <div id="payment-methods-container" class=" d-flex justify-content-center align-items-center">
+            <p>Loading payment methods...</p>
+        </div>
+    </div>
+      <br>
+      <div class="col-sm-12 justify-content-center align-items-center">
+          <h4>Payment history</h4>
+          <div id="invoice-container">
+              <p>Loading invoices...</p>
+          </div>
+      </div>
+    
       <br>
       <br>
-          <h6>
-            <a class="btn2 nav-item nav-link" href="{{ url_for('auth.logout') }}">LOGOUT</a>
-          </h6>
+      <h6>
+        <a class="btn2 nav-item nav-link" href="{{ url_for('auth.logout') }}">LOGOUT</a>
+      </h6>
     </div>
   </div>
 </div>
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    console.log('Fetching Stripe data...');
+      console.log('Fetching Stripe data...'); // Debugging message
+  
+      function fetchStripeData() {
+          fetch('{{ url_for("auth.get_stripe_data") }}')
+              .then(response => {
+            //      console.log('Received response:', response); // Debugging message
+                  if (!response.ok) {
+                      throw new Error('HTTP error! Status: ' + response.status);
+                  }
+                  return response.json();
+              })
+              .then(data => {
+            //      console.log('Received data:', data); // Debugging message
+  
+                  if (data.error) {
+                      document.getElementById('invoice-container').innerHTML = `<p>${data.error}</p>`;
+                      document.getElementById('payment-methods-container').innerHTML = `<p>${data.error}</p>`;
+                      return;
+                  }
+  
+                  // Vykreslenie faktúr
+                  let invoiceHTML = '';
+                  data.invoices.forEach(invoice => {
+                      console.log('Processing invoice:', invoice); // Debugging message
+                      invoiceHTML += `<table border="1" cellpadding="5" cellspacing="0" class=" d-flex justify-content-center align-items-center"><tbody>`;
+                      if (invoice.lines && invoice.lines.data) {
+                          invoice.lines.data.forEach(item => {
+                              console.log('Processing line item:', item); // Debugging message
+                              invoiceHTML += `<tr class="table-row ">
+                                                  <td style="width:34%; text-align: left; margin: 4px; padding: 8px; border-radius: 20px 0 0 20px;">
+                                                      ${item.description.split('×')[1].split('(')[0].trim()}
+                                                  </td>
+                                                  <td style="width:28%; text-align:center; margin:4px; padding: 8px;">
+                                                      ${new Date(invoice.created * 1000).toLocaleDateString()}
+                                                  </td>
+                                                  <td style="width:28%; text-align:right; margin: 4px; padding: 8px;">
+                                                      ${(item.amount / 100).toFixed(2)} €
+                                                  </td>
+                                                  <td style="width:20%; text-align:center; margin-right: 8px; padding-right: 8px; border-radius: 0 20px 20px 0;">
+                                                      <a href="users/download_invoice/${invoice.id}" title="download invoice"><i class="fas fa-download"></i></a>
+                                                  </td>
+                                                </tr>`;
+                          });
+                      } else {
+                          invoiceHTML += `<tr><td colspan="4">No line items found for this invoice.</td></tr>`;
+                      }
+                      invoiceHTML += `</tbody></table>`;
+                  });
+                  document.getElementById('invoice-container').innerHTML = invoiceHTML;
+  
+                  // Vykreslenie platobných metód
+                  let paymentMethodsHTML = '';
+                  paymentMethodsHTML += `<table class="table table-bordered" stlye="border: 3px solid #4CAF50;">`;
 
-    fetch('{{ url_for("auth.get_stripe_data") }}')
-        .then(response => {
-            console.log('Received response:', response);
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Received data:', data);
+                    
+                    data.payment_methods.forEach(method => {
+                        console.log('Processing payment method:', method); // Debugging message
+                        paymentMethodsHTML += `<tr class="d-flex justify-content-between align-items-center">`;
+                    
+                        // Ikona pre značku karty
+                        let cardIcon = `<i style="font-size: 163%;" class="fas fa-credit-card"></i>`;
+                        if (method.card.brand === 'visa') {
+                            cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-visa"></i>`;
+                        } else if (method.card.brand === 'mastercard') {
+                            cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-mastercard"></i>`;
+                        } else if (method.card.brand === 'amex') {
+                            cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-amex"></i>`;
+                        } else if (method.card.brand === 'discover') {
+                            cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-discover"></i>`;
+                        }
+                    
+                        // Vloženie dát do stĺpcov tabuľky
+                        paymentMethodsHTML += `<td>${cardIcon} </td>`;
+                        //paymentMethodsHTML += `<td>${cardIcon} ${method.card.brand.toUpperCase()}</td>`;
+                        paymentMethodsHTML += `<td>.... ${method.card.last4}</td>`;
+                        paymentMethodsHTML += `<td>${method.card.exp_month}/${method.card.exp_year}</td>`;
+                    
+                        // Tlačidlo na vymazanie karty
+                        paymentMethodsHTML += `<td><a href="#" onclick="deletePaymentMethod('${method.id}')" ><i class="fas fa-trash-alt"></i></a></td>`;
+                    
+                        paymentMethodsHTML += `</tr>`;
+                    });
+                    
+                    paymentMethodsHTML += `</tbody></table>`;
+                    
+  
+                  if (paymentMethodsHTML === '') {
+                      paymentMethodsHTML = '<p>No payment methods found for this customer...</p>';
+                  }
+  
+                  document.getElementById('payment-methods-container').innerHTML = paymentMethodsHTML;
+  
+              })
+              .catch(error => {
+                  console.error('Error loading invoices:', error); // Debugging message
+                  document.getElementById('invoice-container').innerHTML = `<p>Error loading invoices: ${error}</p>`;
+                  document.getElementById('payment-methods-container').innerHTML = `<p>Error loading payment methods: ${error}</p>`;
+              });
+      }
+  
+      // Funkcia na odstránenie platobnej metódy
+      window.deletePaymentMethod = function (paymentMethodId) {
+          fetch('{{ url_for("auth.delete_payment_method") }}', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': '{{ csrf_token() }}'
+              },
+              body: JSON.stringify({ 'payment_method_id': paymentMethodId })
+          })
+          .then(response => {
+              if (!response.ok) {
+                  throw new Error('HTTP error! Status: ' + response.status);
+              }
+              
+              return response.json();
+          })
+          .then(data => {
+              if (data.success) {
+                  console.log('Payment method deleted successfully');
+                  fetchStripeData(); // Refresh the payment methods list
+              } else {
+                  console.error('Error deleting payment method:', data.error);
+              }
+          })
+          .catch(error => {
+              console.error('Error deleting payment method:', error);
+          });
+      }
+  
+      fetchStripeData(); // Initial fetch
+  });
 
-            if (data.error) {
-                document.getElementById('invoice-container').innerHTML = `<p>${data.error}</p>`;
-                return;
-            }
+  // Use the updated URL if you renamed the endpoint
+window.deletePaymentMethod = function (paymentMethodId) {
+  fetch('{{ url_for("auth.delete_payment_method") }}', {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token() }}'
+      },
+      body: JSON.stringify({ 'payment_method_id': paymentMethodId })
+  })
+  .then(response => {
+      if (!response.ok) {
+          throw new Error('HTTP error! Status: ' + response.status);
+      }
+      return response.json();
+  })
+  .then(data => {
+      if (data.success) {
+          console.log('Payment method deleted successfully');
+          fetchStripeData(); // Refresh the payment methods list
+      } else {
+          console.error('Error deleting payment method:', data.error);
+      }
+  })
+  .catch(error => {
+      console.error('Error deleting payment method:', error);
+  });
+}
+  </script>
+  
 
-            // Render invoices
-            let invoiceHTML = '';
-            data.invoices.forEach(invoice => {
-                console.log('Processing invoice:', invoice);
-                invoiceHTML += `<table border="1" cellpadding="5" cellspacing="0"><tbody>`;
-                invoice.line_items.forEach(item => {
-                    console.log('Processing line item:', item);
-                    invoiceHTML += `<tr class="table-row">
-                                      <td style="width:34%; text-align: left; margin: 4px; padding: 8px; border-radius: 20px 0 0 20px;">
-                                          ${item.description ? item.description.split('×')[1]?.split('(')[0].trim() : 'No description'}
-                                      </td>
-                                      <td style="width:28%; text-align:center; margin:4px; padding: 8px;">
-                                          ${new Date(invoice.created * 1000).toLocaleDateString()}
-                                      </td>
-                                      <td style="width:28%; text-align:right; margin: 4px; padding: 8px;">
-                                          ${(item.amount / 100).toFixed(2)} €
-                                      </td>
-                                      <td style="width:20%; text-align:center; margin-right: 8px; padding-right: 8px; border-radius: 0 20px 20px 0;">
-                                          <a href="users/download_invoice/${invoice.id}" title="download invoice"><i class="fas fa-download"></i></a>
-                                      </td>
-                                    </tr>`;
-                });
-                invoiceHTML += `</tbody></table>`;
-            });
-            document.getElementById('invoice-container').innerHTML = invoiceHTML;
-        })
-        .catch(error => {
-            console.error('Error loading invoices:', error);
-            document.getElementById('invoice-container').innerHTML = `<p>Error loading invoices: ${error.message}</p>`;
-        });
-});
-</script>
+
 
 {% endblock %}

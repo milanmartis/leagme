@@ -12,7 +12,10 @@
       </div>
 
       <div class="col-12 align-items-center justify-content-center" style="display:block;min-width:320px; text-align: center;">
+        <!-- Pridajte CSRF ochranu -->
         <form method="POST" action="{{ url_for('auth.login') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          
           <h3 align="center" class="pt-4"></h3>
           <div class="form-group">
             <input type="email" class="form-control" id="email" required name="email" placeholder="Email" value="{{ request.form['email'] }}" />

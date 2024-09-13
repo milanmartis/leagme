@@ -18,7 +18,8 @@ from redis import Redis
 from celery import Celery
 from flask_session import Session
 from flask_caching import Cache  # Import Cache
-
+from flask_cors import CORS
+from flask_wtf.csrf import CSRFProtect, CSRFError
 import uuid
 
 # Load environment variables
@@ -34,6 +35,8 @@ argon2 = Argon2()
 socketio = SocketIO()
 cache = Cache()
 celery = None  # Initialize as None and configure later
+cors = CORS()
+csrf = CSRFProtect()
 
 def make_celery(app=None):
     app = app or create_app()
@@ -88,8 +91,10 @@ def create_app():
     # cache.init_app(app) 
     cache.init_app(app, config={'CACHE_TYPE': 'redis'})  # alebo iný typ cache
     db.init_app(app)
+    csrf.init_app(app)
     bcrypt.init_app(app)
     argon2.init_app(app)
+    cors.init_app(app)
     mail.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)
@@ -166,6 +171,11 @@ def create_app():
     @app.template_filter('datetimeformat')
     def datetimeformat(value, format='%d/%m/%Y'):
         return datetime.fromtimestamp(value).strftime(format)
+    
+    
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        return jsonify({'error': 'CSRF token missing or incorrect.'}), 400
     
     # Error Handler for Database Issues
     @app.errorhandler(OperationalError)
