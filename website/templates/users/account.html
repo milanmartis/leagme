@@ -1,23 +1,18 @@
-{% extends "base.html" %} {% block title %}User Page{% endblock %} {% block
-content %}
+{% extends "base.html" %}
+{% block title %}User Page{% endblock %}
+
+{% block content %}
+
 <br />
 
 <div class="container readinglazy" align="center">
   <div class="row" style="display:block;max-width:320px; text-align: center;">
-    <div valign="middle" align="center"  class="col-12">
-      <img
-        src="{{ url_for('static', filename='img/my-account.svg') }}"
-        width="250"
-        class="filter-green"
-      />
-
+    <div valign="middle" align="center" class="col-12">
+      <img src="{{ url_for('static', filename='img/my-account.svg') }}" width="250" class="filter-green" />
 
       <form method="POST" action="{{ url_for('auth.user_details') }}">
         <h3 align="center"></h3>
         <div class="form-group">
-          
-          
-          
           <h1 style="margin-top:-15px;margin-bottom:15px;">
             <p style="font-size: 80%;font-weight:700;opacity:0.5;margin-bottom:0px;">
             User Id
@@ -32,7 +27,6 @@ content %}
             name="useride"
             value="{{user.id}}"
           />
-          <!-- <label for="first_name">Nick Name</label> -->
           <input
             type="text"
             class="form-control"
@@ -45,10 +39,9 @@ content %}
           />
         </div>
         <div class="form-group">
-          <!-- <label for="password_old">Old Password</label> -->
           <input
-          type="hidden"
-          class="form-control"
+            type="hidden"
+            class="form-control"
             id="password_old"
             name="password_old"
             placeholder="Old Password"
@@ -56,10 +49,9 @@ content %}
           />
         </div>
         <div class="form-group">
-          <!-- <label for="password1">New Password</label> -->
           <input
-          type="hidden"
-          class="form-control"
+            type="hidden"
+            class="form-control"
             id="password1"
             name="password1"
             placeholder="New Password"
@@ -67,10 +59,9 @@ content %}
           />
         </div>
         <div class="form-group">
-          <!-- <label for="password2">New Password (Confirm)</label> -->
           <input
-          type="hidden"
-          class="form-control"
+            type="hidden"
+            class="form-control"
             id="password2"
             name="password2"
             placeholder="New Password (Confirm)"
@@ -90,7 +81,6 @@ content %}
     <div class="col-12 justify-content-center text-center">
       <br>
 
-
       <div class="col-sm-12">
         <!-- Inklúzia iných šablón -->
           {% include 'pricing.html' %}
@@ -99,136 +89,72 @@ content %}
           {% include 'payment.html' %}
       </div>
 
-
       <div class="col-sm-12">
-        <h4 style="font-size: 80%;line-height:86%;padding:0px;margin-top:10px;">Payment history</h4>
-        {% if invoices %}
-                {% for invoice in invoices %}
-
-                            <table border="1" cellpadding="5" cellspacing="0">
-           
-                                <tbody>
-                                    {% for item in invoice.line_items %}
-                                    <tr class="table-row">
-                                      <td style="width:34%;text-align: left; margin: 4x; padding: 8px; border-radius: 20px 0 0 20px;">
-                                          {{ item.description.split('×')[1].split('(')[0].strip() }}
-                                      </td>
-                                      <td style="width:28%;text-align:center;margin:4px; padding: 8px;">
-                                          {{ invoice.created | datetimeformat }}
-                                      </td>
-                                      <td style="width:28%;text-align:right;margin: 4px; padding: 8px;">
-                                          {{ item.amount / 100 }} €
-                                      </td>
-                                      <td style="width:20%;text-align:center;margin-right: 8px; padding-right: 8px; border-radius: 0 20px 20px 0;">
-                                          <a href="users/download_invoice/{{ invoice.id }}" title="download invoice"><i class="fas fa-download"></i></a>
-                                      </td>
-                                    </tr>
-
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                {% endfor %}
-  
-    {% else %}
-        <p>No invoices found for this customer...</p>
-    {% endif %}
-    </div>
-
-
-
-<!--
-
-  
-  <h1></h1>
-  
-          {% for card in cards %}
-          <div class="inputcard">
-            ...{{ card.card_number[-4:] }} ({{ card.expiration_date }})
-            
-          </div>
-          {% endfor %}
-          
-        -->
-  <div style="display: none;">
-
-    <h2>Add Pay Cards</h2>
-    <form id="payment-form">
-      <label for="card-number" class="btn-user">Card number</label><br>
-      <input type="text" id="card-number" required>
-      <br>
-      <label for="expiration-date" class="btn-user">Expiry date</label><br>
-      <input type="text" id="expiration-date" required >
-      <br>
-      <br>
-      <button class="btn-main" type="submit">Save</button>
-    </form>
-    
-    
-    
-  </div>
-  <br>
-  <br>
-      <h6>
-        <a class="btn2 nav-item nav-link" href="{{ url_for('auth.logout') }}">LOGOUT</a>
-      </h6>
-    </div>
-
-    <!-- <div align="center" class="col-sm-6 pt-20 align-self-center">
-      <img
-        src="{{ url_for('static', filename='img/aim.svg') }}"
-        width="94%"
-        class="filter-green"
-      />
-    </div> -->
-  </div>
-    <div class="row" style="display:block;max-width:320px; text-align: center;">
-      <div class="col-12 justify-content-center text-center">
-        <br>
-
-      <!--  <br>
-        <h6>
-          <a class="btn2 nav-item nav-link" href="{{ url_for('views.business_conditions') }}">Business Conditions</a>
-        </h6>
-      -->
+        <h4 style="font-size: 80%; line-height:86%; padding:0px; margin-top:10px;">Payment history</h4>
+        <div id="invoice-container">
+          <p>Loading invoices...</p>
+        </div>
       </div>
+      <br>
+      <br>
+          <h6>
+            <a class="btn2 nav-item nav-link" href="{{ url_for('auth.logout') }}">LOGOUT</a>
+          </h6>
+    </div>
   </div>
-
-  
 </div>
-<!--
 
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-    const form = document.getElementById('payment-form');
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-  
-      const cardNumber = document.getElementById('card-number').value;
-      const expirationDate = document.getElementById('expiration-date').value;
-  
-      fetch('/user/add_card', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          cardNumber,
-          expirationDate,
-        }),
-      })
-      .then(response => response.json())
-      .then(data => {
-                // Obsluha úspešného pridania karty
-                console.log('Karta úspešne pridaná:', data);
-                window.location.reload(); // Znovunačítať stránku
-              })
-              .catch(error => {
-                // Obsluha chyby
-                console.error('Chyba pri pridaní karty:', error);
-              });
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    console.log('Fetching Stripe data...');
+
+    fetch('{{ url_for("auth.get_stripe_data") }}')
+        .then(response => {
+            console.log('Received response:', response);
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Received data:', data);
+
+            if (data.error) {
+                document.getElementById('invoice-container').innerHTML = `<p>${data.error}</p>`;
+                return;
+            }
+
+            // Render invoices
+            let invoiceHTML = '';
+            data.invoices.forEach(invoice => {
+                console.log('Processing invoice:', invoice);
+                invoiceHTML += `<table border="1" cellpadding="5" cellspacing="0"><tbody>`;
+                invoice.line_items.forEach(item => {
+                    console.log('Processing line item:', item);
+                    invoiceHTML += `<tr class="table-row">
+                                      <td style="width:34%; text-align: left; margin: 4px; padding: 8px; border-radius: 20px 0 0 20px;">
+                                          ${item.description ? item.description.split('×')[1]?.split('(')[0].trim() : 'No description'}
+                                      </td>
+                                      <td style="width:28%; text-align:center; margin:4px; padding: 8px;">
+                                          ${new Date(invoice.created * 1000).toLocaleDateString()}
+                                      </td>
+                                      <td style="width:28%; text-align:right; margin: 4px; padding: 8px;">
+                                          ${(item.amount / 100).toFixed(2)} €
+                                      </td>
+                                      <td style="width:20%; text-align:center; margin-right: 8px; padding-right: 8px; border-radius: 0 20px 20px 0;">
+                                          <a href="users/download_invoice/${invoice.id}" title="download invoice"><i class="fas fa-download"></i></a>
+                                      </td>
+                                    </tr>`;
+                });
+                invoiceHTML += `</tbody></table>`;
             });
-          });
-        </script>
-      -->
+            document.getElementById('invoice-container').innerHTML = invoiceHTML;
+        })
+        .catch(error => {
+            console.error('Error loading invoices:', error);
+            document.getElementById('invoice-container').innerHTML = `<p>Error loading invoices: ${error.message}</p>`;
+        });
+});
+</script>
 
 {% endblock %}

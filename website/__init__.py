@@ -17,6 +17,7 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 from redis import Redis
 from celery import Celery
 from flask_session import Session
+from flask_caching import Cache  # Import Cache
 
 import uuid
 
@@ -31,6 +32,7 @@ bcrypt = Bcrypt()
 mail = Mail()
 argon2 = Argon2()
 socketio = SocketIO()
+cache = Cache()
 celery = None  # Initialize as None and configure later
 
 def make_celery(app=None):
@@ -80,7 +82,11 @@ def create_app():
     app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=5)
     app.config['CELERY_BROKER_URL'] = os.environ.get("CELERY_BROKER_URL")
     app.config['CELERY_RESULT_BACKEND'] = os.environ.get("CELERY_RESULT_BACKEND")
+    app.config['CACHE_TYPE'] = 'redis'
+    app.config['CACHE_REDIS_URL'] = os.environ.get("CACHE_REDIS_URL")
 
+    # cache.init_app(app) 
+    cache.init_app(app, config={'CACHE_TYPE': 'redis'})  # alebo iný typ cache
     db.init_app(app)
     bcrypt.init_app(app)
     argon2.init_app(app)
@@ -88,7 +94,7 @@ def create_app():
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)
 
-    # Import models here to avoid circular import issues
+
     from .models import User, Role, user_datastore
 
     # Configure Google OAuth Blueprint
