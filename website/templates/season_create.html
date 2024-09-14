@@ -6,6 +6,8 @@
 <h1 align="center"><img src="{{ url_for('static', filename = 'img/'+ head +'.svg') }}" class="filter-green" width="290" /></h1>
 <div class="content-section">
     <form action="" method="post" class="form" role="form" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
         {{ form.hidden_tag() }}
         <fieldset class="form-group">
             <div class="form-group">

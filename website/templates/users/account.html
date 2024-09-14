@@ -2,7 +2,6 @@
 {% block title %}User Page{% endblock %}
 
 {% block content %}
-
 <br />
 
 <div class="container readinglazy" align="center">
@@ -11,18 +10,16 @@
       <img src="{{ url_for('static', filename='img/my-account.svg') }}" width="250" class="filter-green" />
 
       <form method="POST" action="{{ url_for('auth.user_details') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <h3 align="center"></h3>
         <div class="form-group">
           <h1 style="margin-top:-15px;margin-bottom:15px;">
-            <p style="font-size: 80%;font-weight:700;opacity:0.5;margin-bottom:0px;">
-              User Id
-            </p>
+            <p style="font-size: 80%;font-weight:700;opacity:0.5;margin-bottom:0px;">User Id</p>
             {{user.email }}
           </h1>
         </div>
         <div class="form-group">
           <input type="hidden" id="useride" name="useride" value="{{user.id}}" />
-          <!-- <label for="first_name">Nick Name</label> -->
           <input
             type="text"
             class="form-control"
@@ -34,226 +31,229 @@
             value="{{ user.first_name }}"
           />
         </div>
-        <div class="form-group">
-          <!-- <label for="password_old">Old Password</label> -->
-          <input type="hidden" class="form-control" id="password_old" name="password_old" placeholder="Old Password" value="" />
-        </div>
-        <div class="form-group">
-          <!-- <label for="password1">New Password</label> -->
-          <input type="hidden" class="form-control" id="password1" name="password1" placeholder="New Password" value="" />
-        </div>
-        <div class="form-group">
-          <!-- <label for="password2">New Password (Confirm)</label> -->
-          <input type="hidden" class="form-control" id="password2" name="password2" placeholder="New Password (Confirm)" value="" />
-        </div>
         <br />
         <button type="submit" id="account_button" class="btn-demo btn-outline-dark btn-block" onclick="javascript:spinner();document.getElementById('account_button').style.color='#00EE00';">
           SUBMIT
           <div class="loader">
-            <div class="loading">
-            </div>
+            <div class="loading"></div>
           </div>
         </button>
       </form>
     </div>
-    <div class="col-12 justify-content-center text-center">
-      <br>
-
-      <div class="col-sm-12">
-        <!-- Inklúzia iných šablón -->
-        {% include 'pricing.html' %}
-      
-
-      </div>
-      <div class="col-sm-12 justify-content-center align-items-center">
-        <h4>Stored Payment Methods</h4>
-        <div id="payment-methods-container" class=" d-flex justify-content-center align-items-center">
-            <p>Loading payment methods...</p>
-        </div>
+    <br>
+    <br>
+    
+    <div id="subscription-container">
+      <!-- Placeholder for dynamic subscription content -->
     </div>
+    
+    <div id="pricing-template-content" style="display: none;">
+      <h3>No Subscription</h3>
+      <h1><a href="{{ url_for('views.pricing_list') }}">Make One</a></h1>
+      <br><br>
+      <!-- Placeholder for dynamic subscription content -->
+    </div>
+
+    <!-- Placeholder for Current Subscription -->
+    <div class="col-sm-12" id="current-subscription-container"></div>
+
+    <div class="col-12 justify-content-center text-center" id="adddata">
       <br>
-      <div class="col-sm-12 justify-content-center align-items-center">
+        <div class="col-sm-12 justify-content-center align-items-center">
+          <h4>Stored Payment Methods</h4>
+          <div id="payment-methods-container" class="d-flex justify-content-center align-items-center">
+            <p>Loading payment methods...</p>
+          </div>
+        </div>
+        <br>
+        <div class="col-sm-12 justify-content-center align-items-center">
           <h4>Payment history</h4>
           <div id="invoice-container">
-              <p>Loading invoices...</p>
+            <p>Loading invoices...</p>
           </div>
+        </div>
+        <br><br>
+        <h6>
+          <a class="btn2 nav-item nav-link" href="{{ url_for('auth.logout') }}">LOGOUT</a>
+        </h6>
       </div>
-    
-      <br>
-      <br>
-      <h6>
-        <a class="btn2 nav-item nav-link" href="{{ url_for('auth.logout') }}">LOGOUT</a>
-      </h6>
     </div>
-  </div>
 </div>
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-      console.log('Fetching Stripe data...'); // Debugging message
-  
-      function fetchStripeData() {
-          fetch('{{ url_for("auth.get_stripe_data") }}')
-              .then(response => {
-            //      console.log('Received response:', response); // Debugging message
-                  if (!response.ok) {
-                      throw new Error('HTTP error! Status: ' + response.status);
-                  }
-                  return response.json();
-              })
-              .then(data => {
-            //      console.log('Received data:', data); // Debugging message
-  
-                  if (data.error) {
-                      document.getElementById('invoice-container').innerHTML = `<p>${data.error}</p>`;
-                      document.getElementById('payment-methods-container').innerHTML = `<p>${data.error}</p>`;
-                      return;
-                  }
-  
-                  // Vykreslenie faktúr
-                  let invoiceHTML = '';
-                  data.invoices.forEach(invoice => {
-                      console.log('Processing invoice:', invoice); // Debugging message
-                      invoiceHTML += `<table border="1" cellpadding="5" cellspacing="0" class=" d-flex justify-content-center align-items-center"><tbody>`;
-                      if (invoice.lines && invoice.lines.data) {
-                          invoice.lines.data.forEach(item => {
-                              console.log('Processing line item:', item); // Debugging message
-                              invoiceHTML += `<tr class="table-row ">
-                                                  <td style="width:34%; text-align: left; margin: 4px; padding: 8px; border-radius: 20px 0 0 20px;">
-                                                      ${item.description.split('×')[1].split('(')[0].trim()}
-                                                  </td>
-                                                  <td style="width:28%; text-align:center; margin:4px; padding: 8px;">
-                                                      ${new Date(invoice.created * 1000).toLocaleDateString()}
-                                                  </td>
-                                                  <td style="width:28%; text-align:right; margin: 4px; padding: 8px;">
-                                                      ${(item.amount / 100).toFixed(2)} €
-                                                  </td>
-                                                  <td style="width:20%; text-align:center; margin-right: 8px; padding-right: 8px; border-radius: 0 20px 20px 0;">
-                                                      <a href="users/download_invoice/${invoice.id}" title="download invoice"><i class="fas fa-download"></i></a>
-                                                  </td>
-                                                </tr>`;
-                          });
-                      } else {
-                          invoiceHTML += `<tr><td colspan="4">No line items found for this invoice.</td></tr>`;
-                      }
-                      invoiceHTML += `</tbody></table>`;
-                  });
-                  document.getElementById('invoice-container').innerHTML = invoiceHTML;
-  
-                  // Vykreslenie platobných metód
-                  let paymentMethodsHTML = '';
-                  paymentMethodsHTML += `<table class="table table-bordered" stlye="border: 3px solid #4CAF50;">`;
+    console.log('Fetching Stripe data...'); // Debugging message
 
-                    
-                    data.payment_methods.forEach(method => {
-                        console.log('Processing payment method:', method); // Debugging message
-                        paymentMethodsHTML += `<tr class="d-flex justify-content-between align-items-center">`;
-                    
-                        // Ikona pre značku karty
-                        let cardIcon = `<i style="font-size: 163%;" class="fas fa-credit-card"></i>`;
-                        if (method.card.brand === 'visa') {
-                            cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-visa"></i>`;
-                        } else if (method.card.brand === 'mastercard') {
-                            cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-mastercard"></i>`;
-                        } else if (method.card.brand === 'amex') {
-                            cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-amex"></i>`;
-                        } else if (method.card.brand === 'discover') {
-                            cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-discover"></i>`;
-                        }
-                    
-                        // Vloženie dát do stĺpcov tabuľky
-                        paymentMethodsHTML += `<td>${cardIcon} </td>`;
-                        //paymentMethodsHTML += `<td>${cardIcon} ${method.card.brand.toUpperCase()}</td>`;
-                        paymentMethodsHTML += `<td>.... ${method.card.last4}</td>`;
-                        paymentMethodsHTML += `<td>${method.card.exp_month}/${method.card.exp_year}</td>`;
-                    
-                        // Tlačidlo na vymazanie karty
-                        paymentMethodsHTML += `<td><a href="#" onclick="deletePaymentMethod('${method.id}')" ><i class="fas fa-trash-alt"></i></a></td>`;
-                    
-                        paymentMethodsHTML += `</tr>`;
-                    });
-                    
-                    paymentMethodsHTML += `</tbody></table>`;
-                    
-  
-                  if (paymentMethodsHTML === '') {
-                      paymentMethodsHTML = '<p>No payment methods found for this customer...</p>';
-                  }
-  
-                  document.getElementById('payment-methods-container').innerHTML = paymentMethodsHTML;
-  
-              })
-              .catch(error => {
-                  console.error('Error loading invoices:', error); // Debugging message
-                  document.getElementById('invoice-container').innerHTML = `<p>Error loading invoices: ${error}</p>`;
-                  document.getElementById('payment-methods-container').innerHTML = `<p>Error loading payment methods: ${error}</p>`;
-              });
-      }
-  
-      // Funkcia na odstránenie platobnej metódy
-      window.deletePaymentMethod = function (paymentMethodId) {
-          fetch('{{ url_for("auth.delete_payment_method") }}', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'X-CSRFToken': '{{ csrf_token() }}'
-              },
-              body: JSON.stringify({ 'payment_method_id': paymentMethodId })
-          })
-          .then(response => {
-              if (!response.ok) {
-                  throw new Error('HTTP error! Status: ' + response.status);
+    function fetchStripeData() {
+      fetch('{{ url_for("auth.get_stripe_data") }}')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('HTTP error! Status: ' + response.status);
+          }
+          return response.json();
+        })
+        .then(data => {
+          const subscriptionContainer = document.getElementById('subscription-container');
+          const adddata = document.getElementById('adddata');
+          const invoiceContainer = document.getElementById('invoice-container');
+          const paymentMethodsContainer = document.getElementById('payment-methods-container');
+          const currentSubscriptionContainer = document.getElementById('current-subscription-container');
+          const pricingTemplateContent = document.getElementById('pricing-template-content');
+
+          if (!data.payment_methods){
+          paymentMethodsContainer.innerText='NO Data';
+          }
+          // Check if elements exist before manipulating
+          if (!subscriptionContainer || !invoiceContainer || !paymentMethodsContainer || !currentSubscriptionContainer) {
+            console.error('One or more required elements are missing.');
+           return;
+          }
+
+          let subscriptionHTML = '';
+          let imgProduct = '';
+          
+          if (data.error) {
+            invoiceContainer.innerHTML = `<p>${data.error}</p>`;
+            paymentMethodsContainer.innerHTML = `<p>${data.error}</p>`;
+            pricingTemplateContent.style.display = 'block';
+            adddata.style.display = 'none';
+            return;
+          }
+
+          if (data.subscriptions && data.subscriptions.length > 0 || data.subscriptions && data.subscriptions.length == 0)  {
+            const subscriptionData = data.subscriptions;
+            const firstSubscription = subscriptionData[0];
+
+            if (firstSubscription && firstSubscription.items && firstSubscription.items.data.length > 0) {
+              const firstItem = firstSubscription.items.data[0];
+              const customerId = firstSubscription.customer;
+              const priceId = firstItem.price.id;
+              
+              if (priceId === 'price_1O3vryKr9xveA3fnqYnskbdW') {
+                imgProduct = `<img src="{{ url_for('static', filename='img/manager.svg') }}" class="filter-green" width="100%" />`;
+              } else if (priceId === 'price_1O3vq1Kr9xveA3fnavSwPRzO') {
+                imgProduct = `<img src="{{ url_for('static', filename='img/player.svg') }}" class="filter-green" width="100%" />`;
               }
               
-              return response.json();
-          })
-          .then(data => {
-              if (data.success) {
-                  console.log('Payment method deleted successfully');
-                  fetchStripeData(); // Refresh the payment methods list
-              } else {
-                  console.error('Error deleting payment method:', data.error);
-              }
-          })
-          .catch(error => {
-              console.error('Error deleting payment method:', error);
-          });
-      }
-  
-      fetchStripeData(); // Initial fetch
-  });
+              subscriptionHTML += `
+                <div class="col-sm-12">
+                  <div class="product-card">
+                    <h4 style="font-size: 80%;line-height:86%;padding:0px;margin-top:10px;">My current subscription</h4>
+                    ${imgProduct}
+                    <form method="post" action="{{ url_for('auth.cancel_subscription') }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="subscription_id" value="${customerId}">
+                      <input type="hidden" name="product_id" value="${firstItem.price.product}">
+                      <button id="cancelsubscription" class="btn-reverse" type="submit" style="cursor: pointer;margin-left: 0px;margin-right: 5px;">Cancel Subscription</button>
+                    </form>
+                  </div>
+                </div>
+              `;
+              currentSubscriptionContainer.innerHTML = subscriptionHTML;
+            } else {
 
-  // Use the updated URL if you renamed the endpoint
-window.deletePaymentMethod = function (paymentMethodId) {
-  fetch('{{ url_for("auth.delete_payment_method") }}', {
-      method: 'POST',
-      headers: {
+              pricingTemplateContent.style.display = 'block';
+              //adddata.style.display = 'none';
+            }
+          } else {
+            // No subscription found, show the pricing template
+            pricingTemplateContent.style.display = 'block';
+            adddata.style.display = 'none';
+          }
+            // Render invoices
+            
+            let invoiceHTML = '';
+            data.invoices.forEach(invoice => {
+              invoiceHTML += `<table border="1" cellpadding="5" cellspacing="0" class="d-flex justify-content-center align-items-center">`;
+              if (invoice.lines && invoice.lines.data) {
+                invoice.lines.data.forEach(item => {
+                  invoiceHTML += `<tr class="table-row">
+                                      <td style="width:34%; text-align: left; margin: 4px; padding: 8px; border-radius: 20px 0 0 20px;">
+                                          ${item.description.split('×')[1].split('(')[0].trim()}
+                                      </td>
+                                      <td style="width:28%; text-align:center; margin:4px; padding: 8px;">
+                                          ${new Date(invoice.created * 1000).toLocaleDateString()}
+                                      </td>
+                                      <td style="width:28%; text-align:right; margin: 4px; padding: 8px;">
+                                          ${(item.amount / 100).toFixed(2)} €
+                                      </td>
+                                      <td style="width:20%; text-align:center; margin-right: 8px; padding-right: 8px; border-radius: 0 20px 20px 0;">
+                                          <a href="users/download_invoice/${invoice.id}" title="download invoice"><i class="fas fa-download"></i></a>
+                                      </td>
+                                    </tr>`;
+                });
+              } else {
+                invoiceHTML += `<tr><td colspan="4">No line items found for this invoice.</td></tr>`;
+              }
+              invoiceHTML += `</table>`;
+            });
+            invoiceContainer.innerHTML = invoiceHTML;
+
+            // Render payment methods
+            let paymentMethodsHTML = `<table class="table table-bordered"><tbody>`;
+
+            data.payment_methods.forEach(method => {
+              let cardIcon = `<i style="font-size: 163%;" class="fas fa-credit-card"></i>`;
+              if (method.card.brand === 'visa') {
+                cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-visa"></i>`;
+              } else if (method.card.brand === 'mastercard') {
+                cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-mastercard"></i>`;
+              } else if (method.card.brand === 'amex') {
+                cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-amex"></i>`;
+              } else if (method.card.brand === 'discover') {
+                cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-discover"></i>`;
+              }
+
+              paymentMethodsHTML += `<tr class="d-flex justify-content-between align-items-center">
+                                      <td>${cardIcon}</td>
+                                      <td>.... ${method.card.last4}</td>
+                                      <td>${method.card.exp_month}/${method.card.exp_year}</td>
+                                      <td><a href="#" onclick="deletePaymentMethod('${method.id}')"><i class="fas fa-trash-alt"></i></a></td>
+                                  </tr>`;
+            });
+
+            paymentMethodsHTML += `</tbody></table>`;
+            
+            paymentMethodsContainer.innerHTML = paymentMethodsHTML;
+
+        })
+        .catch(error => {
+          console.error('Error loading data:', error);
+          document.getElementById('pricing-template-content').style.display = 'block'; // Show error message
+        });
+    }
+
+    // Function to delete payment method
+    window.deletePaymentMethod = function (paymentMethodId) {
+      fetch('{{ url_for("auth.delete_payment_method") }}', {
+        method: 'POST',
+        headers: {
           'Content-Type': 'application/json',
           'X-CSRFToken': '{{ csrf_token() }}'
-      },
-      body: JSON.stringify({ 'payment_method_id': paymentMethodId })
-  })
-  .then(response => {
-      if (!response.ok) {
+        },
+        body: JSON.stringify({ 'payment_method_id': paymentMethodId })
+      })
+      .then(response => {
+        if (!response.ok) {
           throw new Error('HTTP error! Status: ' + response.status);
-      }
-      return response.json();
-  })
-  .then(data => {
-      if (data.success) {
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.success) {
           console.log('Payment method deleted successfully');
           fetchStripeData(); // Refresh the payment methods list
-      } else {
+        } else {
           console.error('Error deleting payment method:', data.error);
-      }
-  })
-  .catch(error => {
-      console.error('Error deleting payment method:', error);
+        }
+      })
+      .catch(error => {
+        console.error('Error deleting payment method:', error);
+      });
+    }
+
+    fetchStripeData(); // Initial fetch
   });
-}
-  </script>
-  
-
-
+</script>
 
 {% endblock %}

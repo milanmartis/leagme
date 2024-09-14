@@ -1121,12 +1121,14 @@ def season_player_delete(player, season):
 def pricing_list():
     
     
-    products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
+    # products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
     orders3 = Order.query.filter(Order.user_id==current_user.id).all()
     print(orders3)
+    cards = PaymentCard.query.filter(PaymentCard.user_id==current_user.id).all()
+    products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
+    orders = Order.query.filter(Order.user_id==current_user.id).all()
 
-    return render_template("pricing.html", orders3=orders3, products=products, user=current_user, adminz=adminz)
-
+    return render_template("pricing.html",  orders3=orders3, products=products, adminz=adminz, checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), user=current_user, cards=cards, orders=orders)
 
 @views.route('/season', methods=['GET', 'POST'])
 def season_list():

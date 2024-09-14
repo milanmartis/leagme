@@ -99,8 +99,8 @@ def create_app():
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)
 
+    from .models import User, ProductCategory, Product, Role, user_datastore
 
-    from .models import User, Role, user_datastore
 
     # Configure Google OAuth Blueprint
     google_blueprint = make_google_blueprint(
@@ -172,6 +172,18 @@ def create_app():
     def datetimeformat(value, format='%d/%m/%Y'):
         return datetime.fromtimestamp(value).strftime(format)
     
+    @app.route('/notify-disconnect', methods=['POST'])
+    def notify_disconnect():
+        data = request.get_json()
+        message = data.get('message', 'An unknown issue occurred.')
+        
+        # Použijeme flash správu na upozornenie používateľa
+        flash(message, category='error')
+        
+        return jsonify({'status': 'success', 'message': 'Notification received'}), 200
+    
+
+
     
     @app.errorhandler(CSRFError)
     def handle_csrf_error(e):
@@ -190,4 +202,6 @@ def create_app():
     def load_user(user_id):
         return User.query.get(int(user_id))
 
+
     return app
+

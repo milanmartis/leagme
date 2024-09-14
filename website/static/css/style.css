@@ -194,6 +194,10 @@ input[type=button] {
     /* Add any other properties that are changed on hover */
 }
 
+p{
+    color:#4d4d4d;
+}
+
 h2 {
     color: #0ca00c;
     text-transform: uppercase;

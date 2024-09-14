@@ -91,7 +91,8 @@
                     const response = await fetch('/season/{{season}}/search_users', {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken
                         },
                         body: JSON.stringify({ query: query })
                     });
@@ -126,7 +127,8 @@
                 const response = await fetch('/season/add_user_to_season', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
                     },
                     body: JSON.stringify({ user_id: user_id, season_id: season_id })
                 });
@@ -204,6 +206,10 @@
                             data: JSON.stringify(data),
                             contentType: 'application/json',
                             dataType: 'json',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': csrfToken
+                            },
                             success: function(response) {
                                 console.log(response);
                                 refreshTable(); // Opätovné načítanie tabuľky po úspešnej aktualizácii
@@ -229,6 +235,10 @@
                 url: '/season/delete_row',
                 data: JSON.stringify(data),
                 contentType: 'application/json',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
                 dataType: 'json',
                 success: function(response) {
                     tr.fadeOut(function() {
@@ -260,6 +270,8 @@ aria-hidden="true"
         class=""
         method="POST"
       >
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
         <button class="btn2 btn-sm" style="font-weight: 700;padding-left: 10px;padding-right: 10px;padding-top: 4px;"  type="submit" value="OK" />DELETE</button>
       </form>
       <button style="font-weight: 700;" type="button" class="btn3 btn-sm" data-bs-dismiss="modal">
@@ -280,7 +292,8 @@ aria-hidden="true"
             const response = await fetch('/season/add_user_to_season', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
                 },
                 body: JSON.stringify({ user_id: user_id, season_id: season_id })
             });

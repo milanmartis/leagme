@@ -459,52 +459,61 @@ def add_order(user_id,product_id):
         return redirect(url_for('auth.user_details'))
 
     
-    # return jsonify({'message': 'Karta úspešne pridaná'})
 @auth.route('/user/cancel_subscription', methods=['POST'])
+@login_required
 def cancel_subscription():
     try:
-        # Get the subscription ID from the request
-        subscription_id = request.form['subscription_id']
-        produc_id = request.form['produc_id']
-        subscription = stripe.Subscription.retrieve(subscription_id)
-        subscription.delete()
-        print(produc_id)
-        print('--------------------')
+        # Get the customer ID from the request
+        customer_id = request.form.get('subscription_id')
+        product_id = request.form.get('product_id')
+
+        # Ensure the customer ID is provided
+        if not customer_id:
+            flash('Customer ID is missing.', category='error')
+            return redirect(url_for('auth.user_details'))
         
-        # Default role_to_delete
+        # List subscriptions for the customer
+        subscriptions = stripe.Subscription.list(customer=customer_id, limit=1)
+
+        if not subscriptions.data:
+            flash('No subscription found for this customer.', category='error')
+            return redirect(url_for('auth.user_details'))
+
+        # Get the first subscription from the list
+        subscription = subscriptions.data[0]
+
+        # Cancel the subscription
+        canceled_subscription = stripe.Subscription.delete(subscription.id)
+
+        # Determine the role to delete based on the product ID
         role_to_delete = None
-        
-        if produc_id == '45':
+        if product_id == 'prod_OrfAsMfcZTCPMF':
             role_to_delete = 'Player'
-        elif produc_id == '46':
+        elif product_id == 'prod_OrfCVSsy37ZOjH':
             role_to_delete = 'Manager'
-        
-        if role_to_delete is not None:
+
+        # Remove the role from the user
+        if role_to_delete:
             user = User.query.get(current_user.id)
             role = Role.query.filter_by(name=str(role_to_delete)).first()
             if role:
                 user.roles.remove(role)
                 db.session.commit()
 
-        user = User.query.get(current_user.id)
-        user.stripe_subscription_id = ''
-        
-        # Update orders (assuming this should be a loop or query, not a direct update)
+        # Mark all user's orders as canceled
         orders = Order.query.filter(Order.user_id == current_user.id).all()
         for order in orders:
             order.storno = True
         
         db.session.commit()
 
-        # You can also update your database to reflect the canceled subscription
-        # For example, mark the subscription as canceled in your database
-
         flash('Subscription canceled successfully.', category='success')
         return redirect(url_for('auth.user_details'))
 
     except Exception as e:
-        # Handle other errors
-        return str(e)
+        # Handle errors
+        flash(f'Error cancelling subscription: {str(e)}', category='error')
+        return redirect(url_for('auth.user_details'))
 
 
 
@@ -535,21 +544,33 @@ def make_order():
         product_id = data['product_id']
         amount = data['amount']  # Toto by mal byť price_id, ak používate Stripe pre predplatné
         role_name = data['role_name']
+      
+        customer_id = current_user.stripe_subscription_id  # Retrieve the customer's Stripe ID from the user
+  
+        
+        if not customer_id:
+            # If not, create a new Stripe customer
+            customer = stripe.Customer.create(
+                email=current_user.email,  # Use the user's email to create the customer
+                payment_method=payment_method_id,
+                invoice_settings={
+                    'default_payment_method': payment_method_id,
+                },
+            )
 
-        # Vytvorenie Stripe zákazníka
-        customer = stripe.Customer.create(
-            email=email,
-            payment_method=payment_method_id,
-            invoice_settings={
-                'default_payment_method': payment_method_id,
-            },
-        )
+            # Store the newly created customer ID in the user's profile
+            current_user.stripe_subscription_id = customer.id
+            db.session.commit()  # Save the user profile with the new Stripe customer ID
 
-        # Vytvorenie predplatného
+        else:
+            # If a customer ID already exists, retrieve the customer from Stripe
+            customer = stripe.Customer.retrieve(customer_id)
+
+        # Create the subscription for the retrieved or newly created customer
         subscription = stripe.Subscription.create(
             customer=customer.id,
-            items=[{'price': amount}],  # Použite price_id, nie konkrétnu sumu
-            expand=['latest_invoice.payment_intent']  # Zabezpečí, že payment_intent bude dostupný
+            items=[{'price': amount}],  # Use the price ID (not the amount) from your Stripe dashboard
+            expand=['latest_invoice.payment_intent']  # Expand the payment intent for further details
         )
 
         payment_intent = subscription.latest_invoice.payment_intent
@@ -559,14 +580,15 @@ def make_order():
             return jsonify({
                 'requires_action': True,
                 'payment_intent_client_secret': payment_intent.client_secret,
-                'subscription_id': subscription.id,
+                'subscription_id': customer.id,
                 'product_id': product_id,
-                'role_name': role_name
+                'role_name': role_name,
+                'customer_id': customer.id
             })
 
         if payment_intent.status == 'succeeded':
             # Platba bola úspešná bez potreby 3D Secure overenia
-            save_order_to_database(user_id, product_id, subscription.id, role_name)
+            save_order_to_database(user_id, product_id, subscription.id, role_name, customer.id)
             flash("Thanks for your purchase.", category="success")
             return jsonify({'subscription_id': subscription.id})
 
@@ -576,9 +598,9 @@ def make_order():
         return jsonify({'error': str(e)}), 400
 
 
-def save_order_to_database(user_id, product_id, subscription_id, role_name):
+def save_order_to_database(user_id, product_id, subscription_id, role_name, customer_id):
     # Vytvorenie novej objednávky
-    new_order = Order(produc_id=product_id, quantity=1, amount=1, user_id=user_id, stripe_subscription_id=subscription_id)
+    new_order = Order(produc_id=product_id, quantity=1, amount=1, user_id=user_id, stripe_subscription_id=customer_id)
     db.session.add(new_order)
 
     # Pridanie roly užívateľovi
@@ -586,7 +608,7 @@ def save_order_to_database(user_id, product_id, subscription_id, role_name):
     role = Role.query.filter_by(name=role_name).first()
     if role:
         user.roles.append(role)
-        user.stripe_subscription_id = subscription_id
+        user.stripe_subscription_id = customer_id
     db.session.commit()
 
 
@@ -599,8 +621,9 @@ def save_order():
         product_id = data['product_id']
         subscription_id = data['subscription_id']
         role_name = data['role_name']
+        customer_id = data['customer_id']
 
-        save_order_to_database(user_id, product_id, subscription_id, role_name)
+        save_order_to_database(user_id, product_id, subscription_id, role_name, customer_id)
         return jsonify({'success': True})
 
     except Exception as e:
@@ -691,37 +714,13 @@ def user_details():
         elif nickname:
             flash("User name already exists.", category="error")
         else:
-            if password1 != '':
-                try:
-                    ph.verify(user.password, password_old)
-                    
-                    if password1 != password2:
-                        flash("New passwords don't match", category="error")
-                    elif password_old == password2:
-                        flash("New password must be different", category="error")
-                    elif len(password1) < 7:
-                        flash("New password must be at least 7 chars", category="error")
-                    else:
-                        # Hashovanie nového hesla pomocou argon2
-                        user.password = ph.hash(password1)
-                        user.first_name = first_name
-                        session["user_name"] = first_name
+            user.first_name = first_name
+            session["user_name"] = first_name
+            db.session.commit()
+            login_user(user, remember=True)
 
-                        db.session.commit()
-                        login_user(user, remember=True)
-
-                        flash("Account updated!", category="success")
-                        return redirect(url_for('auth.user_details'))
-                except VerifyMismatchError:
-                    flash('Old password is not correct!', category='error')
-            else:
-                user.first_name = first_name
-                session["user_name"] = first_name
-                db.session.commit()
-                login_user(user, remember=True)
-
-                flash("Account updated!", category="success")
-                return redirect(url_for('auth.user_details'))
+            flash("Account updated!", category="success")
+            return redirect(url_for('auth.user_details'))
 
     # Stránka sa načíta bez Stripe dát
     cards = PaymentCard.query.filter(PaymentCard.user_id==current_user.id).all()
@@ -746,48 +745,45 @@ def delete_payment_method():
 @auth.route('/account/stripe_data', methods=['GET'])
 @login_required
 def get_stripe_data():
-    customer_email = current_user.email
+    customer_id = current_user.stripe_subscription_id  # Predpokladám, že máte stripe_customer_id uložené v používateľskom objekte
+    # print(customer_id)
+    if not customer_id:
+        print("No Stripe subscription ID found for the user.")
+        return jsonify({"error": "No subscription ID found."}), 400
     try:
-        # Vyhľadajte všetkých zákazníkov podľa e-mailu
-        customers = stripe.Customer.list(email=customer_email)
-
-        if len(customers.data) == 0:
-            return jsonify({"error": "Customer not found."}), 404
-
+        # Získanie všetkých faktúr pre zákazníka
         all_invoices = []
-        all_payment_methods = []
+        invoices = stripe.Invoice.list(customer=customer_id, limit=100, expand=['data.lines'])
 
-        # Prejdeme všetkých zákazníkov so zadaným e-mailom
-        for customer in customers.data:
-            customer_id = customer.id
+        # Pridanie načítaných faktúr
+        all_invoices.extend(invoices.data)
 
-            # Načítanie faktúr pre každého zákazníka
-            invoices = stripe.Invoice.list(customer=customer_id, limit=100, expand=['data.lines'])
+        # Načítanie všetkých strán faktúr (ak je viac než 100)
+        while invoices.has_more:
+            invoices = stripe.Invoice.list(customer=customer_id, limit=100, starting_after=invoices.data[-1].id, expand=['data.lines'])
             all_invoices.extend(invoices.data)
 
-            # Načítanie všetkých strán faktúr (ak je viac než 100)
-            while invoices.has_more:
-                invoices = stripe.Invoice.list(customer=customer_id, limit=100, starting_after=invoices.data[-1].id, expand=['data.lines'])
-                all_invoices.extend(invoices.data)
+        # Načítanie platobných metód pre zákazníka
+        payment_methods = stripe.PaymentMethod.list(customer=customer_id, type="card")
+        all_payment_methods = payment_methods.data
 
-            # Načítanie platobných metód pre každého zákazníka
-            payment_methods = stripe.PaymentMethod.list(customer=customer_id, type="card")
-            all_payment_methods.extend(payment_methods.data)
+        # Načítanie predplatných pre zákazníka
+        subscriptions = stripe.Subscription.list(customer=customer_id)
 
         # Pripraviť odpoveď so Stripe dátami
         stripe_data = {
             'invoices': [invoice.to_dict() for invoice in all_invoices],
-            'payment_methods': [pm.to_dict() for pm in all_payment_methods]
+            'payment_methods': [pm.to_dict() for pm in all_payment_methods],
+            'subscriptions': [subscription.to_dict() for subscription in subscriptions.data]
         }
 
+        # print(stripe_data)  # Debugging output
         return jsonify(stripe_data)
 
     except Exception as e:
         print(f"Error fetching data from Stripe: {str(e)}")  # Debugging output
         return jsonify({"error": str(e)}), 500
-
-
-    
+        
 
     
 @auth.route('/users/add_payment_method', methods=['GET', 'POST'])

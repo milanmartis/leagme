@@ -4,7 +4,7 @@
   // /season/delete-player/<player>/<season>
 
 
-  const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+ const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
 
 function getOutPlyer(season, player, index){

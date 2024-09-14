@@ -55,6 +55,34 @@
     <meta property="og:site_name" content="Leagme.com" />
   </head>
   <body>
+
+    <!-- Detekcia pripojenia -->
+    <script>
+        function checkConnection() {
+            if (!navigator.onLine) {
+              //  alert('You have lost connection. Please check your internet connection.');
+            }
+        }
+
+        window.addEventListener('offline', function() {
+            checkConnection();
+            fetch('/notify-disconnect', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': "{{ csrf_token() }}"
+                },
+                body: JSON.stringify({message: 'Connection lost'})
+            })
+            .catch(function(error) {
+                console.error('Failed to notify server:', error);
+            });
+        });
+
+        window.addEventListener('online', function() {
+            console.log('Connection restored.');
+        });
+    </script>
     <!--
 
       <div class="popup" id="error-popup">
