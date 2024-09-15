@@ -201,11 +201,15 @@
         var seasonId = '{{ seas.id }}';
         var roundId = '{{ round.id }}';
         var url = `/tournament/season/${seasonId}/round/${roundId}`;
-    
+        var csrf_token = "{{ csrf_token() }}";
         $.ajax({
             url: url,
             type: 'GET',
             dataType: 'json',
+            beforeSend: function(xhr) {
+              // Nastavení CSRF tokenu do hlavičky požadavku
+              xhr.setRequestHeader('X-CSRFToken', csrf_token);
+            },
             success: function(data) {
               //alert(data.length);
                 // Dáta boli úspešne načítané

@@ -168,7 +168,7 @@ def logout():
     logout_user()
     session["name"] = None
     session['logged_in'] = False
-    return redirect(url_for('auth.login'))
+    return redirect(url_for('views.index'))
 
 
 

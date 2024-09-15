@@ -94,6 +94,24 @@ def is_power_of_two(form, field):
 
 # print(current_user)
 
+
+
+
+@views.route('/welcome', methods=['GET', 'POST'])
+# @login_required
+def welcome():
+    seasons = db.session.query(Season).filter(
+    or_(
+        Season.visible == True    )
+    ).all()
+    
+    return render_template("welcome.html", seasons=seasons)
+    
+    
+
+
+
+
 @views.route('/', methods=['GET', 'POST'])
 # @login_required
 def index():
@@ -106,7 +124,7 @@ def index():
     
     if not current_user.is_authenticated:
         # Ak nie je používateľ prihlásený, presmerujte ho na prihlasovaciu stránku
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('views.welcome'))
 
     # print('-----------------')
     # print(current_user.has_roles)
@@ -1116,16 +1134,22 @@ def season_player_delete(player, season):
 
 @views.route('/pricing', methods=['GET', 'POST'])
 def pricing_list():
-    
-    
-    # products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
-    orders3 = Order.query.filter(Order.user_id==current_user.id).all()
-    print(orders3)
-    cards = PaymentCard.query.filter(PaymentCard.user_id==current_user.id).all()
-    products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
-    orders = Order.query.filter(Order.user_id==current_user.id).all()
+    customer_id = current_user.stripe_subscription_id  # Predpokladám, že máte stripe_customer_id uložené v používateľskom objekte
+    subscriptions = stripe.Subscription.list(customer=customer_id)
+    if not subscriptions:
+       
+        # products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
+        orders3 = Order.query.filter(Order.user_id==current_user.id).all()
+        print(orders3)
+        cards = PaymentCard.query.filter(PaymentCard.user_id==current_user.id).all()
+        products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
+        orders = Order.query.filter(Order.user_id==current_user.id).all()
 
-    return render_template("pricing.html",  orders3=orders3, products=products, adminz=adminz, checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), user=current_user, cards=cards, orders=orders)
+        return render_template("pricing.html",  orders3=orders3, products=products, adminz=adminz, checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), user=current_user, cards=cards, orders=orders)
+    else:
+        return redirect(url_for('auth.user_details'))
+
+
 
 @views.route('/season', methods=['GET', 'POST'])
 def season_list():

@@ -1,0 +1,62 @@
+{% extends 'base.html' %} {% block title %}
+  LeagMe
+{% endblock %} {% block content %}
+<br>
+<center>
+    <img
+    src="{{ url_for('static', filename='img/logo-head.svg') }}"
+    class="filter-green"
+    width="273"
+  />
+</center>
+
+<h4 style="font-size:103%;padding:20px;folor:#fff;opacity:1;">
+    Welcome to our site! Sign in to create groups of players who can compete against each other in exciting matches. You'll be able to view leaderboards, tournaments, and tournament brackets – all while enjoying loads of fun. Join us now and let the games begin!
+</h4>
+  <center><h3 class="neon-text" style="font-size: 99%; font-weight: 700;">OPEN</h3></center>
+  <h1 style="margin-top: -40px;" align="center"><img src="{{ url_for('static', filename = 'img/seasons.svg') }}" class="filter-green" width="150" /></h1>
+  {% if seasons %}
+    <div class="container readinglazy" align="center">
+      <div class="row" style="display:block;max-width:320px; text-align: center;">
+        {% for season in seasons %}
+          <div valign="middle" align="center" class="col-12">
+            {% if season.visible == true %}
+            {% if season.open == true %}
+            <a href="{{ url_for('views.home', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none">{{ season.name }}</a>
+            {% else %}
+            <a href="{{ url_for('views.season_manager', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none">{{ season.name }}</a>
+            {% endif %}
+            {% else %}
+            {% if season.open == true %}
+            <a href="{{ url_for('views.home', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none" style="opacity:0.6;">{{ season.name }}</a>
+            {% else %}
+            <a href="{{ url_for('views.season_manager', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none" style="opacity:0.6;">{{ season.name }}</a>
+            {% endif %}
+
+            {% endif %}
+
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% else %}
+    <div class="container">
+      <div class="row">
+        <div class="col">
+          <h1>NO SEASON YET</h1>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <br>
+  <br>
+
+<h4><a class="btn-demo btn-outline-dark btn-block" href="login">Login</a>
+<a class="btn-demo btn-outline-dark btn-block" href="register">Join Us</a></h4>
+
+  <br>
+  <br>
+
+
+{% endblock %}
