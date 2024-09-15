@@ -685,9 +685,9 @@ input[type="textarea"] {
 
 .btn-user.focus,
 .btn-result:focus {
-    background-color: #1d1d1d;
+    background-color: #00EE00;
     border: 2px solid #00EE00;
-    color: #00EE00;
+    color: #1d1d1d;
     /* color: #00EE00; */
     outline: 0;
     box-shadow: none !important;
