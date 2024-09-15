@@ -24,6 +24,8 @@ def show_name_table(season, round):
 
 ########################## SHOW TABLE IN GROUPS
 def show_table(season, round):
+    season_obj = db.session.query(Season).filter(Season.id == season).first()
+
 
     valz = []
 
@@ -38,7 +40,7 @@ def show_table(season, round):
             (
                 and_(
                     (user_duel.c.checked == 'true'),
-                    (user_duel.c.points == 2)
+                    (user_duel.c.points == int(season_obj.winner_points))
                 ), 1
             ),
             else_=0
@@ -123,6 +125,8 @@ def show_table(season, round):
 ########################## SHOW TABLE ALL
 
 def show_table_all(season):
+    season_obj = db.session.query(Season).filter(Season.id == season).first()
+
     valz2 = []
     # season = 1
     # group = 1
@@ -138,7 +142,7 @@ def show_table_all(season):
             (and_(
                 (user_duel.c.checked == 'true'),
                 or_(
-                    (user_duel.c.points == 2),
+                    (user_duel.c.points == int(season_obj.winner_points)),
                 )
             ), 1)
         ,

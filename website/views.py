@@ -530,7 +530,7 @@ def update_duel2():
     try:
         duelResult = json.loads(request.data)
         data = duelResult["duelResult"]
-        print(data)
+        # print(data)
         data = data.split(",")
         duel = Duel.query.get(int(data[1]))
         season = Season.query.filter_by(id=duel.season_id).first()
@@ -636,9 +636,6 @@ def update_duel2():
 
                 if existing_record:
                     # Záznam existuje, skontrolujte, či user_id zodpovedá new_user_id
-                    print("SSSSSSSSSSSSSSSSSSSSSSSSSSS")
-                    print(new_user_id)
-                    print("SSSSSSSSSSSSSSSSSSSSSSSSSSS")
                     
                     if existing_record.user_id != new_user_id:
                         # Ak user_id sa líši, aktualizujte záznam
@@ -1030,7 +1027,7 @@ def tournament_new():
         ## season_from=form.season_from.data, 
         if not season:
                 new_season = Season(name=form.name.data, no_group=1, 
-                                    winner_points=3, open=form.open.data, user_id=current_user.id, min_players=form.min_players.data,season_type=season_type)
+                                    winner_points=3, open=form.open.data, visible=form.visible.data, user_id=current_user.id, min_players=form.min_players.data,season_type=season_type)
                 db.session.add(new_season)
                 db.session.commit()
                 return redirect(url_for('views.season_manager', season=new_season.id))
@@ -1062,7 +1059,7 @@ def season_new():
         ## season_from=form.season_from.data, 
         if not season:
                 new_season = Season(name=form.name.data, no_group=form.no_group.data, 
-                                    winner_points=form.winner_points.data, open=form.open.data, user_id=current_user.id, min_players=form.min_players.data,season_type=season_type)
+                                    winner_points=form.winner_points.data, open=form.open.data, visible=form.visible.data ,user_id=current_user.id, min_players=form.min_players.data,season_type=season_type)
                 db.session.add(new_season)
                 db.session.commit()
                 return redirect(url_for('views.season_manager', season=new_season.id))
