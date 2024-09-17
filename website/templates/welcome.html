@@ -2,6 +2,29 @@
   LeagMe
 {% endblock %} {% block content %}
 <br>
+<style scope>
+  .center-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px; /* Space between the cards */
+    padding: 10px;
+  }
+  
+  .card {
+    flex: 1 1 250px; /* Flex-grow: 1, Flex-shrink: 1, Flex-basis: 300px */
+    max-width: 300px; /* Optional: limit the maximum width */
+    text-align: center;
+    padding: 10px;
+    border: 3px solid #4CAF50;
+    border-radius: 8px;
+    background-color: transparent;
+  }
+  
+  .flex {
+    text-align: center; /* Vycentruje text uvnitř <h4> */
+  }
+</style>
 <center>
     <img
     src="{{ url_for('static', filename='img/logo-head.svg') }}"
@@ -9,45 +32,42 @@
     width="273"
   />
 </center>
-
-<h4 style="font-size:103%;padding:20px;folor:#fff;opacity:1;">
+<br>
+<div class="center-container">
+  <h4 class="flex" style="font-size:103%; padding:20px; opacity:1; max-width: 480px;">
     Welcome to our site! Sign in to create groups of players who can compete against each other in exciting matches. You'll be able to view leaderboards, tournaments, and tournament brackets – all while enjoying loads of fun. Join us now and let the games begin!
-</h4>
-  <center><h3 class="neon-text" style="font-size: 99%; font-weight: 700;">OPEN</h3></center>
-  <h1 style="margin-top: -40px;" align="center"><img src="{{ url_for('static', filename = 'img/seasons.svg') }}" class="filter-green" width="150" /></h1>
-  {% if seasons %}
-    <div class="container readinglazy" align="center">
-      <div class="row" style="display:block;max-width:320px; text-align: center;">
-        {% for season in seasons %}
-          <div valign="middle" align="center" class="col-12">
-            {% if season.visible == true %}
-            {% if season.open == true %}
-            <a href="{{ url_for('views.home', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none">{{ season.name }}</a>
-            {% else %}
-            <a href="{{ url_for('views.season_manager', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none">{{ season.name }}</a>
-            {% endif %}
-            {% else %}
-            {% if season.open == true %}
-            <a href="{{ url_for('views.home', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none" style="opacity:0.6;">{{ season.name }}</a>
-            {% else %}
-            <a href="{{ url_for('views.season_manager', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none" style="opacity:0.6;">{{ season.name }}</a>
-            {% endif %}
+  </h4>
+</div>
+<div style="display: flex;flex-wrap: wrap;justify-content: center;">
+  <p><button onclick="javascript:location.href='{{ url_for('views.business_conditions') }}';" class="btn btn-sm createforms2" style="padding: 20px;"/>Demo</button></p>
+</div>
+<div class="center-container" onclick="javascript:location.href='{{ url_for('views.business_conditions') }}';">
+  <h4>
+    <img src="{{ url_for('static', filename = 'img/subscribe-as.svg') }}" class="filter-green" width="150" />
+  </h4>
+  </div>
+<div class="center-container" onclick="javascript:location.href='{{ url_for('views.business_conditions') }}';">
+  <div class="card">
+    <h4>
+      <img src="{{ url_for('static', filename = 'img/player.svg') }}" class="filter-green" width="250" />
+      <p>Access to any season</p>
+      <p>Email notification</p>
+    </h4>
+  </div>
+  
+  <div class="card">
+    <h4>
+      <img src="{{ url_for('static', filename = 'img/manager.svg') }}" class="filter-green" width="250" />
+      <p>Access to any season</p>
+      <p>Creating a manage own season</p>
+      <p>Email notification</p>
+    </h4>
+  </div>
+</div>
 
-            {% endif %}
 
-          </div>
-        {% endfor %}
-      </div>
-    </div>
-  {% else %}
-    <div class="container">
-      <div class="row">
-        <div class="col">
-          <h1>NO SEASON YET</h1>
-        </div>
-      </div>
-    </div>
-  {% endif %}
+<br>
+
 
   <br>
   <br>

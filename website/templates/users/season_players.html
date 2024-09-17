@@ -52,7 +52,7 @@
     {% if seasons %}
     <h2>{{ seasons[0][0].name }}</h2>
     {% else %}
-        <h4>No Rounds available.</h4>
+        <h4>No Rounds available</h4>
     {% endif %}
 <table class="table-sortable" id="userSeasonTable">
     <thead style="margin-bottom:20px;">
@@ -69,7 +69,7 @@
 </table>
 <br><br>
 <form id="addUserToSeasonForm">
-    <label for="userSelect"><h4>Search User to Add</h4></label>
+    <label for="userSelect"><h4>Search User by Name or City</h4></label>
     <br>
     <input type="text" id="userSearch" name="user_search" placeholder="SEARCH">
     <button type="button" class="btn-reverse" id="addUserToSeasonButton" style="margin-top:8px;width:88px;display:none;"></button>
@@ -86,43 +86,45 @@
     $(document).ready(function() {
         $('#userSearch').on('input', async function() {
             var query = $(this).val();
-            if (query.length>1){
-
-                    const response = await fetch('/season/{{season}}/search_users', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': csrfToken
-                        },
-                        body: JSON.stringify({ query: query })
-                    });
-
-                    if (response.ok) {
-                        const users = await response.json();
-                        var userSearchResultsHTML = '';
-                        for (var i = 0; i < users.length; i++) {
-                            userSearchResultsHTML += '<div class="user-result" style="width:233px;cursor:pointer;border-bottom:1px solid rgba(0,238,0,0.3);" data-id="' + users[i].id + '"><h4>' + users[i].first_name + '</h4></div>';
-                        }
-                        $('#userSearchResults').html(userSearchResultsHTML);
-                    } else {
-                        $('#userSearchResults').html('Chyba pri vyhľadávaní');
+            if (query.length > 1) {
+                const response = await fetch('/season/{{season}}/search_users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+    
+                if (response.ok) {
+                    const users = await response.json();
+                    var userSearchResultsHTML = '';
+                    for (var i = 0; i < users.length; i++) {
+                        userSearchResultsHTML += '<div class="user-result" style="width:233px;cursor:pointer;border-bottom:1px solid rgba(0,238,0,0.3);" data-id="' + users[i].id + '"><h4>' + users[i].first_name + '</h4></div>';
                     }
-
+                    $('#userSearchResults').html(userSearchResultsHTML);
+                } else {
+                    $('#userSearchResults').html('Chyba pri vyhľadávaní');
+                }
             }
         });
-
+    
+        // Udalosť kliknutia na položky výsledkov vyhľadávania
         $(document).on('click', '.user-result', function() {
             var userId = $(this).data('id');
-            $('#userSearch').val($(this).text());
-            $('#addUserToSeasonButton').text('Add player');
-            $('#addUserToSeasonButton').css('display', 'block').data('userId', userId);
-            $('#userSearchResults').html('');
+          //  $('#userSearch').val($(this).text());  // Nastaví text vstupného poľa na meno používateľa
+           // $('#addUserToSeasonButton').text('Add player');
+            $('#addUserToSeasonButton').css('display', 'block').data('userId', userId); // Zobrazuje tlačidlo a pridáva data atribút
+            $('#userSearchResults').html('');  // Vymaže výsledky vyhľadávania
+    
+            // Automaticky spustí formulár, keď je tlačidlo zobrazené
+           $('#addUserToSeasonButton').trigger('click');
         });
-
+    
         $('#addUserToSeasonButton').click(async function() {
             var user_id = $(this).data('userId');
             var season_id = {{season}};
-
+    
             try {
                 const response = await fetch('/season/add_user_to_season', {
                     method: 'POST',
@@ -132,22 +134,25 @@
                     },
                     body: JSON.stringify({ user_id: user_id, season_id: season_id })
                 });
-
+    
                 if (response.ok) {
                     const data = await response.json();
-           
-                    refreshTable();
-                    $('#addUserToSeasonButton').css('display','none');
-                    $('#userSearch').val('');
-
+                   // alert(data.message);  // Zobrazí správu o úspechu
+                    refreshTable();  // Aktualizuje tabuľku hráčov
+                    $('#addUserToSeasonButton').css('display', 'none');  // Skryje tlačidlo po pridaní
+                    $('#userSearch').val('');  // Vyprázdni pole vyhľadávania
                 } else {
                     const errorData = await response.json();
-                   // alert('Chyba: ' + errorData.error);
+                    alert('Chyba: ' + errorData.error);  // Zobrazí chybu, ak sa vyskytla
                 }
             } catch (error) {
                 console.error('Chyba:', error);
             }
         });
+
+    
+
+
 
         function refreshTable() {
             $.get('/season/{{season}}/get_user_seasons', function(data) {
@@ -283,11 +288,12 @@ aria-hidden="true"
 </div>
 
 </div>
-<script>
-    document.getElementById('addUserToSeasonButton').addEventListener('click', async function() {
-        var user_id = $('#userSelect').val();
-        var season_id = $('#seasonSelect').val();
-  
+
+<!-- <script>
+    $('#addUserToSeasonButton').click(async function() {
+        var user_id = $(this).data('userId');  // Uistite sa, že správne získavate user_id
+        var season_id = {{season}};  // Sezona ID by malo byť definované v šablóne
+    
         try {
             const response = await fetch('/season/add_user_to_season', {
                 method: 'POST',
@@ -295,19 +301,20 @@ aria-hidden="true"
                     'Content-Type': 'application/json',
                     'X-CSRFToken': csrfToken
                 },
-                body: JSON.stringify({ user_id: user_id, season_id: season_id })
+                body: JSON.stringify({ user_id: user_id, season_id: season_id })  // Uistite sa, že tieto hodnoty sú správne
             });
-  
+    
             if (response.ok) {
                 const data = await response.json();
-                alert(data.message);
+                //alert(data.message);
             } else {
                 const errorData = await response.json();
-               // alert('Chyba: ' + errorData.error);
+                //alert('Chyba: ' + errorData.error);
             }
         } catch (error) {
             console.error('Chyba:', error);
         }
-  });
-</script>
+    });
+</script> 
+-->
 {% endblock %}

@@ -54,30 +54,39 @@ function getOutPlyer(season, player, index){
 
 
 
-function getOutPlyerDelete(season, player, index){
+function getOutPlyerDelete(season, player, index) {
   $.ajax({
      url: "/season/delete-player/" + player + "/" + season,
      type: "POST",
      headers: {
       'X-CSRFToken': csrfToken
      },
-     data: {season_delete_ide: season},  // Uistite sa, že táto dáta sú správne očakávané na serveri
+     data: {
+        season_delete_id: season,
+        action: 'remove'
+     },
      success: function(response) {
        if(response.status === 'success') {
-           // Ak je odpoveď úspešná, skryte príslušný element
+           // Skryte príslušný element
            $('#playerout-delete'+index+'').modal('hide');
            setTimeout(function(){
              $('#playerin'+index).fadeOut();
            }, 400);
 
-          // alert(response.message);  // Alebo aktualizujte užívateľské rozhranie iným spôsobom
+           // Presmerovanie na koncový bod season_manager z odpovede
+           window.location.href = response.redirect_url;
        } else {
            // Spracovanie chyby
-          // alert(response.message);
+           alert(response.message);
        }
+     },
+     error: function() {
+        // Spracovanie chyby v prípade, že AJAX požiadavka zlyhá
+        alert('An error occurred while processing your request.');
      }
   });
 }
+
 
 
 

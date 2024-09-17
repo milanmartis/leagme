@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% block title %}
+  DartsClub - Create Tournament
+{% endblock %}
+{% block content %}
+<style scoped>
+    input[type="time"] {
+      font-size: 12px; /* Nastaví veľkosť písma na 12px */
+    }
+
+    .form-group.row {
+        max-width: 600px;
+        display: flex;
+        align-items: center;
+        border-top: 2px red;
+      }
+      
+      .d-flex {
+        display: flex;
+      }
+      
+      .align-items-center {
+        align-items: center;
+      }
+      
+      .mr-2 {
+        margin-right: 8px;
+      }
+      
+      .mx-2 {
+        margin-left: 8px;
+        margin-right: 8px;
+      }
+      
+      .btn-no-border {
+        border: none;
+        background: none;
+        cursor: pointer;
+        padding: 0px;
+        margin: 0px;
+      }
+  </style>
+<h1 align="center"><img src="{{ url_for('static', filename='img/' + head + '.svg') }}" class="filter-green" width="290" /></h1>
+<div class="content-section">
+    <form action="" method="post" class="form" role="form" enctype="multipart/form-data" autocomplete="off">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        {{ form.hidden_tag() }}
+        <fieldset class="form-group">
+            <!-- Place Name -->
+            <div class="form-group">
+                {{ form.name.label(class="form-control-label createforms") }}
+                {% if form.name.errors %}
+                    {{ form.name(class="form-control form-control-lg is-invalid", autocomplete="off") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.name.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.name(autocomplete="off", class="form-control form-control-lg createforms") }}
+                {% endif %}
+            </div>
+
+            <!-- Place Address Details -->
+            <div class="form-group">
+                {{ form.address_street.label(class="form-control-label createforms") }}
+                {% if form.address_street.errors %}
+                    {{ form.address_street(class="form-control form-control-lg is-invalid", autocomplete="off") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.address_street.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.address_street(class="form-control form-control-lg createforms", autocomplete="off") }}
+                {% endif %}
+            </div>
+            
+            <!-- Repeat similar blocks for address_street_no, address_street_zip, address_street_city, address_street_state -->
+
+            <!-- Place Phone Number -->
+            <div class="form-group">
+                {{ form.phone_number.label(class="form-control-label createforms") }}
+                {% if form.phone_number.errors %}
+                    {{ form.phone_number(class="form-control form-control-lg is-invalid", autocomplete="off") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.phone_number.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.phone_number(class="form-control form-control-lg createforms", autocomplete="off") }}
+                {% endif %}
+            </div>
+
+            <!-- Coordinates -->
+            <div class="form-group">
+                {{ form.coordinates.label(class="form-control-label createforms") }}
+                {% if form.coordinates.errors %}
+                    {{ form.coordinates(class="form-control form-control-lg is-invalid", autocomplete="off") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.coordinates.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.coordinates(class="form-control form-control-lg createforms", autocomplete="off") }}
+                {% endif %}
+                
+                <!-- Add similar form inputs for other attributes like user_id, and gallery fields if needed -->
+                <br>
+            </div>
+
+                <!-- Submit Button -->
+                <!-- Opening Hours Section -->
+                    <h4>Opening Hours</h4>
+                    <div id="opening-hours-container"></div>
+
+            <!-- Dynamic opening hours fields will be added here -->
+        <button type="button" onclick="addOpeningHours()" class="btn btn-sm btn-outline-success">Add Opening Hours</button>
+    </div>
+    <br>
+        <!-- Submit Button -->
+        <div class="form-group">
+            {{ form.submit(class="btn-demo btn-outline-info createforms", value=title) }}
+        </div>
+
+    <br>
+    <!-- Back Button Logic -->
+    {% if season %}
+    <button onclick="javascript:location.href='{{ url_for('views.season_manager', season=season.id) }}';" class="btn btn-sm createforms2">Back</button>
+    {% else %}
+    <button onclick="javascript:location.href='{{ url_for('views.index') }}';" class="btn btn-sm createforms2">Back</button>
+    {% endif %}
+</div>
+</div>
+</form>
+<script>
+    // JavaScript for dynamically adding opening hours fields
+    const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    
+    function addOpeningHours() {
+        const container = document.getElementById('opening-hours-container');
+        
+        daysOfWeek.forEach(day => {
+            if (!document.getElementById(day)) {
+                const row = document.createElement('div');
+                row.className = 'form-group row align-items-center'; // Flex container for alignment
+                row.id = day;
+
+                row.innerHTML = `
+                    <label class="col-sm-2 col-form-label">${day}:</label>
+                    <div class="col-sm-8 d-flex align-items-center">
+                        <input type="time" placeholder="HH:MM" name="opening_hours[${day}][open_time]" class="form-control time-input mr-2" lang="sk" pattern="[0-9]{2}:[0-9]{2}">
+                        <span class="mx-2">-</span>
+                        <input type="time" placeholder="HH:MM" name="opening_hours[${day}][close_time]" class="form-control time-input mr-2" lang="sk" pattern="[0-9]{2}:[0-9]{2}">
+                        <button type="button" class="btn btn-no-border" onclick="removeOpeningHours('${day}')">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(row);
+
+                // Add event listeners to new inputs
+                const timeInputs = row.querySelectorAll('.time-input');
+                timeInputs.forEach(input => {
+                    input.addEventListener('input', function(e) {
+                        let value = e.target.value;
+                        // Kontrola a úprava vstupu, aby zodpovedal formátu 24-hodinového času (HH:MM)
+                        if (!/^\d{0,2}:\d{0,2}$/.test(value)) {
+                            e.target.value = value.slice(0, -1);  // Odstráni posledný znak, ak nespĺňa podmienku
+                        }
+                    });
+                });
+            }
+        });
+    }
+
+    function removeOpeningHours(day) {
+        const row = document.getElementById(day);
+        if (row) {
+            row.remove();
+        }
+    }
+</script>
+
+
+    <script>
+        document.getElementById('timeInput').addEventListener('input', function (e) {
+          let value = e.target.value;
+      
+          // Kontrola a úprava vstupu, aby zodpovedal formátu 24-hodinového času (HH:MM)
+          if (!/^\d{0,2}:\d{0,2}$/.test(value)) {
+            e.target.value = value.slice(0, -1);  // Odstráni posledný znak, ak nespĺňa podmienku
+          }
+        });
+      </script>
+
+<script>
+    let formHasChanged = false;
+    window.onload = function() {
+        const form = document.querySelector('form');
+        form.addEventListener('input', function() {
+            formHasChanged = true;
+        });
+        window.addEventListener('beforeunload', function(e) {
+            if (formHasChanged) {
+                const confirmationMessage = 'Are you sure you want to leave? You have unsaved changes.';
+                (e || window.event).returnValue = confirmationMessage; // Gecko + IE
+                return confirmationMessage; // Gecko + Webkit, Safari, Chrome etc.
+            }
+        });
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            const inputs = form.querySelectorAll('input[type=text], input[type=number], input[type=email]');
+            inputs.forEach(input => {
+                const savedValue = localStorage.getItem(input.name); // Uses 'name' as key
+                if (savedValue) {
+                    input.value = savedValue;
+                }
+                input.addEventListener('input', function() {
+                    localStorage.setItem(this.name, this.value);
+                });
+            });
+        });
+    });
+</script>
+
+{% endblock content %}

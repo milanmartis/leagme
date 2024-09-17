@@ -6,6 +6,9 @@ from flask_security.utils import hash_password, verify_and_update_password
 from sqlalchemy.sql import func
 from sqlalchemy import PrimaryKeyConstraint
 from flask import current_app
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import relationship
+# from flask_babel import gettext as _
 
 roles_users = db.Table('roles_users',
                        db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
@@ -35,6 +38,8 @@ user_season = db.Table('user_season',
                        db.Column('season_first_date', db.DateTime(timezone=True), default=func.now()),
                        db.Column('orderz', db.Integer))
 
+
+
 class Note(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     data = db.Column(db.String(10000))
@@ -56,6 +61,7 @@ class User(db.Model, fsqla.FsUserMixin):
     first_name = db.Column(db.String(150))
     username = db.Column(db.String(64))
     google_id = db.Column(db.String(100), unique=True)
+    # messages = db.relationship('Message', backref='user')
     orderz = db.Column(db.Integer)
     notes = db.relationship('Note')
     seasony = db.relationship('Season', secondary=user_season, backref=db.backref('seasons'))
@@ -145,6 +151,53 @@ class Season(db.Model):
     season_from = db.Column(db.DateTime(timezone=True))
     season_to = db.Column(db.DateTime(timezone=True), default=func.now())
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    place_id = db.Column(db.Integer, db.ForeignKey('place.id'), nullable=True)  # Pridanie stĺpca place_id
+
+    # Vzťahy
+    place = db.relationship('Place', backref='seasons')
+    
+class Place(db.Model):
+    __tablename__ = 'place'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(300))
+    slug = db.Column(db.String(300), unique=True, nullable=False)  # Slug field
+    address_street = db.Column(db.String(300))
+    address_street_no = db.Column(db.String(50))
+    address_street_zip = db.Column(db.String(20))
+    address_street_city = db.Column(db.String(100))
+    address_street_state = db.Column(db.String(100))
+    phone_number = db.Column(db.String(20))
+    coordinates = db.Column(db.String(100))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    
+    # Establish a relationship with PlaceGallery using back_populates to avoid naming conflicts
+    galleries = relationship('PlaceGallery', back_populates='place', lazy=True)
+
+
+    # Relationship with OpeningHours
+    opening_hours = relationship('OpeningHours', back_populates='place', lazy=True)
+
+class OpeningHours(db.Model):
+    __tablename__ = 'opening_hours'
+    id = db.Column(db.Integer, primary_key=True)
+    day_of_week = db.Column(db.String(10))  # e.g., "Monday", "Tuesday"
+    open_time = db.Column(db.Time)  # Opening time (e.g., 09:00:00)
+    close_time = db.Column(db.Time)  # Closing time (e.g., 17:00:00)
+    place_id = db.Column(db.Integer, db.ForeignKey('place.id'))
+
+    # Relationship with Place
+    place = relationship('Place', back_populates='opening_hours')
+    
+    
+class PlaceGallery(db.Model):
+    __tablename__ = 'place_gallery'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(300))
+    place_id = db.Column(db.Integer, db.ForeignKey('place.id'))
+
+    # Define the inverse relationship using back_populates
+    place = relationship('Place', back_populates='galleries')
+
 
 class Duel(db.Model):
     __tablename__ = 'duel'

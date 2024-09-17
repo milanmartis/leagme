@@ -1085,13 +1085,27 @@ input[type="textarea"] {
     color: #00EE00;
 }
 
+
+.time-input{
+    padding: 4px 2px 4px 8px;
+    margin: 2px;
+    display: flex;
+    justify-content: center;
+    text-align: center;
+} 
+
+
 .btn2:disabled:hover {
     background-color: transparent;
     color: #00EE00;
 }
 
 
+.btn .btn-no-border{
+    border: 0px;
+    outline: none !important;
 
+}
 
 .btn .btn-outline-dark[disabled] {
     border-color: transparent !important;

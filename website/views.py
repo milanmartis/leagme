@@ -4,12 +4,13 @@ from flask_security import roles_required
 import os
 from dotenv import load_dotenv
 load_dotenv()
-from .models import Note, User, Duel, Season, Groupz, Round, Product, Order, user_duel, user_group, user_season, PaymentCard
+from .models import Note, User, Duel, Place, OpeningHours, Season, Groupz, Round, Product, Order, user_duel, user_group, user_season, PaymentCard
 from . import db
 import json
 from sqlalchemy import func, or_
 from sqlalchemy import insert, update
 import stripe
+from slugify import slugify
 
 from . import tabz, duels, dictionary, mysql
 from datetime import datetime
@@ -38,7 +39,7 @@ import email
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, PasswordField, SubmitField, BooleanField, SelectField, SelectMultipleField, IntegerField, RadioField, TextAreaField
-from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, StopValidation,NumberRange
+from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, StopValidation, NumberRange, Optional
 from wtforms import DateField, DateTimeField, DateTimeLocalField, Form
 from psycopg2.errorcodes import UNIQUE_VIOLATION
 from psycopg2 import errors
@@ -49,6 +50,7 @@ from functools import wraps
 from py_vapid import Vapid
 from sqlalchemy.exc import IntegrityError  # Importujte pre zachytávanie chýb pri vkladaní do databázy
 from website import mail, celery
+
 
 # Stripe konfigurácia
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
@@ -105,7 +107,7 @@ def welcome():
         Season.visible == True    )
     ).all()
     
-    return render_template("welcome.html", seasons=seasons)
+    return render_template("welcome.html", user=None, seasons=seasons)
     
     
 
@@ -160,7 +162,7 @@ def index():
     if request.method == "POST" and request.form.get('season_add'):
         
         # print(request.form.get('season_add'))
-        return redirect(url_for('views.season_new'))
+        return redirect(url_for('views.index'))
 
     
     
@@ -1027,31 +1029,120 @@ def determine_final_winner(last_round):
     return 'None'
 
 
-####### NEW TOURNAMENT
 
+####### NEW PLACE
+def generate_unique_slug(session, name):
+    # Vygeneruje základný slug z názvu
+    slug = slugify(name)
+    return slug
+
+@views.route('/place/new', methods=['GET', 'POST'])
+@login_required
+def new_place():
+    form = NewPlace()  # Initialize the form without data
+
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            # Create a slug from the place name
+            slug = generate_unique_slug(db.session, form.name.data)
+            
+            # Check if slug already exists in the database
+            existing_place = Place.query.filter_by(slug=slug).first()
+            if existing_place:
+                flash('Place with this name already exists', 'error')
+                return render_template('place_create.html', form=form, head='new-place', title='Create New Place', user=current_user)
+
+            # Create a new Place object with form data
+            new_place = Place(
+                name=form.name.data,
+                slug=slug,
+                address_street=form.address_street.data,
+                # address_street_no=form.address_street_no.data,
+                # address_street_zip=form.address_street_zip.data,
+                # address_street_city=form.address_street_city.data,
+                # address_street_state=form.address_street_state.data,
+                phone_number=form.phone_number.data,
+                coordinates=form.coordinates.data,
+                user_id=current_user.id
+            )
+            db.session.add(new_place)
+            db.session.commit()
+
+            # Process opening hours
+            opening_hours_data = request.form.getlist('opening_hours')
+            print(opening_hours_data)
+            for day, hours in request.form.get('opening_hours', {}).items():
+                open_time = hours.get('open_time')
+                close_time = hours.get('close_time')
+                if open_time and close_time:
+                    opening_hour = OpeningHours(
+                        day_of_week=day,
+                        open_time=open_time,
+                        close_time=close_time,
+                        place_id=new_place.id
+                    )
+                    db.session.add(opening_hour)
+            db.session.commit()
+
+            flash('New place created successfully.', 'success')
+            return redirect(url_for('views.place_manager', place_slug=new_place.slug))
+    
+    return render_template('place_create.html', form=form, head='new-place', title='Create New Place', user=current_user)
+
+
+
+@views.route('/place/<place_slug>', methods=['GET', 'POST'])
+# @login_required
+# @roles_required('Admin', 'Player', 'Manager')
+def place_manager(place_slug):
+    # Query the Place object based on the slug
+    place = Place.query.filter_by(slug=place_slug).first()
+    
+    if not place:
+        flash("Place not found.", category="error")
+        return redirect(url_for('views.index'))
+    
+    return render_template("place.html", place=place, user=current_user)
+
+
+
+
+####### NEW TOURNAMENT
 @views.route('/tournament/new', methods=['GET', 'POST'])
 @login_required
-@roles_required('Admin','Manager','Player')
+@roles_required('Admin','Manager')
 def tournament_new():
-    
     form = NewTournament()
     
     players = User.query.all()
-   
+
+    # Získanie všetkých miest aktuálneho používateľa
+    user_places = Place.query.filter_by(user_id=current_user.id).all()
+
     if form.validate_on_submit():
         season = db.session.query(Season).filter(Season.name.like(form.name.data)).first()
         season_type = int(request.form.get('season_type'))
+        place_id = request.form.get('place_id')  # Získanie vybraného miesta z formulára
     
-        ## season_from=form.season_from.data, 
         if not season:
-                new_season = Season(name=form.name.data, no_group=1, 
-                                    winner_points=3, open=form.open.data, visible=form.visible.data, user_id=current_user.id, min_players=form.min_players.data,season_type=season_type)
-                db.session.add(new_season)
-                db.session.commit()
-                return redirect(url_for('views.season_manager', season=new_season.id))
+            new_season = Season(
+                name=form.name.data,
+                no_group=1, 
+                winner_points=3,
+                open=form.open.data,
+                visible=form.visible.data,
+                user_id=current_user.id,
+                min_players=form.min_players.data,
+                season_type=season_type,
+                place_id=place_id  # Uloženie vybraného miesta do turnaja
+            )
+            db.session.add(new_season)
+            db.session.commit()
+            return redirect(url_for('views.season_manager', season=new_season.id))
         else:
             flash("Tournament name must be unique.", category="error")
 
+    return render_template("tournament_create.html", head='new-tournament', title='Create New Tournament', form=form, players=players, user=current_user, adminz=adminz, user_places=user_places)
 
         
 
@@ -1111,24 +1202,46 @@ def season_delete(season):
 
 
 
-@views.route('/season/delete-player/<player>/<season>', methods=['GET', 'POST'])
+@views.route('/season/delete-player/<player>/<season>', methods=['POST'])
 @login_required
 @roles_required('Admin', 'Manager', 'Player')
 def season_player_delete(player, season):
-    response_data = {'status': 'error', 'message': 'An error occurred'}  # Predvolená odpoveď
-    if player and season:
+    action = request.form.get('action')
+
+    if player and season and action == 'remove':
         season_obj = Season.query.get(season)
         user = User.query.get(player)
         if season_obj and user:
             user.seasony.remove(season_obj)
             db.session.commit()
-            response_data = {'status': 'success', 'message': 'Removed from list'}
+
+            # Skontrolujte, či je hráč, ktorý má byť odstránený, aktuálny používateľ
+            if int(player) == current_user.id:
+                flash('You have been removed from the season.', 'success')
+                message = 'You have been removed from the season'
+            else:
+                flash('Player has been removed from the season.', 'success')
+                message = 'Player has been removed from the season'
+
+            # Odošlite JSON odpoveď so správou a URL na presmerovanie
+            response = {
+                'status': 'success',
+                'message': message,
+                'redirect_url': url_for('views.season_manager', season=season)
+            }
+            return jsonify(response), 200
         else:
-            response_data = {'status': 'error', 'message': 'Season or player not found'}
+            response = {
+                'status': 'error',
+                'message': 'Season or player not found'
+            }
+            return jsonify(response), 404
 
-    return jsonify(response_data)
-    
-
+    response = {
+        'status': 'error',
+        'message': 'Invalid request'
+    }
+    return jsonify(response), 400
 
 
 
@@ -1277,10 +1390,10 @@ def search_users(season):
     except Exception as e:
         return jsonify({"error": "An error occurred"}), 500
 
+
 @views.route('/season/add_user_to_season', methods=['POST'])
 @login_required
 @roles_required('Admin','Manager')
-# @roles_required('Admin')
 def add_user_to_season():
     try:
         data = request.json
@@ -1290,13 +1403,14 @@ def add_user_to_season():
         user = User.query.get(user_id)
         season = Season.query.get(season_id)
         
-        max_orderz = db.session.query(func.max(user_season.c.orderz)).filter(user_season.c.season_id==season_id).scalar()
+        max_orderz = db.session.query(func.max(user_season.c.orderz)).filter(user_season.c.season_id == season_id).scalar()
 
         # Ak je max_orderz None (žiadne záznamy), nastavte ho na 1, inak inkrementujte o 1
         if max_orderz is None:
             max_orderz = 1
         else:
             max_orderz += 1
+
         if user and season:
             # Vložte nový záznam do tabuľky 'user_season' s nastavenou hodnotou 'orderz'
             db.session.execute(user_season.insert().values(
@@ -1308,8 +1422,11 @@ def add_user_to_season():
             return jsonify({"message": "User added to season successfully"})
         else:
             return jsonify({"error": "User or season not found"}), 404
+
     except Exception as e:
-        return jsonify({"error": "An error occurred"}), 500
+        # Vrátte detailnú správu o chybe pre účely diagnostiky
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
 
 
 @views.route('/season/delete_row', methods=['POST'])
@@ -1426,6 +1543,43 @@ def update_tournament(season):
     return render_template("tournament_create.html", head='edit-tournament', title='Update Tournament', season=season, seas=season, form=form, user=current_user, adminz=adminz)
 
 
+
+# @views.route("/place/<int:place>/update", methods=['GET', 'POST'])
+# @login_required
+# @roles_required('Admin','Manager')
+# def update_place(place):
+#     # season = Season.query.get(season)
+   
+#     form = NewPlace()
+    
+#     if form.validate_on_submit():
+#         season.name = form.name.data
+#         season.min_players = form.min_players.data
+#         # season.no_round = form.no_round.data
+#         # season.no_group = form.no_group.data
+#         # season.winner_points = form.winner_points.data
+#         season.season_from = form.season_from.data
+#         season.open = form.open.data
+#         season.visible = form.visible.data
+        
+#         db.session.commit()
+
+        
+#         flash('Your Tournament have been updated!', 'success')
+#         return redirect(url_for('views.season_manager', season=season.id))
+    
+#     elif request.method == 'GET':
+#         form.name.data = season.name
+#         form.min_players.data = season.min_players
+#         # form.no_round.data = season.no_round
+#         # form.no_group.data = season.no_group
+#         # form.winner_points.data = season.winner_points
+#         form.season_from.data = season.season_from
+#         form.open.data = season.open
+#         form.visible.data = season.visible
+
+        
+#     return render_template("place_create.html", head='edit-tournament', title='Update Tournament', season=season, seas=season, form=form, user=current_user, adminz=adminz)
 
 
 
@@ -1568,6 +1722,9 @@ def season_manager(season):
     return render_template("season.html", season_author=season_author,season_type=season_type.season_type, season_type_name=season_type_name,products=products, orders=orders, order=order, rounds_open=rounds_open, manager=manager, end_date=end_date, players_wait=players_wait, players=players, seas=seas, groupz=groupz, dic=dic, season=season, seasons=rounds, user=current_user, adminz=adminz)
 
 
+
+
+
 def create_new_season(season):
 
     # my_list_of_ids = [16, 17, 18, 19, 20]
@@ -1704,3 +1861,20 @@ class NewTournament(FlaskForm):
 
     submit = SubmitField()
 
+
+class NewPlace(FlaskForm):
+    # Basic Place Information
+    name = StringField('Place Name', validators=[DataRequired(), Length(max=300)])
+    address_street = StringField('Street Address', validators=[DataRequired(), Length(max=300)])
+    # address_street_no = StringField('Street Number', validators=[Optional(), Length(max=50)])
+    # address_street_zip = StringField('ZIP Code', validators=[Optional(), Length(max=20)])
+    # address_street_city = StringField('City', validators=[Optional(), Length(max=100)])
+    # address_street_state = StringField('State', validators=[Optional(), Length(max=100)])
+
+    # Contact Information
+    phone_number = StringField('Phone Number', validators=[Optional(), Length(max=20)])
+
+    # Coordinates (could be latitude/longitude or a specific format)
+    coordinates = StringField('Coordinates', validators=[Optional(), Length(max=100)])
+
+    submit = SubmitField('Submit')

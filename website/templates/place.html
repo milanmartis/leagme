@@ -1,0 +1,87 @@
+{% extends 'base.html' %} 
+{% block title %}
+  LeagMe
+{% endblock %} 
+
+{% block content %}
+<br>
+<style scope>
+  .center-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px; /* Space between the cards */
+    padding: 10px;
+  }
+
+  .card {
+    flex: 1 1 250px; /* Flex-grow: 1, Flex-shrink: 1, Flex-basis: 300px */
+    max-width: 300px; /* Optional: limit the maximum width */
+    text-align: center;
+    padding: 10px;
+    border: 3px solid #4CAF50;
+    border-radius: 8px;
+    background-color: transparent;
+  }
+
+  .flex {
+    text-align: center; /* Center the text inside <h4> */
+  }
+
+  #map {
+    height: 400px; /* Height of the map */
+    width: 100%; /* Full width */
+    margin-top: 20px;
+    border-radius: 8px;
+  }
+</style>
+
+<center>
+  <img
+    src="{{ url_for('static', filename='img/place.svg') }}"
+    class="filter-green"
+    width="273"
+  />
+</center>
+<br>
+
+<!-- Display the Place Information -->
+<div class="center-container">
+  <div class="card">
+    <h4>
+      <strong>Place Name: </strong>{{ place.name }}<br>
+      <strong>Coordinates: </strong>{{ place.coordinates }}<br>
+      <!-- Map Placeholder -->
+      <div id="map"></div>
+    </h4>
+  </div>
+</div>
+
+<!-- Include Leaflet JavaScript -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var coordinates = "{{ place.coordinates }}".split(',');
+
+    // Check if coordinates are valid
+    if (coordinates.length === 2) {
+      var latitude = parseFloat(coordinates[0].trim());
+      var longitude = parseFloat(coordinates[1].trim());
+
+      // Initialize the map
+      var map = L.map('map').setView([latitude, longitude], 13);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        
+      }).addTo(map);
+
+      L.marker([latitude, longitude]).addTo(map)
+        .bindPopup("{{ place.name }}")
+        .openPopup();
+    } else {
+      console.error('Invalid coordinates:', coordinates);
+    }
+  });
+</script>
+
+{% endblock %}
