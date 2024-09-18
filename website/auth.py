@@ -64,6 +64,9 @@ auth = Blueprint('auth', __name__)
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
+    # Ak je už používateľ prihlásený, presmerujte ho na hlavnú stránku
+    if current_user.is_authenticated:
+        return redirect(url_for('views.index'))
     if request.method == 'POST' and request.form.get('email'):
         email = request.form.get('email')
         password = request.form.get('password')

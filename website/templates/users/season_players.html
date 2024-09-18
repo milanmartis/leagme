@@ -2,7 +2,9 @@
 {% block content %}
     {% set lang = 0 %}
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
+
     <style scoped>
         .user-result{
             font-size: 111%;
@@ -159,21 +161,16 @@
                 var tbody = $("#userSeasonTable tbody");
                 tbody.empty();
                 
-                // Získajte hodnotu no_group z prvého riadku (predpokladám, že je rovnaká pre všetky riadky)
                 var noGroupValue = data.length > 0 ? data[0].no_group : 0;
         
-                // Pre každý záznam vo výsledkoch
                 data.forEach(function(item, index) {
-                    // Predvolená trieda pre každý riadok
                     var classs = "draggable-row";
                     var borderBottomStyle = "";
         
-                    // Ak je no_group nastavený a tento riadok je násobkom hodnoty no_group, pridajte červený border-bottom
                     if (noGroupValue > 0 && (index + 1) % noGroupValue === 0) {
                         borderBottomStyle = "border-bottom: 1px solid #00EE00;";
                     }
         
-                    // Vytvorenie HTML riadku s nastavenými štýlmi
                     var row = `
                         <tr style="width:269px;padding-bottom:5px; ${borderBottomStyle}" class="${classs}" data-user-id="${item.user_id}" data-season-id="${item.season_id}">
                             <td style="width:33px;padding-bottom:5px;">${item.orderz}</td>
@@ -183,19 +180,16 @@
                             </td>
                         </tr>`;
         
-                    // Konvertovanie riadku na jQuery objekt a jeho postupné zobrazenie
                     var newRow = $(row);
                     newRow.hide();
                     tbody.append(newRow);
                     newRow.fadeIn();
                 });
-        
-                // Inicializácia triediteľnosti tabuľky
+
+                // Aktivácia triediteľnosti tabuľky s dotykovou podporou
                 tbody.sortable({
                     update: function(event, ui) {
                         var data = [];
-        
-                        // Pre každý riadok v tabuľke získanie dátových atribútov
                         tbody.find("tr").each(function(index) {
                             data.push({
                                 user_id: $(this).data("user-id"),
@@ -203,8 +197,7 @@
                                 orderz: index
                             });
                         });
-        
-                        // Odoslanie aktualizovaných dát na server
+
                         $.ajax({
                             type: 'POST',
                             url: '/season/update_order',
@@ -217,15 +210,13 @@
                             },
                             success: function(response) {
                                 console.log(response);
-                                refreshTable(); // Opätovné načítanie tabuľky po úspešnej aktualizácii
+                                refreshTable();
                             }
                         });
                     }
                 }).disableSelection();
             });
         }
-        
-        
 
         refreshTable();
 

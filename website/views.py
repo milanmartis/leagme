@@ -1118,6 +1118,7 @@ def tournament_new():
 
     # Získanie všetkých miest aktuálneho používateľa
     user_places = Place.query.filter_by(user_id=current_user.id).all()
+    form.place_id.choices = [(place.id, place.name) for place in Place.query.all()]
 
     if form.validate_on_submit():
         season = db.session.query(Season).filter(Season.name.like(form.name.data)).first()
@@ -1160,15 +1161,20 @@ def season_new():
     form = NewSeason()
     
     players = User.query.all()
-   
+    
+    user_places = Place.query.filter_by(user_id=current_user.id).all()
+    form.place_id.choices = [(place.id, place.name) for place in Place.query.filter_by(user_id=current_user.id).all()]
+    if not form.validate_on_submit():
+        flash(f"you must fill in all fields", 'error')  # Toto vám ukáže chyby v konzole, ak nejaké existujú
     if form.validate_on_submit():
         season = db.session.query(Season).filter(Season.name.like(form.name.data)).first()
         season_type = int(request.form.get('season_type'))
+        place_id = request.form.get('place_id')  # Získanie vybraného miesta z formulára
     
         ## season_from=form.season_from.data, 
         if not season:
                 new_season = Season(name=form.name.data, no_group=form.no_group.data, 
-                                    winner_points=form.winner_points.data, open=form.open.data, visible=form.visible.data ,user_id=current_user.id, min_players=form.min_players.data,season_type=season_type)
+                                    winner_points=form.winner_points.data, open=form.open.data, visible=form.visible.data ,user_id=current_user.id, min_players=form.min_players.data,season_type=season_type,place_id=form.place_id.data)
                 db.session.add(new_season)
                 db.session.commit()
                 return redirect(url_for('views.season_manager', season=new_season.id))
@@ -1178,7 +1184,7 @@ def season_new():
 
         
 
-    return render_template("season_create.html", head='new-season', title='Create Season', form=form, players=players, user=current_user, adminz=adminz)
+    return render_template("season_create.html", head='new-season', title='Create Season', form=form, players=players, user=current_user, adminz=adminz, user_places=user_places)
 
 
 
@@ -1473,7 +1479,11 @@ def update_season(season):
     season = Season.query.get(season)
    
     form = NewSeason()
-    
+    user_places = Place.query.filter_by(user_id=current_user.id).all()
+    form.place_id.choices = [(place.id, place.name) for place in Place.query.filter_by(user_id=current_user.id).all()]
+    # form.place_id.choices = [(place.id, place.name) for place in user_places]
+    if not form.validate_on_submit():
+        flash(f"you must fill in all fields", 'error')  # Toto vám ukáže chyby v konzole, ak nejaké existujú
     if form.validate_on_submit():
         season.name = form.name.data
         season.min_players = form.min_players.data
@@ -1483,6 +1493,8 @@ def update_season(season):
         season.season_from = form.season_from.data
         season.open = form.open.data
         season.visible = form.visible.data
+        season.place_id = form.place_id.data
+
         
         db.session.commit()
 
@@ -1499,9 +1511,10 @@ def update_season(season):
         form.season_from.data = season.season_from
         form.open.data = season.open
         form.visible.data = season.visible
+        form.place_id.data = season.place_id
 
         
-    return render_template("season_create.html", head='edit-season', title='Update Season', season=season.id, seas=season, form=form, user=current_user, adminz=adminz)
+    return render_template("season_create.html", head='edit-season', title='Update Season', season=season.id, seas=season, form=form, user=current_user, adminz=adminz, user_places=user_places)
 
 
 @views.route("/tournament/<int:season>/update", methods=['GET', 'POST'])
@@ -1512,6 +1525,12 @@ def update_tournament(season):
     season = Season.query.get(season)
    
     form = NewTournament()
+    user_places = Place.query.filter_by(user_id=current_user.id).all()
+
+    # form.place_id.choices = [(place.id, place.name) for place in Place.query.all()]
+    form.place_id.choices = [(place.id, place.name) for place in user_places]
+    if not form.validate_on_submit():
+        flash(f"you must fill in all fields", 'error')  # Toto vám ukáže chyby v konzole, ak nejaké existujú
     
     if form.validate_on_submit():
         season.name = form.name.data
@@ -1522,6 +1541,7 @@ def update_tournament(season):
         season.season_from = form.season_from.data
         season.open = form.open.data
         season.visible = form.visible.data
+        season.place_id = form.place_id.data
         
         db.session.commit()
 
@@ -1538,9 +1558,9 @@ def update_tournament(season):
         form.season_from.data = season.season_from
         form.open.data = season.open
         form.visible.data = season.visible
-
+        form.place_id.data = season.place_id
         
-    return render_template("tournament_create.html", head='edit-tournament', title='Update Tournament', season=season, seas=season, form=form, user=current_user, adminz=adminz)
+    return render_template("tournament_create.html", head='edit-tournament', title='Update Tournament', season=season, seas=season, form=form, user=current_user, adminz=adminz,user_places=user_places)
 
 
 
@@ -1841,7 +1861,7 @@ class NewSeason(FlaskForm):
     # season_to = DateTimeLocalField('Break Point')
     open = BooleanField('Open')
     visible = BooleanField('Visible')
-
+    place_id = SelectField('Select Place', choices=[], coerce=int, validators=[DataRequired()])  # Definujte pole place_id s výberom
     submit = SubmitField()
 
 
@@ -1858,7 +1878,7 @@ class NewTournament(FlaskForm):
     # season_to = DateTimeLocalField('Break Point')
     open = BooleanField('Open')
     visible = BooleanField('Visible')
-
+    place_id = SelectField('Select Place', choices=[], coerce=int, validators=[DataRequired()])  # Definujte pole place_id s výberom
     submit = SubmitField()
 
 

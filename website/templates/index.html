@@ -66,9 +66,9 @@
               <form method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                <button style="font-size: 150%;padding: 0px;margin: 4px;" id="season_add" name="season_add" type="submit" class="btn btn-demo btn-block shadow-none" value="11">+Season</button>
-                <button style="font-size: 150%;padding: 0px;margin: 4px;" onclick="location.href='{{ url_for('views.tournament_new') }}';" type="button" class="btn btn-demo btn-block shadow-none">+Draw</button>
-                <button style="font-size: 150%;padding: 0px;margin: 4px;" onclick="location.href='{{ url_for('views.new_place') }}';" type="button" class="btn">+Place</button>
+                <a style="font-size: 150%;padding: 0px;margin: 4px;" href="{{ url_for('views.season_new') }}" type="submit" class="btn btn-demo btn-block shadow-none" value="11">+Season</a>
+                <a style="font-size: 150%;padding: 0px;margin: 4px;" href="{{ url_for('views.tournament_new') }}" type="button" class="btn btn-demo btn-block shadow-none">+Draw</a>
+                <a style="font-size: 150%;padding: 0px;margin: 4px;" href="{{ url_for('views.new_place') }}" type="button" class="btn">+Place</a>
               </form>
             </div>
         </div>

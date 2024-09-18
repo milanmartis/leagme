@@ -51,7 +51,17 @@
   {% endif %}
   
 </h1>
-<h5>{{season_author[0]}}</h5>
+<h6>Manager: <b>{{season_author[0]}}</b></h6>
+{% if seas.place %}
+    <h6>Place: 
+        <a href="{{ url_for('views.place_manager', place_slug = seas.place.slug) }}">
+            <b>{{ seas.place.name }}</b>
+        </a>
+    </h6>
+    {% else %}
+    <h6>No place assigned</h6>
+{% endif %}
+
 {% if seas %}
 {% if seasons %}
 <div class="container readinglazy" align="center">

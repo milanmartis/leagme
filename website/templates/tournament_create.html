@@ -11,6 +11,22 @@
     option{
         font-size: 12px; /* Nastavte požadovanú veľkosť písma */
     }
+
+    select {
+        background-color: black;
+    }
+
+    /* Farba pri hover */
+    select option:hover {
+
+    }
+
+    /* Farba pre vybratú možnosť */
+    select option:checked {
+        background-color: black;
+        color: white;
+    }
+
 </style>
 <h1 align="center"><img src="{{ url_for('static', filename = 'img/'+ head +'.svg') }}" class="filter-green" width="290" /></h1>
 <div class="content-section">
@@ -48,9 +64,12 @@
 
             <div class="form-group">
                 <label for="place_select" class="form-control-label createforms">Select Place</label>
-                <select style="font-size: 19px;" id="place_select" name="place_id" class="form-control form-control-lg createforms">
+                <select style="font-size: 19px;" id="place_select" name="place_id" class="form-control form-control-lg createforms" require>
+                    <option style="font-size: 13px;" value="">...choose place</option>
                     {% for place in user_places %}
-                        <option style="font-size: 13px;" value="{{ place.id }}">{{ place.name }}</option>
+                        <option style="font-size: 13px; background-color: black; color: white;font-size: 13px;cursor: pointer;" value="{{ place.id }}" {% if form.place_id.data == place.id %}selected{% endif %}>
+                            {{ place.name }}
+                        </option>
                     {% endfor %}
                 </select>
             </div>
