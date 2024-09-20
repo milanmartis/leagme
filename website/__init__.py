@@ -118,7 +118,7 @@ def create_app():
             flash("Failed to log in with Google.", category="error")
             return False
 
-        resp = google.get("/oauth2/v1/userinfo")
+        resp = google.get("/oauth2/v3/userinfo")
         if not resp.ok:
             flash("Failed to fetch user info from Google.", category="error")
             return False

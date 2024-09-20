@@ -639,11 +639,20 @@ def update_duel2():
                     winner_user_id = int(data[5])
                     
                 
-                new_user = User.query.get(winner_user_id)
                 if winner_user_id:
-                    new_user_id = new_user.id
+                    new_user = User.query.get(winner_user_id)
+                    if new_user:
+                        new_user_id = new_user.id
+                    else:
+                        new_user_id = None
                 else:
                     new_user_id = None
+                
+                # new_user = User.query.get(winner_user_id)
+                # if winner_user_id:
+                #     new_user_id = new_user.id
+                # else:
+                #     new_user_id = None
                     
                 user_duel_update = db.session.query(user_duel).filter(user_duel.c.notez==str(duell.id))
                 update_expr = user_duel.update().\
@@ -1484,6 +1493,8 @@ def update_season(season):
     user_places = Place.query.filter_by(user_id=current_user.id).all()
     form.place_id.choices = [(place.id, place.name) for place in Place.query.filter_by(user_id=current_user.id).all()]
     # form.place_id.choices = [(place.id, place.name) for place in user_places]
+    if request.method == "POST" and not form.validate_on_submit():
+        flash(f"you must fill in required fields", 'error')  # Toto vám ukáže chyby v konzole, ak nejaké existujú
     if not form.validate_on_submit():
         flash(f"you must fill in all fields", 'error')  # Toto vám ukáže chyby v konzole, ak nejaké existujú
     if form.validate_on_submit():
@@ -1531,9 +1542,8 @@ def update_tournament(season):
 
     # form.place_id.choices = [(place.id, place.name) for place in Place.query.all()]
     form.place_id.choices = [(place.id, place.name) for place in user_places]
-    if not form.validate_on_submit():
-        flash(f"you must fill in all fields", 'error')  # Toto vám ukáže chyby v konzole, ak nejaké existujú
-    
+    if request.method == "POST" and not form.validate_on_submit():
+        flash(f"you must fill in required fields", 'error')  # Toto vám ukáže chyby v konzole, ak nejaké existujú
     if form.validate_on_submit():
         season.name = form.name.data
         season.min_players = form.min_players.data
