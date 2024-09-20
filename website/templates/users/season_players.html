@@ -1,316 +1,275 @@
-{% extends "base.html" %} {% block title %}DartsClub - Season Players{% endblock %} 
+{% extends "base.html" %} 
+{% block title %}DartsClub - Season Players{% endblock %} 
 {% block content %}
     {% set lang = 0 %}
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
+
 
     <style scoped>
-        .user-result{
+        .user-result {
             font-size: 111%;
             font-weight: 700;
-
         }
 
-        .draggable-row-group{
+        .draggable-row-group {
             margin-top: 5px;
             border-bottom: 13px solid #00EE00;
         }
 
-        .draggable-row{
+        .draggable-row {
             padding-bottom: 6px;
+            cursor: grab; /* Cursor style for drag */
+            touch-action: none; /* Prevent default touch behavior */
         }
-        .draggable-row:hover{
+
+        .draggable-row:hover {
             background-color: black;
             border-top: 1px solid rgba(0, 238, 0, 0.38);
             border-bottom: 1px solid rgba(0, 238, 0, 0.38);
-
         }
 
-        tr{
+        tr {
             border-bottom: 1px solid rgba(0, 238, 0, 0.11);
             padding: 3px;
-            cursor:grab;
+            cursor: grab;
         }
 
-        thead{
+        thead {
             margin-top: 25px;
             padding-top: 25px;
-
         }
 
-        th{
+        th {
             padding: 4px;
         }
     </style>
+
     <br>
-<center>
-    <img
-    src="{{ url_for('static', filename='img/logo-head.svg') }}"
-    class="filter-green"
-    width="200"
-    />
-</center><br>
+    <center>
+        <img src="{{ url_for('static', filename='img/logo-head.svg') }}" class="filter-green" width="200" />
+    </center>
+    <br>
+
     {% if seasons %}
-    <h2>{{ seasons[0][0].name }}</h2>
+        <h2>{{ seasons[0][0].name }}</h2>
     {% else %}
         <h4>No Rounds available</h4>
     {% endif %}
-    <h1 id="dataLengthDisplay"></h1>
+    <h4>
+        Total players
+    </h4>
+    <h1 style="font-weight: 700;line-height: 90%;font-size: 194%;" id="dataLengthDisplay"></h1>
 
-<table class="table-sortable" id="userSeasonTable">
-    <thead style="margin-bottom:20px;">
-        <tr>
-            <th>#</th>
-            <th>Player</th>
-            <th></th>
-        </tr>
-    </thead>
+    <table class="table-sortable" id="userSeasonTable">
+        <thead style="margin-bottom:20px;">
+            <tr>
+                <th>#</th>
+                <th>Player</th>
+                <th></th>
+            </tr>
+        </thead>
+        <br>
+        <tbody>
+            <!-- Table rows populated by JavaScript -->
+        </tbody>
+    </table>
+
+    <br><br>
+    <form id="addUserToSeasonForm">
+        <label for="userSelect"><h4>Search User by Name or City</h4></label>
+        <br>
+        <input type="text" id="userSearch" name="user_search" placeholder="SEARCH">
+        <button type="button" class="btn-reverse" id="addUserToSeasonButton" style="margin-top:8px;width:88px;display:none;"></button>
+
+        <div style="margin-top: 11px; padding: 14px;border:0px solid #00EE00;" id="userSearchResults"></div>
+    </form>
+
     <br>
-    <tbody >
-        <!-- Table rows populated by JavaScript -->
-    </tbody>
-</table>
-<br><br>
-<form id="addUserToSeasonForm">
-    <label for="userSelect"><h4>Search User by Name or City</h4></label>
-    <br>
-    <input type="text" id="userSearch" name="user_search" placeholder="SEARCH">
-    <button type="button" class="btn-reverse" id="addUserToSeasonButton" style="margin-top:8px;width:88px;display:none;"></button>
 
-    <div style="margin-top: 11px; padding: 14px;border:0px solid #00EE00;" id="userSearchResults"></div>
+    <button onclick="javascript:location.href='{{ url_for('views.season_manager', season=season) }}';" class="btn btn-sm createforms2">Back</button>
 
-</form>
-
-<br>
-
-    <button onclick="javascript:location.href='{{ url_for('views.season_manager', season=season) }}';" class="btn btn-sm createforms2" />Back</button>
-
-<script>
-    $(document).ready(function() {
-        $('#userSearch').on('input', async function() {
-            var query = $(this).val();
-            if (query.length > 1) {
-                const response = await fetch('/season/{{season}}/search_users', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    },
-                    body: JSON.stringify({ query: query })
-                });
-    
-                if (response.ok) {
-                    const users = await response.json();
-                    //alert(users.length); #pocet hracov k dispozicii
-                    var userSearchResultsHTML = '';
-                    for (var i = 0; i < users.length; i++) {
-                        userSearchResultsHTML += '<div class="user-result" style="width:233px;cursor:pointer;border-bottom:1px solid rgba(0,238,0,0.3);" data-id="' + users[i].id + '"><h4>' + users[i].first_name + '</h4></div>';
-                    }
-                    $('#userSearchResults').html(userSearchResultsHTML);
-                } else {
-                    $('#userSearchResults').html('Chyba pri vyhľadávaní');
-                }
-            }
-        });
-    
-        // Udalosť kliknutia na položky výsledkov vyhľadávania
-        $(document).on('click', '.user-result', function() {
-            var userId = $(this).data('id');
-          //  $('#userSearch').val($(this).text());  // Nastaví text vstupného poľa na meno používateľa
-           // $('#addUserToSeasonButton').text('Add player');
-            $('#addUserToSeasonButton').css('display', 'block').data('userId', userId); // Zobrazuje tlačidlo a pridáva data atribút
-            $('#userSearchResults').html('');  // Vymaže výsledky vyhľadávania
-    
-            // Automaticky spustí formulár, keď je tlačidlo zobrazené
-           $('#addUserToSeasonButton').trigger('click');
-        });
-    
-        $('#addUserToSeasonButton').click(async function() {
-            var user_id = $(this).data('userId');
-            var season_id = {{season}};
-    
-            try {
-                const response = await fetch('/season/add_user_to_season', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    },
-                    body: JSON.stringify({ user_id: user_id, season_id: season_id })
-                });
-    
-                if (response.ok) {
-                    const data = await response.json();
-                   // alert(data.message);  // Zobrazí správu o úspechu
-                    refreshTable();  // Aktualizuje tabuľku hráčov
-                    $('#addUserToSeasonButton').css('display', 'none');  // Skryje tlačidlo po pridaní
-                    $('#userSearch').val('');  // Vyprázdni pole vyhľadávania
-                } else {
-                    const errorData = await response.json();
-                    alert('Chyba: ' + errorData.error);  // Zobrazí chybu, ak sa vyskytla
-                }
-            } catch (error) {
-                console.error('Chyba:', error);
-            }
-        });
-
-    
-
-
-
-        function refreshTable() {
-            $.get('/season/{{season}}/get_user_seasons', function(data) {
-                document.getElementById("dataLengthDisplay").innerHTML = "Players #" + data.length;
-
-                var tbody = $("#userSeasonTable tbody");
-                tbody.empty();
-                
-                var noGroupValue = data.length > 0 ? data[0].no_group : 0;
-        
-                data.forEach(function(item, index) {
-                    var classs = "draggable-row";
-                    var borderBottomStyle = "";
-        
-                    if (noGroupValue > 0 && (index + 1) % noGroupValue === 0) {
-                        borderBottomStyle = "border-bottom: 1px solid #00EE00;";
-                    }
-        
-                    var row = `
-                        <tr style="width:269px;padding-bottom:5px; ${borderBottomStyle}" class="${classs}" data-user-id="${item.user_id}" data-season-id="${item.season_id}">
-                            <td style="width:33px;padding-bottom:5px;">${item.orderz}</td>
-                            <td style="width:203px;padding-bottom:5px;">${item.season_first_date}</td>
-                            <td style="width:33px;padding-bottom:5px;">
-                                <button style="margin-right:20px;" class="btn-reverse delete-btn">x</button>
-                            </td>
-                        </tr>`;
-        
-                    var newRow = $(row);
-                    newRow.hide();
-                    tbody.append(newRow);
-                    newRow.fadeIn();
-                });
-
-                // Aktivácia triediteľnosti tabuľky s dotykovou podporou
-                tbody.sortable({
-                    update: function(event, ui) {
-                        var data = [];
-                        tbody.find("tr").each(function(index) {
-                            data.push({
-                                user_id: $(this).data("user-id"),
-                                season_id: $(this).data("season-id"),
-                                orderz: index
-                            });
-                        });
-
-                        $.ajax({
-                            type: 'POST',
-                            url: '/season/update_order',
-                            data: JSON.stringify(data),
-                            contentType: 'application/json',
-                            dataType: 'json',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': csrfToken
-                            },
-                            success: function(response) {
-                                console.log(response);
-                                refreshTable();
-                            }
-                        });
-                    }
-                }).disableSelection();
-            });
-        }
-
-        refreshTable();
-
-        $(document).on("click", ".delete-btn", function() {
-            var tr = $(this).closest("tr");
-            var data = {
-                user_id: tr.data("user-id"),
-                season_id: tr.data("season-id")
-            };
-            $.ajax({
-                type: 'POST',
-                url: '/season/delete_row',
-                data: JSON.stringify(data),
-                contentType: 'application/json',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                dataType: 'json',
-                success: function(response) {
-                    tr.fadeOut(function() {
-                        // Po dokončení animácie môžete odstrániť riadok z DOM
-                        tr.remove();
+    <script>
+        $(document).ready(function() {
+            $('#userSearch').on('input', async function() {
+                var query = $(this).val();
+                if (query.length > 1) {
+                    const response = await fetch('/season/{{season}}/search_users', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: JSON.stringify({ query: query })
                     });
-                    console.log(response);
+
+                    if (response.ok) {
+                        const users = await response.json();
+                        var userSearchResultsHTML = '';
+                        for (var i = 0; i < users.length; i++) {
+                            userSearchResultsHTML += '<div class="user-result" style="width:233px;cursor:pointer;border-bottom:1px solid rgba(0,238,0,0.3);" data-id="' + users[i].id + '"><h4>' + users[i].first_name + '</h4></div>';
+                        }
+                        $('#userSearchResults').html(userSearchResultsHTML);
+                    } else {
+                        $('#userSearchResults').html('Chyba pri vyhľadávaní');
+                    }
+                }
+            });
+
+            $(document).on('click', '.user-result', function() {
+                var userId = $(this).data('id');
+                $('#addUserToSeasonButton').css('display', 'block').data('userId', userId);
+                $('#userSearchResults').html('');
+                $('#addUserToSeasonButton').trigger('click');
+            });
+
+            $('#addUserToSeasonButton').click(async function() {
+                var user_id = $(this).data('userId');
+                var season_id = {{season}};
+
+                try {
+                    const response = await fetch('/season/add_user_to_season', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: JSON.stringify({ user_id: user_id, season_id: season_id })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        refreshTable();
+                        $('#addUserToSeasonButton').css('display', 'none');
+                        $('#userSearch').val('');
+                    } else {
+                        const errorData = await response.json();
+                        alert('Chyba: ' + errorData.error);
+                    }
+                } catch (error) {
+                    console.error('Chyba:', error);
+                }
+            });
+
+            function refreshTable() {
+                $.get('/season/{{season}}/get_user_seasons', function(data) {
+                    document.getElementById("dataLengthDisplay").innerHTML = data.length;
+
+                    var tbody = $("#userSeasonTable tbody");
+                    tbody.empty();
+
+                    var noGroupValue = data.length > 0 ? data[0].no_group : 0;
+
+                    data.forEach(function(item, index) {
+                        var classs = "draggable-row";
+                        var borderBottomStyle = "";
+
+                        if (noGroupValue > 0 && (index + 1) % noGroupValue === 0) {
+                            borderBottomStyle = "border-bottom: 1px solid #00EE00;";
+                        }
+
+                        var row = `
+                            <tr style="width:269px;padding-bottom:5px; ${borderBottomStyle}" class="${classs}" data-user-id="${item.user_id}" data-season-id="${item.season_id}">
+                                <td style="width:33px;padding-bottom:5px;">${item.orderz}</td>
+                                <td style="width:203px;padding-bottom:5px;">${item.season_first_date}</td>
+                                <td style="width:33px;padding-bottom:5px;">
+                                    <button style="margin-right:20px;" class="btn-reverse delete-btn">x</button>
+                                </td>
+                            </tr>`;
+
+                        var newRow = $(row);
+                        newRow.hide();
+                        tbody.append(newRow);
+                        newRow.fadeIn();
+                    });
+
+                    // Activate sorting with mobile support
+                    tbody.sortable({
+                        update: function(event, ui) {
+                            var data = [];
+                            tbody.find("tr").each(function(index) {
+                                data.push({
+                                    user_id: $(this).data("user-id"),
+                                    season_id: $(this).data("season-id"),
+                                    orderz: index
+                                });
+                            });
+
+                            $.ajax({
+                                type: 'POST',
+                                url: '/season/update_order',
+                                data: JSON.stringify(data),
+                                contentType: 'application/json',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': csrfToken
+                                },
+                                success: function(response) {
+                                    refreshTable();
+                                }
+                            });
+                        }
+                    }).disableSelection();
+                });
+            }
+
+            refreshTable();
+
+            $(document).on("click", ".delete-btn", function() {
+                var tr = $(this).closest("tr");
+                var data = {
+                    user_id: tr.data("user-id"),
+                    season_id: tr.data("season-id")
+                };
+                $.ajax({
+                    type: 'POST',
+                    url: '/season/delete_row',
+                    data: JSON.stringify(data),
+                    contentType: 'application/json',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    success: function(response) {
+                        tr.fadeOut(function() {
+                            tr.remove();
+                        });
+                        var currentValue = parseInt(document.getElementById("dataLengthDisplay").innerHTML, 10);
+
+                        // Skontroluj, či currentValue nie je NaN
+                        if (!isNaN(currentValue)) {
+                            // Odpočítaj 1
+                            document.getElementById("dataLengthDisplay").innerHTML = currentValue - 1;
+                        }                    }
+                });
+            });
+
+            // Additional touch event handling for drag on mobile
+            $('body').on('touchstart', function(e) {
+                if (e.targetTouches.length === 1) {
+                    var touch = e.targetTouches[0];
+                    var simulatedEvent = document.createEvent('MouseEvent');
+                    simulatedEvent.initMouseEvent('mousedown', true, true, window, 1,
+                        touch.screenX, touch.screenY, touch.clientX, touch.clientY, false,
+                        false, false, false, 0, null);
+                    touch.target.dispatchEvent(simulatedEvent);
+                    e.preventDefault();
                 }
             });
         });
-    });
-</script>
+    </script>
 
-<div
-class="modal fade"
-id="season-delete"
-tabindex="-1"
-role="dialog"
-aria-labelledby="deleteModalLabel"
-aria-hidden="true"
->
-<div class="modal-dialog" role="document">
-  <div class="modal-content">
-
-    <div class="modal-header">
-      <h1 class="modal-title">Delete „{{seas.name}}“?</h1>
-     <br>
-      <form
-        class=""
-        method="POST"
-      >
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-        <button class="btn2 btn-sm" style="font-weight: 700;padding-left: 10px;padding-right: 10px;padding-top: 4px;"  type="submit" value="OK" />DELETE</button>
-      </form>
-      <button style="font-weight: 700;" type="button" class="btn3 btn-sm" data-bs-dismiss="modal">
-        NO
-      </button>
-
+    <div class="modal fade" id="season-delete" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title">Delete „{{seas.name}}“?</h1>
+                    <br>
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn2 btn-sm" style="font-weight: 700;padding-left: 10px;padding-right: 10px;padding-top: 4px;" type="submit" value="OK">DELETE</button>
+                    </form>
+                    <button style="font-weight: 700;" type="button" class="btn3 btn-sm" data-bs-dismiss="modal">NO</button>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
-
-</div>
-
-<!-- <script>
-    $('#addUserToSeasonButton').click(async function() {
-        var user_id = $(this).data('userId');  // Uistite sa, že správne získavate user_id
-        var season_id = {{season}};  // Sezona ID by malo byť definované v šablóne
-    
-        try {
-            const response = await fetch('/season/add_user_to_season', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify({ user_id: user_id, season_id: season_id })  // Uistite sa, že tieto hodnoty sú správne
-            });
-    
-            if (response.ok) {
-                const data = await response.json();
-                //alert(data.message);
-            } else {
-                const errorData = await response.json();
-                //alert('Chyba: ' + errorData.error);
-            }
-        } catch (error) {
-            console.error('Chyba:', error);
-        }
-    });
-</script> 
--->
 {% endblock %}

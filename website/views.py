@@ -1688,32 +1688,39 @@ def season_manager(season):
 
     if request.method == "POST" and request.form.get('ide_season'):
         season1 = int(request.form.get('ide_season'))
-        # print(season1)
+        
         if season1 < 1:
             flash('There is a problem!', category='error')
         else:
+            # Načítanie emailov pre sezónu
             emailz = db.session.query(User.email).join(user_season, user_season.c.user_id == User.id).filter(user_season.c.season_id == season1).all()
-
-            # Konverzia výsledku dotazu na jednoduchý zoznam e-mailov
+            
+            # Konverzia výsledku dotazu na zoznam e-mailov
             email_list = [email[0] for email in emailz]
+            
+            # Určenie typu sezóny (pridajte logiku na načítanie správneho 'season_type')
+            season_type = db.session.query(Season).filter_by(id=season1).first()
 
-            # Iterovanie cez zoznam e-mailov a odoslanie e-mailu každému používateľovi
-            # pass
-            # create_new_season(season1)
-            # print("********************")
-            # print(season_type.season_type)
-            # print("********************")
+            if season_type is None:
+                flash('Invalid season type!', category='error')
+                return redirect(url_for('views.season_manager', season=season1))
+            
+            # Vytvorenie sezóny alebo generovanie turnajovej štruktúry
             if season_type.season_type == 1:
                 print("Creating new season...")
                 create_new_season(season1)
             elif season_type.season_type == 2:
                 print("Generating tournament structure...")
                 generate_tournament_structure(season1)
+
             flash('New round was created!!!', category='success')
-            # print("poslat email")
-            # send_new_round_email(,what,season)
-            for email in email_list:
-                send_new_round_email(email, "New Round Notification", season1)
+
+            # Odoslanie e-mailu pre všetkých používateľov naraz
+            if email_list:
+                send_new_round_email(email_list, "New Round Notification", season1)
+            else:
+                flash('No users found for this season!', category='warning')
+
             return redirect(url_for('views.season_manager', season=season1))
 
 
