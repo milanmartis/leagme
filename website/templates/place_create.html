@@ -12,35 +12,36 @@
         max-width: 600px;
         display: flex;
         align-items: center;
-        border-top: 2px red;
       }
       
-      .d-flex {
+    .d-flex {
         display: flex;
       }
       
-      .align-items-center {
+    .align-items-center {
         align-items: center;
       }
       
-      .mr-2 {
+    .mr-2 {
         margin-right: 8px;
       }
       
-      .mx-2 {
+    .mx-2 {
         margin-left: 8px;
         margin-right: 8px;
       }
       
-      .btn-no-border {
+    .btn-no-border {
         border: none;
         background: none;
         cursor: pointer;
         padding: 0px;
         margin: 0px;
       }
-  </style>
-<h1 align="center"><img src="{{ url_for('static', filename='img/' + head + '.svg') }}" class="filter-green" width="290" /></h1>
+</style>
+<h1 align="center">
+    <img src="{{ url_for('static', filename='img/' + head + '.svg') }}" class="filter-green" width="290" />
+</h1>
 <div class="content-section">
     <form action="" method="post" class="form" role="form" enctype="multipart/form-data" autocomplete="off">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -76,8 +77,6 @@
                     {{ form.address_street(class="form-control form-control-lg createforms", autocomplete="off") }}
                 {% endif %}
             </div>
-            
-            <!-- Repeat similar blocks for address_street_no, address_street_zip, address_street_city, address_street_state -->
 
             <!-- Place Phone Number -->
             <div class="form-group">
@@ -107,26 +106,21 @@
                 {% else %}
                     {{ form.coordinates(class="form-control form-control-lg createforms", autocomplete="off") }}
                 {% endif %}
-                
-                <!-- Add similar form inputs for other attributes like user_id, and gallery fields if needed -->
                 <br>
             </div>
 
-                <!-- Submit Button -->
-                <!-- Opening Hours Section -->
-                    <h4>Opening Hours</h4>
-                    <div id="opening-hours-container"></div>
-
-            <!-- Dynamic opening hours fields will be added here -->
-        <button type="button" onclick="addOpeningHours()" class="btn btn-sm btn-outline-success">Add Opening Hours</button>
-    </div>
-    <br>
-        <!-- Submit Button -->
-        <div class="form-group">
-            {{ form.submit(class="btn-demo btn-outline-info createforms", value=title) }}
-        </div>
-
-    <br>
+            <!-- Opening Hours Section -->
+            <h4>Opening Hours</h4>
+            <div id="opening-hours-container"></div>
+            <button type="button" onclick="addOpeningHours()" class="btn btn-sm btn-outline-success" style="max-width: 260px;">Add Opening Hours</button>
+<br><br><br>
+            <div class="form-group">
+                {{ form.submit(class="btn-demo btn-outline-info createforms", value=title) }}
+            </div>
+            <br>
+        </fieldset>
+    </form>
+<br>
     <!-- Back Button Logic -->
     {% if season %}
     <button onclick="javascript:location.href='{{ url_for('views.season_manager', season=season.id) }}';" class="btn btn-sm createforms2">Back</button>
@@ -134,15 +128,13 @@
     <button onclick="javascript:location.href='{{ url_for('views.index') }}';" class="btn btn-sm createforms2">Back</button>
     {% endif %}
 </div>
-</div>
-</form>
+
 <script>
-    // JavaScript for dynamically adding opening hours fields
     const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    
+
     function addOpeningHours() {
         const container = document.getElementById('opening-hours-container');
-        
+
         daysOfWeek.forEach(day => {
             if (!document.getElementById(day)) {
                 const row = document.createElement('div');
@@ -152,27 +144,15 @@
                 row.innerHTML = `
                     <label class="col-sm-2 col-form-label">${day}:</label>
                     <div class="col-sm-8 d-flex align-items-center">
-                        <input type="time" placeholder="HH:MM" name="opening_hours[${day}][open_time]" class="form-control time-input mr-2" lang="sk" pattern="[0-9]{2}:[0-9]{2}">
+                        <input type="time" name="opening_hours[${day}][open_time]" class="form-control time-input mr-2" lang="sk" required>
                         <span class="mx-2">-</span>
-                        <input type="time" placeholder="HH:MM" name="opening_hours[${day}][close_time]" class="form-control time-input mr-2" lang="sk" pattern="[0-9]{2}:[0-9]{2}">
+                        <input type="time" name="opening_hours[${day}][close_time]" class="form-control time-input mr-2" lang="sk" required>
                         <button type="button" class="btn btn-no-border" onclick="removeOpeningHours('${day}')">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
                 `;
                 container.appendChild(row);
-
-                // Add event listeners to new inputs
-                const timeInputs = row.querySelectorAll('.time-input');
-                timeInputs.forEach(input => {
-                    input.addEventListener('input', function(e) {
-                        let value = e.target.value;
-                        // Kontrola a úprava vstupu, aby zodpovedal formátu 24-hodinového času (HH:MM)
-                        if (!/^\d{0,2}:\d{0,2}$/.test(value)) {
-                            e.target.value = value.slice(0, -1);  // Odstráni posledný znak, ak nespĺňa podmienku
-                        }
-                    });
-                });
             }
         });
     }
@@ -184,18 +164,6 @@
         }
     }
 </script>
-
-
-    <script>
-        document.getElementById('timeInput').addEventListener('input', function (e) {
-          let value = e.target.value;
-      
-          // Kontrola a úprava vstupu, aby zodpovedal formátu 24-hodinového času (HH:MM)
-          if (!/^\d{0,2}:\d{0,2}$/.test(value)) {
-            e.target.value = value.slice(0, -1);  // Odstráni posledný znak, ak nespĺňa podmienku
-          }
-        });
-      </script>
 
 <script>
     let formHasChanged = false;
@@ -229,5 +197,10 @@
         });
     });
 </script>
-
+<script>
+    // Clear localStorage when the page is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        localStorage.clear();
+    });
+</script>
 {% endblock content %}

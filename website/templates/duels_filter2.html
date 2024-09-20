@@ -63,11 +63,15 @@
                       
                       {% set disabled = "disabled" if is_disabled else "" %}
                       {% set checked = "btn btn-outline-dark btn-block shadow-none" if is_checked else "btn2 btn-outline-dark btn-block shadow-none" %}
-                      
+                      {% if duel.player|length < 2 %} 
+    {% set disabled22 = "disabled" %} 
+{% else %} 
+    {% set disabled22 = "" %} 
+{% endif %}
                       <div valign="middle" align="center"  class="col-12">
                         <form method="POST" action="javascript:;">
                           <input type="hidden" id="duelz" name="duelz" value="{{ duel.duel_id }}" />
-                          <button id="location_href_season/{{season}}/duel/{{duel.duel_id}}" name="location_href_season/{{season}}/duel/{{duel.duel_id}}" onclick="locationHref('season/{{season}}/duel/{{duel.duel_id}}')" type="submit" {{ disabled }} class="{{ checked }}">
+                          <button {{ disabled22 }} id="location_href_season/{{season}}/duel/{{duel.duel_id}}" name="location_href_season/{{season}}/duel/{{duel.duel_id}}" onclick="locationHref('season/{{season}}/duel/{{duel.duel_id}}')" type="submit" {{ disabled }} class="{{ checked }}">
                             <div class="row">
                               {% if season_type == 2 %}
                                 <div class="col-5" style="text-align: right;padding: 0px; margin: 0px;">

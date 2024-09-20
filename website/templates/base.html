@@ -116,13 +116,13 @@
 
             {% if seas.open == true %}
             <li class="nav-item">
-              <a href="{{ url_for('views.home', season=season) }}" class="nav-item nav-link">
+              <a href="{{ url_for('views.home', season=seas.id) }}" class="nav-item nav-link">
                 Standings
               </a>
             </li>
             {% endif %}
             <li class="nav-item">
-              <a href="{{ url_for('views.season_manager', season=season) }}" class="nav-item nav-link">
+              <a href="{{ url_for('views.season_manager', season=seas.id) }}" class="nav-item nav-link">
                 Rounds
               </a>
             </li>

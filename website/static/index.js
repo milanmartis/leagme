@@ -221,8 +221,7 @@ async function locationHref(url) {
   var location_href = document.getElementById('location_href_'+url+'')
   var user = document.getElementById('user')
   // alert(user.value);
-  location_href.innerHTML =
-  '<i class="fa fa-circle-o-notch fa-spin" ></i>'
+ // location_href.innerHTML =  '<i class="fa fa-circle-o-notch fa-spin" ></i>';
   
   await fetch('/login', {
     method: 'POST',

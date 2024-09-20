@@ -1119,6 +1119,8 @@ def tournament_new():
     # Získanie všetkých miest aktuálneho používateľa
     user_places = Place.query.filter_by(user_id=current_user.id).all()
     form.place_id.choices = [(place.id, place.name) for place in Place.query.all()]
+    if request.method == "POST" and not form.validate_on_submit():
+        flash(f"you must fill in required fields", 'error')  # Toto vám ukáže chyby v konzole, ak nejaké existujú
 
     if form.validate_on_submit():
         season = db.session.query(Season).filter(Season.name.like(form.name.data)).first()
@@ -1164,8 +1166,8 @@ def season_new():
     
     user_places = Place.query.filter_by(user_id=current_user.id).all()
     form.place_id.choices = [(place.id, place.name) for place in Place.query.filter_by(user_id=current_user.id).all()]
-    if not form.validate_on_submit():
-        flash(f"you must fill in all fields", 'error')  # Toto vám ukáže chyby v konzole, ak nejaké existujú
+    if request.method == "POST" and not form.validate_on_submit():
+        flash(f"you must fill in required fields", 'error')  # Toto vám ukáže chyby v konzole, ak nejaké existujú
     if form.validate_on_submit():
         season = db.session.query(Season).filter(Season.name.like(form.name.data)).first()
         season_type = int(request.form.get('season_type'))

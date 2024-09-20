@@ -1,3 +1,4 @@
 env
 .env
 node_modules
+website/virtual_players.py

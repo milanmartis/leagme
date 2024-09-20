@@ -56,6 +56,8 @@
     {% else %}
         <h4>No Rounds available</h4>
     {% endif %}
+    <h1 id="dataLengthDisplay"></h1>
+
 <table class="table-sortable" id="userSeasonTable">
     <thead style="margin-bottom:20px;">
         <tr>
@@ -100,6 +102,7 @@
     
                 if (response.ok) {
                     const users = await response.json();
+                    //alert(users.length); #pocet hracov k dispozicii
                     var userSearchResultsHTML = '';
                     for (var i = 0; i < users.length; i++) {
                         userSearchResultsHTML += '<div class="user-result" style="width:233px;cursor:pointer;border-bottom:1px solid rgba(0,238,0,0.3);" data-id="' + users[i].id + '"><h4>' + users[i].first_name + '</h4></div>';
@@ -158,6 +161,8 @@
 
         function refreshTable() {
             $.get('/season/{{season}}/get_user_seasons', function(data) {
+                document.getElementById("dataLengthDisplay").innerHTML = "Players #" + data.length;
+
                 var tbody = $("#userSeasonTable tbody");
                 tbody.empty();
                 

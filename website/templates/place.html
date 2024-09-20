@@ -56,7 +56,41 @@
     </h4>
   </div>
 </div>
+<center><h3 class="neon-text" style="font-size: 99%; font-weight: 700;">OPEN</h3></center>
+<h1 style="margin-top: -40px;" align="center"><img src="{{ url_for('static', filename = 'img/seasons.svg') }}" class="filter-green" width="150" /></h1>
+{% if season_places %}
+  <div class="container readinglazy" align="center">
+    <div class="row" style="display:block;max-width:320px; text-align: center;">
+      {% for season in season_places %}
+        <div valign="middle" align="center" class="col-12">
+          {% if season.visible == true %}
+          {% if season.open == true %}
+          <a href="{{ url_for('views.home', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none">{{ season.name }}</a>
+          {% else %}
+          <a href="{{ url_for('views.season_manager', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none">{{ season.name }}</a>
+          {% endif %}
+          {% else %}
+          {% if season.open == true %}
+          <a href="{{ url_for('views.home', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none" style="opacity:0.6;">{{ season.name }}</a>
+          {% else %}
+          <a href="{{ url_for('views.season_manager', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none" style="opacity:0.6;">{{ season.name }}</a>
+          {% endif %}
 
+          {% endif %}
+
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% else %}
+  <div class="container">
+    <div class="row">
+      <div class="col">
+        <h1>NO SEASON YET</h1>
+      </div>
+    </div>
+  </div>
+{% endif %}
 <!-- Include Leaflet JavaScript -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {

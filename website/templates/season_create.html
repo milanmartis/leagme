@@ -145,4 +145,10 @@
     <button onclick="javascript:location.href='{{ url_for('views.index') }}';" class="btn btn-sm createforms2" />Back</button>
 {% endif %}
 </div>
+<script>
+    // Clear localStorage when the page is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        localStorage.clear();
+    });
+</script>
 {% endblock content %}
