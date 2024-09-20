@@ -117,7 +117,7 @@ def google_login():
         return redirect(url_for('google.login'))  # Redirect to Google login if not authorized
 
     # Fetch user info from Google API
-    resp = google.get("/oauth2/v3/userinfo")  # Try the v1 endpoint
+    resp = google.get("/oauth2/v2/userinfo")  # Try the v1 endpoint
     if not resp.ok:
         flash("Failed to fetch user info from Google.", "error")
         print("Error details:", resp.text)  # Print detailed error for debugging
