@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 from .models import Note, User, Duel, Place, OpeningHours, Season, Groupz, Round, Product, Order, user_duel, user_group, user_season, PaymentCard
-from . import db
+from . import db, current_app
 import json
 from sqlalchemy import func, or_
 from sqlalchemy import insert, update
@@ -77,6 +77,31 @@ def roles_required(*roles):
         
 views = Blueprint('views', __name__)
 
+
+
+from firebase_admin import messaging
+
+def send_push_notification(token, title, body):
+    """Odoslanie push notifikácie na dané zariadenie pomocou FCM."""
+    
+    # Vytvorenie správy
+    message = messaging.Message(
+        notification=messaging.Notification(
+            title=title,
+            body=body,
+        ),
+        token=token,  # Toto je token zariadenia, kam notifikáciu posielate
+    )
+
+    # Odoslanie správy
+    try:
+        response = messaging.send(message)
+        print('Úspešne odoslané:', response)
+    except Exception as e:
+        print('Chyba pri odosielaní notifikácie:', e)
+        
+        
+
 adminz = [2]
 # season = 58
 def is_integer(form, field):
@@ -145,6 +170,7 @@ def index():
     # seasons = db.session.query(Season).filter(Season.id.in_(season_ids)).all()
     # seasons = db.session.query(Season).filter(Season.open==True).all()
     # seasons = db.session.query(Season).filter(Season.visible==True)
+    
     seasons = db.session.query(Season).filter(
     or_(
         Season.visible == True,
@@ -152,6 +178,8 @@ def index():
     )
     ).all()
     groupz = db.session.query(Groupz.round_id).all()
+    # season_places = Season.query.filter_by(place_id=place.id)
+    placeable = Place.query.filter_by(user_id=current_user.id).first()
     
     if request.method == "POST" and request.form.get('tournament_add'):
         
@@ -172,9 +200,10 @@ def index():
 
         return redirect(url_for('views.home', season=season1))
     
+    vapid_public_key=os.environ.get("VAPID_PUBLIC_KEY")
+    # print(vapid_public_key)
     
-    
-    return render_template("index.html", seasons=seasons, user=current_user, adminz=adminz)
+    return render_template("index.html", vapid_public_key=vapid_public_key, seasons=seasons, user=current_user, adminz=adminz, placeable=placeable)
     
 
 @views.route('/home/<season>/', methods=['GET', 'POST'])
@@ -1106,12 +1135,13 @@ def new_place():
 def place_manager(place_slug):
     # Query the Place object based on the slug
     place = Place.query.filter_by(slug=place_slug).first()
+    season_places = Season.query.filter_by(place_id=place.id)
     
     if not place:
         flash("Place not found.", category="error")
         return redirect(url_for('views.index'))
     
-    return render_template("place.html", place=place, user=current_user)
+    return render_template("place.html", season_places=season_places, place=place, user=current_user)
 
 
 
@@ -1264,6 +1294,7 @@ def season_player_delete(player, season):
 
 @views.route('/pricing', methods=['GET', 'POST'])
 def pricing_list():
+    
     customer_id = current_user.stripe_subscription_id  # Predpokladám, že máte stripe_customer_id uložené v používateľskom objekte
     subscriptions = stripe.Subscription.list(customer=customer_id)
     if not subscriptions:
@@ -1495,8 +1526,6 @@ def update_season(season):
     # form.place_id.choices = [(place.id, place.name) for place in user_places]
     if request.method == "POST" and not form.validate_on_submit():
         flash(f"you must fill in required fields", 'error')  # Toto vám ukáže chyby v konzole, ak nejaké existujú
-    if not form.validate_on_submit():
-        flash(f"you must fill in all fields", 'error')  # Toto vám ukáže chyby v konzole, ak nejaké existujú
     if form.validate_on_submit():
         season.name = form.name.data
         season.min_players = form.min_players.data
@@ -1857,7 +1886,46 @@ def create_new_season(season):
     open_season.open = True
 
     db.session.commit()
+    
+    
+    
+    
+    
+    
+    
+#################### FIRE BASE ###########################
+    user_tokens = {}
+    @views.route('/register_token', methods=['POST'])
+    def register_token():
+        print("ssssssssssssssssssssssssssssssssssssssssssssssssssss")
+        print("ssssssssssssssssssssssssssssssssssssssssssssssssssss")
+        print("ssssssssssssssssssssssssssssssssssssssssssssssssssss")
+        """API na registráciu FCM tokenu pre používateľa."""
+        data = request.json
+        user_id = data.get('user_id')
+        token = data.get('token')
 
+        # Uložte token pre používateľa
+        user_tokens[user_id] = token
+        return jsonify({"message": "Token uložený"}), 200
+    
+    @views.route('/send_notification', methods=['POST'])
+    def send_notification():
+        """API na odoslanie push notifikácie."""
+        data = request.json
+        user_id = data.get('user_id')
+        title = data.get('title')
+        body = data.get('body')
+
+        # Získanie tokenu používateľa
+        token = user_tokens.get(user_id)
+        
+        if token:
+            # Odoslanie notifikácie
+            send_push_notification(token, title, body)
+            return jsonify({"message": "Notifikácia odoslaná"}), 200
+        else:
+            return jsonify({"error": "Používateľ nemá registrovaný token"}), 404
 
 
 

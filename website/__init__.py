@@ -17,14 +17,17 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 from redis import Redis
 from celery import Celery
 from flask_session import Session
-from flask_caching import Cache  # Import Cache
+from flask_caching import Cache
 from flask_cors import CORS
 from flask_wtf.csrf import CSRFProtect, CSRFError
 import uuid
+import json
+import boto3
+import firebase_admin
+from firebase_admin import credentials, firestore, auth, messaging
 
 # Load environment variables
 load_dotenv()
-# os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -38,12 +41,20 @@ celery = None  # Initialize as None and configure later
 cors = CORS()
 csrf = CSRFProtect()
 
+firebase_cert = json.loads(os.getenv('FIREBASE_CERT'))
+cred = credentials.Certificate(firebase_cert)
+firebase_admin.initialize_app(cred)
+
+# Firestore client (optional, if you're using Firestore)
+firebase_db = firestore.client()
+
+# Celery configuration
 def make_celery(app=None):
     app = app or create_app()
     celery = Celery(
         app.import_name,
-        broker='redis://elasticacheleagme-wb2hf0.serverless.eun1.cache.amazonaws.com:6379/0',  # Redis endpoint from ElastiCache
-        backend='redis://elasticacheleagme-wb2hf0.serverless.eun1.cache.amazonaws.com:6379/0'  # Redis as backend
+        broker=os.environ.get("CELERY_BROKER_URL"),
+        backend=os.environ.get("CELERY_RESULT_BACKEND")
     )
     celery.conf.update(app.config)
 
@@ -63,10 +74,10 @@ def create_app():
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
     app.config["SECURITY_PASSWORD_SALT"] = "156043940537155509276282232127182067465"
     app.config["SECURITY_TOTP_SECRETS"] = {"1": "TjQ9Qa31VOrfEzuPy4VHQWPCTmRzCnFzMKLxXYiZu9B"}
-    app.config["SECURITY_PASSWORD_HASH"] = "argon2"  # Set Argon2 as the default hash
-    app.config['SECURITY_CONFIRMABLE'] = True  # Enables email confirmation
-    app.config['SECURITY_REGISTERABLE'] = True  # Allows user registration
-    app.config['SECURITY_RECOVERABLE'] = True   # Enables password recovery
+    app.config["SECURITY_PASSWORD_HASH"] = "argon2"
+    app.config['SECURITY_CONFIRMABLE'] = True
+    app.config['SECURITY_REGISTERABLE'] = True
+    app.config['SECURITY_RECOVERABLE'] = True
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("SQLALCHEMY_DATABASE_URI")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config['MAIL_SERVER'] = os.environ.get("MAIL_SERVER")
@@ -87,9 +98,11 @@ def create_app():
     app.config['CELERY_RESULT_BACKEND'] = os.environ.get("CELERY_RESULT_BACKEND")
     app.config['CACHE_TYPE'] = 'redis'
     app.config['CACHE_REDIS_URL'] = os.environ.get("CACHE_REDIS_URL")
+    app.config['VAPID_PUBLIC_KEY'] = os.environ.get("VAPID_PUBLIC_KEY")
+    app.config['VAPID_PRIVATE_KEY'] = os.environ.get("VAPID_PRIVATE_KEY")
 
-    # cache.init_app(app) 
-    cache.init_app(app, config={'CACHE_TYPE': 'redis'})  # alebo iný typ cache
+    # Initialize extensions
+    cache.init_app(app, config={'CACHE_TYPE': 'redis'})
     db.init_app(app)
     csrf.init_app(app)
     bcrypt.init_app(app)
@@ -101,12 +114,11 @@ def create_app():
 
     from .models import User, ProductCategory, Product, Role, user_datastore
 
-
     # Configure Google OAuth Blueprint
     google_blueprint = make_google_blueprint(
         client_id=os.getenv("GOOGLE_CLIENT_ID"),
         client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
-        redirect_to="views.index",  # Function to handle the redirection after login
+        redirect_to="views.index",
         scope=["openid", "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"]
     )
     app.register_blueprint(google_blueprint, url_prefix="/login")
@@ -129,14 +141,14 @@ def create_app():
         # Check if user already exists
         user = User.query.filter_by(email=user_email).first()
         if not user:
-            # If not, create a new user
             user = User(
-                email=user_email, 
+                email=user_email,
                 first_name=user_info.get("email"),
-                authenticated=True, 
-                confirm=True, 
-                active=True, 
-                fs_uniquifier=str(uuid.uuid4()))
+                authenticated=True,
+                confirm=True,
+                active=True,
+                fs_uniquifier=str(uuid.uuid4())
+            )
             db.session.add(user)
             db.session.commit()
 
@@ -148,8 +160,9 @@ def create_app():
     global celery
     celery = make_celery(app)
 
-    # socketio.init_app(app)
-    socketio.init_app(app, cors_allowed_origins="*", async_mode="gevent")
+    socketio.init_app(app)
+    # socketio.init_app(app, cors_allowed_origins="*", async_mode="gevent")
+
 
     # Register Blueprints
     from .views import views
@@ -165,30 +178,59 @@ def create_app():
     # Initialize Flask-Security
     Security(app, user_datastore)
 
+    # Firebase Messaging Example
+    def send_firebase_message(token, title, body):
+        """Send a notification to a device using Firebase Cloud Messaging"""
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title=title,
+                body=body
+            ),
+            token=token
+        )
+        response = messaging.send(message)
+        print(f"Successfully sent message: {response}")
+
     # Role Protection Definition
     _security = LocalProxy(lambda: current_app.extensions['security'])
+
+    @app.route('/get-firebase-config')
+    def get_firebase_config():
+        firebase_config = {
+            "apiKey": os.environ.get('FIREBASE_API_KEY'),
+            "authDomain": os.environ.get('FIREBASE_AUTH_DOMAIN'),
+            "projectId": os.environ.get('FIREBASE_PROJECT_ID'),
+            "storageBucket": os.environ.get('FIREBASE_STORAGE_BUCKET'),
+            "messagingSenderId": os.environ.get('FIREBASE_MESSAGING_SENDER_ID'),
+            "appId": os.environ.get('FIREBASE_APP_ID'),
+            "measurementId": os.environ.get('FIREBASE_MEASUREMENT_ID')
+        }
+        return jsonify(firebase_config)
+
+    @app.route('/vapid-public-key')
+    def get_vapid_public_key():
+        vapid_public_key=os.getenv("VAPID_PUBLIC_KEY")
+        return jsonify({'publicKey': vapid_public_key})
+
 
     @app.template_filter('datetimeformat')
     def datetimeformat(value, format='%d/%m/%Y'):
         return datetime.fromtimestamp(value).strftime(format)
-    
+
     @app.route('/notify-disconnect', methods=['POST'])
     def notify_disconnect():
         data = request.get_json()
         message = data.get('message', 'An unknown issue occurred.')
-        
+
         # Použijeme flash správu na upozornenie používateľa
         flash(message, category='error')
-        
+
         return jsonify({'status': 'success', 'message': 'Notification received'}), 200
-    
 
-
-    
     @app.errorhandler(CSRFError)
     def handle_csrf_error(e):
         return jsonify({'error': 'CSRF token missing or incorrect.'}), 400
-    
+
     # Error Handler for Database Issues
     @app.errorhandler(OperationalError)
     def handle_operational_error(e):
@@ -202,6 +244,4 @@ def create_app():
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-
     return app
-

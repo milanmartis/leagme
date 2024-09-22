@@ -22,6 +22,7 @@ import uuid
 import random
 import requests
 from website import mail, celery
+from .utils import send_new_purchase_email
 
 import os
 from datetime import datetime
@@ -592,6 +593,8 @@ def make_order():
         if payment_intent.status == 'succeeded':
             # Platba bola úspešná bez potreby 3D Secure overenia
             save_order_to_database(user_id, product_id, subscription.id, role_name, customer.id)
+            send_new_purchase_email(current_user.email, role_name)
+
             flash("Thanks for your purchase.", category="success")
             return jsonify({'subscription_id': subscription.id})
 
