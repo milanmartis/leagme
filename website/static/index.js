@@ -35,42 +35,62 @@ function requestNotificationPermission(messaging) {
 }
 
 // Inicializácia Firebase a FCM
-function initializeFirebase() {
-  fetch('/get-firebase-config')
-    .then(response => response.json())
-    .then(firebaseConfig => {
-      // Inicializácia Firebase s dynamicky načítanou konfiguráciou
-      firebase.initializeApp(firebaseConfig);
+// Načítanie Firebase SDK
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging.js";
 
-      // Inicializácia Firebase Cloud Messaging
-      const messaging = firebase.messaging();
+// Funkcia na načítanie Firebase konfigurácie
+async function initializeFirebase() {
+    try {
+        // Načítanie konfigurácie z endpointu
+        const response = await fetch('/get-firebase-config');
+        const firebaseConfig = await response.json();
 
-      // Získanie povolenia na zobrazenie notifikácií
-      if (isIndexedDBAvailable()) {
-        console.log("IndexedDB is available, initializing Firebase Messaging...");
-        requestNotificationPermission(messaging); // Zavolanie funkcie na získanie povolenia
-      } else {
-        console.log("This browser doesn't support IndexedDB, FCM will not work.");
-      }
+        // Inicializácia Firebase
+        const app = initializeApp(firebaseConfig);
+        const messaging = getMessaging(app);
 
-      // Spracovanie správ, keď je stránka aktívna (popredí)
-      messaging.onMessage((payload) => {
-        console.log('Správa prijatá:', payload);
-        const notificationTitle = payload.notification.title;
-        const notificationOptions = {
-          body: payload.notification.body,
-          icon: '/firebase-logo.png'  // Upravte cestu k vašej ikone, ak chcete
-        };
-        new Notification(notificationTitle, notificationOptions);
-      });
+        // Získanie FCM tokenu
+        const token = await getToken(messaging, { vapidKey: '<Your VAPID Key>' });
+        if (token) {
+            console.log('FCM Token:', token);
+            // Odoslanie tokenu na server
+            registerTokenOnServer(token);
+        } else {
+            console.log('Nebolo možné získať token.');
+        }
+
+        // Spracovanie prichádzajúcich správ (ak je aplikácia otvorená)
+        onMessage(messaging, (payload) => {
+            console.log('Správa prijatá:', payload);
+            // Zobrazenie správy alebo notifikácie
+        });
+
+    } catch (error) {
+        console.error('Chyba pri inicializácii Firebase:', error);
+    }
+}
+
+// Funkcia na odoslanie tokenu na server
+function registerTokenOnServer(token) {
+    fetch('/register_token', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_id: 'YourUserID', token: token })
     })
-    .catch((error) => {
-      console.error('Chyba pri načítaní Firebase konfigurácie:', error);
+    .then(response => response.json())
+    .then(data => {
+        console.log('Token bol uložený na serveri:', data);
+    })
+    .catch(error => {
+        console.error('Chyba pri odosielaní tokenu na server:', error);
     });
 }
 
-// Inicializujte Firebase pri načítaní stránky
-document.addEventListener('DOMContentLoaded', initializeFirebase);
+// Zavolanie funkcie na inicializáciu Firebase
+initializeFirebase();
 
 
 
