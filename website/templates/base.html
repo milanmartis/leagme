@@ -301,8 +301,8 @@
   <script>
       // Pripojenie k serveru Socket.IO
       //const socket = io();
-      var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port)
-    
+      const socket = io('https://leagme.com', { transports: ['websocket'] });
+
     socket.on('disconnect', () => {
         console.log('Disconnected from server, attempting to reconnect...');
         socket.connect();  // Reconnect logic
