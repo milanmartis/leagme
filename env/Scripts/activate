@@ -38,7 +38,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="C:\Users\Dell\lm\env"
+VIRTUAL_ENV="C:\lm\env"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

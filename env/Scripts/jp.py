@@ -1,4 +1,4 @@
-#!C:\Users\Dell\lm\env\Scripts\python.exe
+#!C:\lm\env\Scripts\python.exe
 
 import sys
 import json

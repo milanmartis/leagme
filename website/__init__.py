@@ -24,7 +24,7 @@ import uuid
 import json
 import boto3
 import firebase_admin
-from firebase_admin import credentials, firestore, auth, messaging
+from firebase_admin import credentials, firestore, auth, messaging, initialize_app
 
 # Load environment variables
 load_dotenv()
@@ -41,12 +41,11 @@ celery = None  # Initialize as None and configure later
 cors = CORS()
 csrf = CSRFProtect()
 
-firebase_cert = json.loads(os.getenv('FIREBASE_CERT'))
-cred = credentials.Certificate(firebase_cert)
-firebase_admin.initialize_app(cred)
+# Načítanie certifikátu zo súboru
+cred = credentials.Certificate(os.environ.get("FIREBASE_URL_JSON"))
 
-# Firestore client (optional, if you're using Firestore)
-firebase_db = firestore.client()
+# Inicializácia aplikácie Firebase
+firebase_admin.initialize_app(cred)
 
 # Celery configuration
 def make_celery(app=None):

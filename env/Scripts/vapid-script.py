@@ -1,4 +1,4 @@
-#!C:\Users\Dell\lm\env\Scripts\python.exe
+#!C:\lm\env\Scripts\python.exe
 # EASY-INSTALL-ENTRY-SCRIPT: 'py-vapid==1.9.1','console_scripts','vapid'
 import re
 import sys
