@@ -1894,38 +1894,38 @@ def create_new_season(season):
     
     
 #################### FIRE BASE ###########################
-    user_tokens = {}
-    @views.route('/register_token', methods=['POST'])
-    def register_token():
-        print("ssssssssssssssssssssssssssssssssssssssssssssssssssss")
-        print("ssssssssssssssssssssssssssssssssssssssssssssssssssss")
-        print("ssssssssssssssssssssssssssssssssssssssssssssssssssss")
-        """API na registráciu FCM tokenu pre používateľa."""
-        data = request.json
-        user_id = data.get('user_id')
-        token = data.get('token')
+    # user_tokens = {}
+    # @views.route('/register_token', methods=['POST'])
+    # def register_token():
+    #     print("ssssssssssssssssssssssssssssssssssssssssssssssssssss")
+    #     print("ssssssssssssssssssssssssssssssssssssssssssssssssssss")
+    #     print("ssssssssssssssssssssssssssssssssssssssssssssssssssss")
+    #     """API na registráciu FCM tokenu pre používateľa."""
+    #     data = request.json
+    #     user_id = data.get('user_id')
+    #     token = data.get('token')
 
-        # Uložte token pre používateľa
-        user_tokens[user_id] = token
-        return jsonify({"message": "Token uložený"}), 200
+    #     # Uložte token pre používateľa
+    #     user_tokens[user_id] = token
+    #     return jsonify({"message": "Token uložený"}), 200
     
-    @views.route('/send_notification', methods=['POST'])
-    def send_notification():
-        """API na odoslanie push notifikácie."""
-        data = request.json
-        user_id = data.get('user_id')
-        title = data.get('title')
-        body = data.get('body')
+    # @views.route('/send_notification', methods=['POST'])
+    # def send_notification():
+    #     """API na odoslanie push notifikácie."""
+    #     data = request.json
+    #     user_id = data.get('user_id')
+    #     title = data.get('title')
+    #     body = data.get('body')
 
-        # Získanie tokenu používateľa
-        token = user_tokens.get(user_id)
+    #     # Získanie tokenu používateľa
+    #     token = user_tokens.get(user_id)
         
-        if token:
-            # Odoslanie notifikácie
-            send_push_notification(token, title, body)
-            return jsonify({"message": "Notifikácia odoslaná"}), 200
-        else:
-            return jsonify({"error": "Používateľ nemá registrovaný token"}), 404
+    #     if token:
+    #         # Odoslanie notifikácie
+    #         send_push_notification(token, title, body)
+    #         return jsonify({"message": "Notifikácia odoslaná"}), 200
+    #     else:
+    #         return jsonify({"error": "Používateľ nemá registrovaný token"}), 404
 
 
 
