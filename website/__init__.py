@@ -1,4 +1,4 @@
-from flask import Flask, session, jsonify, flash, render_template, current_app, redirect, url_for, request
+from flask import Flask, session, jsonify, flash, render_template, current_app, redirect, url_for, request, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import OperationalError
 from flask_login import LoginManager, current_user, login_user, logout_user
@@ -211,6 +211,9 @@ def create_app():
         vapid_public_key=os.getenv("VAPID_PUBLIC_KEY")
         return jsonify({'publicKey': vapid_public_key})
 
+    @app.route('/firebase-messaging-sw.js')
+    def service_worker():
+        return send_from_directory('static', 'firebase-messaging-sw.js')
 
     @app.template_filter('datetimeformat')
     def datetimeformat(value, format='%d/%m/%Y'):

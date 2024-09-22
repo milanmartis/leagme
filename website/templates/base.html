@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="vapid-public-key" content="{{ vapid_public_key }}">
 
     <link rel="manifest" href="{{ url_for('static', filename = 'js/manifest.json') }}" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -63,7 +64,10 @@
     <meta property="og:site_name" content="Leagme.com" />
   </head>
   <body>
-
+    <script>
+      const vapidPublicKey = "{{ vapid_public_key }}";
+     // alert(vapidPublicKey);
+  </script>
     <!-- Detekcia pripojenia -->
     <script>
         function checkConnection() {

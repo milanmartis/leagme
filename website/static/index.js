@@ -51,7 +51,7 @@ async function initializeFirebase() {
         const messaging = getMessaging(app);
 
         // Získanie FCM tokenu
-        const token = await getToken(messaging, { vapidKey: '<Your VAPID Key>' });
+        const token = await getToken(messaging, { vapidKey: vapidPublicKey });
         if (token) {
             console.log('FCM Token:', token);
             // Odoslanie tokenu na server

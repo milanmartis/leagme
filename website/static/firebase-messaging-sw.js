@@ -1,32 +1,31 @@
-// Importovanie Firebase SDK pre Service Worker
 importScripts('https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js');
 importScripts('https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging.js');
 
-// Načítanie Firebase konfigurácie z backendu
-self.addEventListener('install', event => {
-  event.waitUntil(
-    fetch('/get-firebase-config') // Endpoint, kde načítaš konfiguráciu
-      .then(response => response.json())
-      .then(firebaseConfig => {
-        // Inicializácia Firebase vo Service Worker
-        firebase.initializeApp(firebaseConfig);
 
-        // Inicializácia Firebase Cloud Messaging
-        const messaging = firebase.messaging();
+    // Firebase konfigurácia
+    const firebaseConfig = {
+        apiKey: "AIzaSyCdvgoR_IQBnUk8cr1FstAGu66-o-fkSFM",
+        authDomain: "leagme-2b3cd.firebaseapp.com",
+        projectId: "leagme-2b3cd",
+        storageBucket: "leagme-2b3cd.appspot.com",
+        messagingSenderId: "192069980417",
+        appId: "1:192069980417:web:10f7d96d0330865ff08b00",
+        measurementId: "G-BJPEC0B7NG" // Pridajte, ak používate Analytics
+    };
 
-        // Spracovanie notifikácií, ktoré prichádzajú, keď je aplikácia na pozadí
-        messaging.onBackgroundMessage(function(payload) {
-          console.log('Prijatá správa na pozadí:', payload);
+    // Inicializácia Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const messaging = firebase.messaging();
 
-          const notificationTitle = payload.notification.title;
-          const notificationOptions = {
-            body: payload.notification.body,
-            icon: '/firebase-logo.png' // Tu môžeš nastaviť ikonu notifikácie
-          };
-
-          // Zobrazenie notifikácie
-          self.registration.showNotification(notificationTitle, notificationOptions);
-        });
-      })
-  );
-});
+    // Požiadajte o povolenie na odosielanie notifikácií
+    messaging.requestPermission()
+    .then(function() {
+        console.log('Notification permission granted.');
+        return messaging.getToken();
+    })
+    .then(function(token) {
+        console.log('FCM Token:', token);
+    })
+    .catch(function(err) {
+        console.log('Unable to get permission to notify.', err);
+    });
