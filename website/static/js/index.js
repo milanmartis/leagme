@@ -6,14 +6,14 @@ import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/fireb
 function isIndexedDBAvailable() {
   return typeof indexedDB !== 'undefined';
 }
-// console.log("eee",vapidPublicKey);
+
 // Funkcia na získanie povolenia na notifikácie
 function requestNotificationPermission(messaging) {
   Notification.requestPermission().then(permission => {
     if (permission === 'granted') {
       console.log('Notification permission granted.');
       // Registrácia Service Worker a získanie tokenu s použitím VAPID public key
-      navigator.serviceWorker.register('/js/firebase-messaging-sw.js')
+      navigator.serviceWorker.register('/static/js/firebase-messaging-sw.js')
         .then((registration) => {
           return getToken(messaging, {
             vapidKey: vapidPublicKey,  // Použitie VAPID key

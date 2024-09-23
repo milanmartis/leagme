@@ -24,8 +24,5 @@ self.addEventListener('install', event => {
           self.registration.showNotification(notificationTitle, notificationOptions);
         });
       })
-      .catch(error => {
-        console.error('Chyba pri načítaní Firebase konfigurácie:', error);
-      })
   );
 });

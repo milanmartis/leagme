@@ -195,7 +195,6 @@ def create_app():
 
     @app.route('/get-firebase-config', methods=['GET'])
     def get_firebase_config():
-        print("sssss")
         firebase_config = {
             "apiKey": os.environ.get('FIREBASE_API_KEY'),
             "authDomain": os.environ.get('FIREBASE_AUTH_DOMAIN'),
