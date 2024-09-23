@@ -106,7 +106,10 @@ def create_app():
     csrf.init_app(app)
     bcrypt.init_app(app)
     argon2.init_app(app)
-    cors.init_app(app)
+    cors.init_app(app, resources={r"/*": {"origins": "*"}}, 
+                  allow_headers=["Authorization", "Content-Type"], 
+                  methods=["GET", "POST", "OPTIONS"], 
+                  supports_credentials=True)
     mail.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)
