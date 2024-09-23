@@ -1,19 +1,21 @@
 importScripts('https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js');
 importScripts('https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging.js');
+const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-// Načítanie Firebase konfigurácie z backendu
+// Inicializácia Firebase v Service Worker
 self.addEventListener('install', event => {
   event.waitUntil(
-    fetch('/get-firebase-config')
+    fetch('/get-firebase-config', {
+      headers: {
+        'X-CSRFToken': csrfToken,
+        'Content-Type': 'application/json',
+      }
+    })
       .then(response => response.json())
       .then(firebaseConfig => {
-        // Inicializácia Firebase vo Service Worker
         firebase.initializeApp(firebaseConfig);
 
-        // Inicializácia Firebase Cloud Messaging
         const messaging = firebase.messaging();
-
-        // Nastavenie spracovania správ na pozadí
         messaging.onBackgroundMessage(function(payload) {
           console.log('Prijatá správa na pozadí:', payload);
           const notificationTitle = payload.notification.title;
@@ -23,6 +25,9 @@ self.addEventListener('install', event => {
           };
           self.registration.showNotification(notificationTitle, notificationOptions);
         });
+      })
+      .catch(error => {
+        console.error('Chyba pri načítaní Firebase konfigurácie:', error);
       })
   );
 });

@@ -181,20 +181,20 @@ def create_app():
     Security(app, user_datastore)
 
     # Firebase Messaging Example
-    def send_firebase_message(token, title, body):
-        """Send a notification to a device using Firebase Cloud Messaging"""
-        message = messaging.Message(
-            notification=messaging.Notification(
-                title=title,
-                body=body
-            ),
-            token=token
-        )
-        response = messaging.send(message)
-        print(f"Successfully sent message: {response}")
+    # def send_firebase_message(token, title, body):
+    #     """Send a notification to a device using Firebase Cloud Messaging"""
+    #     message = messaging.Message(
+    #         notification=messaging.Notification(
+    #             title=title,
+    #             body=body
+    #         ),
+    #         token=token
+    #     )
+    #     response = messaging.send(message)
+    #     print(f"Successfully sent message: {response}")
 
-    # Role Protection Definition
-    _security = LocalProxy(lambda: current_app.extensions['security'])
+    # # Role Protection Definition
+    # _security = LocalProxy(lambda: current_app.extensions['security'])
 
     @app.route('/get-firebase-config', methods=['GET'])
     def get_firebase_config():
@@ -208,6 +208,38 @@ def create_app():
             "measurementId": os.environ.get('FIREBASE_MEASUREMENT_ID')
         }
         return jsonify(firebase_config)
+    
+    
+    # @app.route('/get-firebase-config')
+    # def get_firebase_config():
+    #     config = {
+    #         "apiKey": os.environ.get("FIREBASE_API_KEY"),
+    #         "authDomain": os.environ.get("FIREBASE_AUTH_DOMAIN"),
+    #         "projectId": os.environ.get("FIREBASE_PROJECT_ID"),
+    #         "storageBucket": os.environ.get("FIREBASE_STORAGE_BUCKET"),
+    #         "messagingSenderId": os.environ.get("FIREBASE_MESSAGING_SENDER_ID"),
+    #         "appId": os.environ.get("FIREBASE_APP_ID"),
+    #         "measurementId": os.environ.get("FIREBASE_MEASUREMENT_ID")
+    #     }
+    #     return jsonify(config)
+
+    @app.route('/send-notification', methods=['POST'])
+    def send_notification():
+        data = request.get_json()
+        token = data.get('token')
+        title = data.get('title')
+        body = data.get('body')
+
+        # Odoslanie notifikácie cez Firebase Messaging
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title=title,
+                body=body
+            ),
+            token=token
+        )
+        response = messaging.send(message)
+        return jsonify({"message": "Notification sent", "response": response})
 
     @app.route('/vapid-public-key')
     def get_vapid_public_key():

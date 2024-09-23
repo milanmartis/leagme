@@ -6,7 +6,8 @@ import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/fireb
 function isIndexedDBAvailable() {
   return typeof indexedDB !== 'undefined';
 }
-
+// alert(vapidPublicKey);
+// console.log("eee",vapidPublicKey);
 // Funkcia na získanie povolenia na notifikácie
 function requestNotificationPermission(messaging) {
   Notification.requestPermission().then(permission => {
@@ -15,10 +16,10 @@ function requestNotificationPermission(messaging) {
       // Registrácia Service Worker a získanie tokenu s použitím VAPID public key
       navigator.serviceWorker.register('/static/js/firebase-messaging-sw.js')
         .then((registration) => {
-          return getToken(messaging, {
-            vapidKey: vapidPublicKey,  // Použitie VAPID key
-            serviceWorkerRegistration: registration
-          });
+            return messaging.getToken({
+                vapidKey: vapidPublicKey,  // Použitie VAPID key
+                serviceWorkerRegistration: registration
+              });
         })
         .then((currentToken) => {
           if (currentToken) {
@@ -37,9 +38,19 @@ function requestNotificationPermission(messaging) {
   });
 }
 
+
+const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+
+
 // Inicializácia Firebase a FCM
 function initializeFirebase() {
-  fetch('/get-firebase-config')
+  fetch('/get-firebase-config', {
+    headers: {
+      'X-CSRFToken': csrfToken,
+      'Content-Type': 'application/json',
+    }
+  })
     .then(response => response.json())
     .then(firebaseConfig => {
       // Inicializácia Firebase s dynamicky načítanou konfiguráciou
