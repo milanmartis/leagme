@@ -13,9 +13,7 @@ function requestNotificationPermission(messaging) {
     if (permission === 'granted') {
       console.log('Notification permission granted.');
       // Registrácia Service Worker a získanie tokenu s použitím VAPID public key
-      navigator.serviceWorker.register('/static/js/firebase-messaging-sw.js', {
-        scope: '/static/js/'
-      })
+      navigator.serviceWorker.register('/js/firebase-messaging-sw.js')
         .then((registration) => {
           return getToken(messaging, {
             vapidKey: vapidPublicKey,  // Použitie VAPID key

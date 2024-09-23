@@ -1,6 +1,7 @@
 importScripts('https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js');
 importScripts('https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging.js');
 
+// Načítanie Firebase konfigurácie z backendu
 self.addEventListener('install', event => {
   event.waitUntil(
     fetch('/get-firebase-config')
@@ -24,7 +25,7 @@ self.addEventListener('install', event => {
         });
       })
       .catch(error => {
-        console.error("Chyba pri načítaní Firebase konfigurácie v Service Worker:", error);
+        console.error('Chyba pri načítaní Firebase konfigurácie:', error);
       })
   );
 });
