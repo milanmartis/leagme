@@ -10,32 +10,26 @@ function isIndexedDBAvailable() {
 // console.log("eee",vapidPublicKey);
 // Funkcia na získanie povolenia na notifikácie
 function requestNotificationPermission(messaging) {
-  Notification.requestPermission().then(permission => {
-    if (permission === 'granted') {
-      console.log('Notification permission granted.');
-      // Registrácia Service Worker a získanie tokenu s použitím VAPID public key
-      navigator.serviceWorker.register('/static/js/firebase-messaging-sw.js')
-        .then((registration) => {
-            return messaging.getToken({
-                vapidKey: vapidPublicKey,  // Použitie VAPID key
-                serviceWorkerRegistration: registration
-              });
-        })
-        .then((currentToken) => {
-          if (currentToken) {
-            console.log('FCM token:', currentToken);
-            // Odošlite tento token na backend, aby ste ho mohli uložiť
-          } else {
-            console.log('Nebolo možné získať FCM token.');
-          }
-        })
-        .catch((err) => {
-          console.error('Chyba pri získavaní tokenu:', err);
-        });
-    } else {
-      console.log('Notifications permission denied');
-    }
-  });
+    Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+            console.log('Notification permission granted.');
+            // Get registration token for FCM
+            getToken(messaging, { vapidKey: vapidPublicKey })
+            .then((currentToken) => {
+                if (currentToken) {
+                    console.log('FCM token:', currentToken);
+                    // Send the token to your server or save it locally
+                } else {
+                    console.log('No registration token available. Request permission to generate one.');
+                }
+            })
+            .catch((err) => {
+                console.error('An error occurred while retrieving token. ', err);
+            });
+        } else {
+            console.log('Unable to get permission to notify.');
+        }
+    });
 }
 
 
