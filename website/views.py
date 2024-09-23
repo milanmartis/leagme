@@ -201,7 +201,7 @@ def index():
         return redirect(url_for('views.home', season=season1))
     
     vapid_public_key=os.environ.get("VAPID_PUBLIC_KEY")
-    # print(vapid_public_key)
+    print(vapid_public_key)
     
     return render_template("index.html", vapid_public_key=vapid_public_key, seasons=seasons, user=current_user, adminz=adminz, placeable=placeable)
     

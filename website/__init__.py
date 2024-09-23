@@ -193,8 +193,9 @@ def create_app():
     # Role Protection Definition
     _security = LocalProxy(lambda: current_app.extensions['security'])
 
-    @app.route('/get-firebase-config')
+    @app.route('/get-firebase-config', methods=['GET'])
     def get_firebase_config():
+        print("sssss")
         firebase_config = {
             "apiKey": os.environ.get('FIREBASE_API_KEY'),
             "authDomain": os.environ.get('FIREBASE_AUTH_DOMAIN'),
@@ -214,6 +215,8 @@ def create_app():
     @app.route('/firebase-messaging-sw.js')
     def service_worker():
         return send_from_directory('static', 'firebase-messaging-sw.js')
+    
+
 
     @app.template_filter('datetimeformat')
     def datetimeformat(value, format='%d/%m/%Y'):
