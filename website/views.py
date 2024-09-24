@@ -11,7 +11,6 @@ from sqlalchemy import func, or_
 from sqlalchemy import insert, update
 import stripe
 from slugify import slugify
-from pywebpush import webpush, WebPushException
 
 from . import tabz, duels, dictionary, mysql
 from datetime import datetime
@@ -52,11 +51,7 @@ from py_vapid import Vapid
 from sqlalchemy.exc import IntegrityError  # Importujte pre zachytávanie chýb pri vkladaní do databázy
 from website import mail, celery
 
-VAPID_PUBLIC_KEY = os.getenv('VAPID_PUBLIC_KEY')
-VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY')
-VAPID_CLAIMS = {
-    "sub": "mailto:tvoj-email@example.com"
-}
+
 # Stripe konfigurácia
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 vapid_public_key=os.environ.get("VAPID_PUBLIC_KEY")
@@ -81,13 +76,8 @@ def roles_required(*roles):
     return decorator
         
 views = Blueprint('views', __name__)
-global subscriptions
-subscriptions = []
-@views.route('/subscribe', methods=['POST'])
-def subscribe():
-    subscription_info = request.get_json()
-    subscriptions.append(subscription_info)
-    return jsonify({"message": "Subscription successful"}), 201
+
+
 
 from firebase_admin import messaging
 
@@ -723,25 +713,6 @@ def update_duel2():
 
                 # Uložte zmeny
                 db.session.commit()
-                notification_payload = {
-                "title": "title",
-                "body": "body_push",
-                "icon": "/static/img/icon.png"  # cesta k tvojej ikonke
-                }
-                
-                for subscription in subscriptions:
-                    try:
-                        webpush(
-                            subscription_info=subscription,
-                            data=json.dumps(notification_payload),
-                            vapid_private_key=VAPID_PRIVATE_KEY,
-                            vapid_claims=VAPID_CLAIMS
-                        )
-                    except WebPushException as ex:
-                        print(f"Chyba pri posielaní notifikácie: {ex}")
-                        return jsonify({"message": "Chyba pri odoslaní notifikácie"}), 500
-
-                return jsonify({"message": "Notifikácia bola odoslaná"}), 200
 
 
         return jsonify(success=True)

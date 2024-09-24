@@ -217,7 +217,6 @@ def create_app():
     }
 
     # Route na odoslanie subscription údajov na backend
-    global subscriptions
     subscriptions = []
 
     @app.route('/subscribe', methods=['POST'])
@@ -228,10 +227,10 @@ def create_app():
     
     # Route pre odoslanie skúšobnej notifikácie
     @app.route('/send_test_notification', methods=['POST'])
-    def send_test_notification(title,body_push):
+    def send_test_notification():
         notification_payload = {
-            "title": title,
-            "body": body_push,
+            "title": "Skúšobná notifikácia",
+            "body": "Toto je test push notifikácie",
             "icon": "/static/img/icon.png"  # cesta k tvojej ikonke
         }
         

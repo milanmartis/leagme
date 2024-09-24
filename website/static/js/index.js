@@ -1,6 +1,6 @@
 const publicVapidKey = vapidPublicKey;
 
-
+// Prihlásenie na odber push notifikácií
 async function subscribeToPushNotifications() {
     if ('serviceWorker' in navigator) {
         try {
@@ -55,41 +55,3 @@ function urlBase64ToUint8Array(base64String) {
 
 // Zavolať funkciu pri načítaní stránky
 subscribeToPushNotifications();
-
-
-
-        // Ak prehliadač podporuje Badging API
-        // if ('setAppBadge' in navigator) {
-        //     // Nastavenie počtu notifikácií (napr. počet neprečítaných správ)
-        //     navigator.setAppBadge(5).catch(error => {
-        //         console.error('Chyba pri nastavovaní odznaku:', error);
-        //     });
-        // } else {
-        //     console.log('Badging API nie je podporované v tomto prehliadači.');
-        // }
-
-
-        // Resetovanie odznaku po otvorení aplikácie
-function resetNotificationBadge() {
-    // Vyresetuj počet notifikácií v IndexedDB
-    openDatabase().then(db => {
-        const tx = db.transaction('notifications', 'readwrite');
-        const store = tx.objectStore('notifications');
-        store.put({ id: 1, count: 0 });
-        return tx.complete;
-    }).then(() => {
-        // Vymaž odznak
-        if ('clearAppBadge' in navigator) {
-            navigator.clearAppBadge().catch(error => {
-                console.error('Chyba pri odstraňovaní odznaku:', error);
-            });
-        }
-    });
-}
-
-// Ak aplikácia zistí, že bola znovu otvorená, vyresetuje odznak
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-        resetNotificationBadge();
-    }
-});
