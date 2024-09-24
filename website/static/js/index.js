@@ -47,9 +47,9 @@ async function subscribeToPushNotifications() {
                         }
                     });
 
+                    alert("FCM token odoslaný na server");
                     console.log('FCM token odoslaný na server.');
                 } catch (error) {
-                    alert("Chyba pri získavanítokenu");
                     console.error('Chyba pri získavaní FCM tokenu:', error);
                 }
 
