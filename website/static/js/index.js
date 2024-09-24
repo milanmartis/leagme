@@ -1,6 +1,6 @@
 const publicVapidKey = vapidPublicKey;
 
-// Prihlásenie na odber push notifikácií
+
 async function subscribeToPushNotifications() {
     if ('serviceWorker' in navigator) {
         try {
@@ -55,3 +55,15 @@ function urlBase64ToUint8Array(base64String) {
 
 // Zavolať funkciu pri načítaní stránky
 subscribeToPushNotifications();
+
+
+
+        // Ak prehliadač podporuje Badging API
+        if ('setAppBadge' in navigator) {
+            // Nastavenie počtu notifikácií (napr. počet neprečítaných správ)
+            navigator.setAppBadge(5).catch(error => {
+                console.error('Chyba pri nastavovaní odznaku:', error);
+            });
+        } else {
+            console.log('Badging API nie je podporované v tomto prehliadači.');
+        }

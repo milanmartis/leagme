@@ -69,6 +69,19 @@
   <body>
     <button id="sendNotificationButton">Poslať skúšobnú notifikáciu</button>
     <button id="enableNotificationsButton">Povoliť push notifikácie</button>
+        <!-- Element na zobrazenie počtu notifikácií -->
+        <div id="notificationCount">
+          <span>Notifikácie: <span id="notificationBadge">0</span></span>
+      </div>
+  
+      <!-- Tlačidlo na simuláciu prijatia notifikácie -->
+      <button id="enableNotificationsButton">Simulovať notifikáciu</button>
+  
+      <!-- Tlačidlo na resetovanie počtu neprečítaných notifikácií -->
+      <button id="resetNotificationsButton">Resetovať notifikácie</button>
+  
+      <!-- Pripojenie JavaScript súboru -->
+      <script src="app.js"></script>
     <script>
     document.getElementById('enableNotificationsButton').addEventListener('click', async () => {
       // Požiadať používateľa o povolenie na push notifikácie
