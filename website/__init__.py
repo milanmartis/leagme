@@ -301,10 +301,15 @@ def create_app():
     #     response = messaging.send(message)
     #     return jsonify({"message": "Notification sent", "response": response})
 
+    # @app.route('/vapid-public-key')
+    # def get_vapid_public_key():
+    #     vapid_public_key=os.getenv("VAPID_PUBLIC_KEY")
+    #     return jsonify({'publicKey': vapid_public_key})
+    
     @app.route('/vapid-public-key')
-    def get_vapid_public_key():
-        vapid_public_key=os.getenv("VAPID_PUBLIC_KEY")
-        return jsonify({'publicKey': vapid_public_key})
+    def get_public_vapid_key():
+        public_vapid_key = os.getenv('VAPID_PUBLIC_KEY')
+        return jsonify({"publicVapidKey": public_vapid_key})
 
     @app.route('/firebase-messaging-sw.js')
     def service_worker():

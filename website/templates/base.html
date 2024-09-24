@@ -68,7 +68,7 @@
   ></script>
   </head>
   <body>
-
+    <button id="sendNotificationButton">Poslať skúšobnú notifikáciu</button>
     <script>
       const vapidPublicKey = "{{ vapid_public_key }}";
     // alert(vapidPublicKey);
@@ -109,6 +109,15 @@
         </div>
       </div>
     -->
+
+
+    <div id="notificationModal" style="display: none;">
+      <p>Do you want to receive push notifications?</p>
+      <button id="allowNotificationsButton">Allow notifications</button>
+      <button id="denyNotificationsButton">Deny</button>
+  </div>
+
+
     {% if current_user.id %}
 
     <div class="container justify-content-center w-100" align="center">
@@ -817,7 +826,7 @@
 
 
   </script>
-  <button id="sendNotificationButton">Poslať skúšobnú notifikáciu</button>
+  
 
   <script>
   document.getElementById('sendNotificationButton').addEventListener('click', async () => {
