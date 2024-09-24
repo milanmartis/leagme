@@ -205,7 +205,6 @@ def create_app():
     # Endpoint pre získanie Firebase konfigurácie
     @app.route('/get-firebase-config', methods=['GET'])
     def get_firebase_config():
-        print("fcul")
         firebase_config = {
             "apiKey": os.environ.get('FIREBASE_API_KEY'),
             "authDomain": os.environ.get('FIREBASE_AUTH_DOMAIN'),
