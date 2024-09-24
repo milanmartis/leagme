@@ -713,6 +713,7 @@ def update_duel2():
 
                 # Uložte zmeny
                 db.session.commit()
+                
 
 
         return jsonify(success=True)

@@ -68,13 +68,13 @@ subscribeToPushNotifications();
 
 
 
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/js/service-worker.js')
-            .then(function(registration) {
-                alert("ok");
-                console.log('Service Worker zaregistrovaný na iOS:', registration);
-            }).catch(function(error) {
-                alert("bad");
-                console.log('Chyba pri registrácii Service Workera na iOS:', error);
-            });
-        }
+        // if ('serviceWorker' in navigator) {
+        //     navigator.serviceWorker.register('/static/js/service-worker.js')
+        //     .then(function(registration) {
+        //         alert("ok");
+        //         console.log('Service Worker zaregistrovaný na iOS:', registration);
+        //     }).catch(function(error) {
+        //         alert("bad");
+        //         console.log('Chyba pri registrácii Service Workera na iOS:', error);
+        //     });
+        // }
