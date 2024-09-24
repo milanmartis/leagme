@@ -1,12 +1,13 @@
+// VAPID public key
 const publicVapidKey = vapidPublicKey;
 
 // Prihlásenie na odber push notifikácií
 async function subscribeToPushNotifications() {
     if ('serviceWorker' in navigator) {
         try {
-            // Registrácia service workera
+            // Registrácia Service Workera
             const registration = await navigator.serviceWorker.register('/static/js/service-worker.js');
-            console.log('Service Worker registrovaný.');
+            console.log('Service Worker úspešne zaregistrovaný.');
 
             // Požiadať používateľa o povolenie na zobrazovanie push notifikácií
             const permission = await Notification.requestPermission();
@@ -16,23 +17,29 @@ async function subscribeToPushNotifications() {
 
             // Prihlásenie na odber push notifikácií
             const subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
+                userVisibleOnly: true, // Uistíme sa, že notifikácie budú viditeľné pre používateľa
                 applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
             });
 
+            console.log('Subscription údaje:', subscription);
+
             // Odoslanie subscription údajov na backend
-            await fetch('/subscribe', {
+            const response = await fetch('/subscribe', {
                 method: 'POST',
                 body: JSON.stringify(subscription),
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken // Pridaj CSRF token do hlavičky
+                    'X-CSRFToken': csrfToken // Pridaj CSRF token do hlavičky, ak je potrebný pre backend
                 }
             });
 
+            if (!response.ok) {
+                throw new Error('Chyba pri odosielaní subscription na server.');
+            }
+
             console.log('Prihlásenie na push notifikácie prebehlo úspešne.');
         } catch (error) {
-            console.error('Prihlásenie na push notifikácie zlyhalo.', error);
+            console.error('Prihlásenie na push notifikácie zlyhalo:', error);
         }
     } else {
         console.error('Service Worker nie je podporovaný v tomto prehliadači.');
@@ -53,5 +60,7 @@ function urlBase64ToUint8Array(base64String) {
     return outputArray;
 }
 
-// Zavolať funkciu pri načítaní stránky
-subscribeToPushNotifications();
+// Overíme, či prehliadač podporuje Push API a spustíme proces prihlásenia na notifikácie
+window.addEventListener('load', () => {
+    subscribeToPushNotifications();
+});
