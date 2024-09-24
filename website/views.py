@@ -54,7 +54,7 @@ from website import mail, celery
 
 # Stripe konfigurácia
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
-
+vapid_public_key=os.environ.get("VAPID_PUBLIC_KEY")
 def roles_required(*roles):
     """Dekorátor, ktorý kontroluje, či má používateľ aspoň jednu z požadovaných rolí."""
     def decorator(f):
@@ -132,7 +132,7 @@ def welcome():
         Season.visible == True    )
     ).all()
     
-    return render_template("welcome.html", user=None, seasons=seasons)
+    return render_template("welcome.html", vapid_public_key=vapid_public_key, user=None, seasons=seasons)
     
     
 
@@ -200,7 +200,7 @@ def index():
 
         return redirect(url_for('views.home', season=season1))
     
-    vapid_public_key=os.environ.get("VAPID_PUBLIC_KEY")
+    
     
     return render_template("index.html", vapid_public_key=vapid_public_key, seasons=seasons, user=current_user, adminz=adminz, placeable=placeable)
     
@@ -243,7 +243,7 @@ def home(season):
     seas = Season.query.get(season)
 
 
-    return render_template("home.html", round=round, seas = seas, season=season, user_group=user_group, groups=groups, dataAll=data_all, players=players, data_name_tabz=data_name_tabz, data_show_table=data_show_table, user=current_user, adminz=adminz)
+    return render_template("home.html", vapid_public_key=vapid_public_key, round=round, seas = seas, season=season, user_group=user_group, groups=groups, dataAll=data_all, players=players, data_name_tabz=data_name_tabz, data_show_table=data_show_table, user=current_user, adminz=adminz)
 
 
 # def make_tab_list():
@@ -888,7 +888,7 @@ def duel_id(season, duelz):
     # print('------------------')
     seas = Season.query.get(season)
 
-    return render_template("duel.html", seas = seas, season=season, group=group, roundz=roundz,  duel=duel, players=duelz, user=current_user, adminz=adminz)
+    return render_template("duel.html", vapid_public_key=vapid_public_key, seas = seas, season=season, group=group, roundz=roundz,  duel=duel, players=duelz, user=current_user, adminz=adminz)
 
 
 
@@ -957,9 +957,9 @@ def duel_view(season, round):
     manager = db.session.query(Season.user_id).filter(Season.user_id==current_user.id).filter(Season.id==season).first()
 
     if seas.season_type == 1:
-        return render_template("duels_filter.html", season_type=seas.season_type, manager=manager, seas_no_r=len(seas_no_r), roundz=roundz, seas = seas, season_obj=season_obj, round=round, groups=groups, season=season, duels=new_ret, user=current_user, adminz=adminz)
+        return render_template("duels_filter.html", vapid_public_key=vapid_public_key, season_type=seas.season_type, manager=manager, seas_no_r=len(seas_no_r), roundz=roundz, seas = seas, season_obj=season_obj, round=round, groups=groups, season=season, duels=new_ret, user=current_user, adminz=adminz)
     if seas.season_type == 2:
-        return render_template("duels_filter2.html", season_type=seas.season_type, manager=manager, seas_no_r=len(seas_no_r), roundz=roundz, seas = seas, season_obj=season_obj, round=round, groups=groups, season=season, duels=new_ret, user=current_user, adminz=adminz)
+        return render_template("duels_filter2.html", vapid_public_key=vapid_public_key, season_type=seas.season_type, manager=manager, seas_no_r=len(seas_no_r), roundz=roundz, seas = seas, season_obj=season_obj, round=round, groups=groups, season=season, duels=new_ret, user=current_user, adminz=adminz)
 
 
 @views.route('/tournament/season/<int:season_id>/round/<int:round_id>', methods=['GET', 'POST'])
@@ -1087,7 +1087,7 @@ def new_place():
             existing_place = Place.query.filter_by(slug=slug).first()
             if existing_place:
                 flash('Place with this name already exists', 'error')
-                return render_template('place_create.html', form=form, head='new-place', title='Create New Place', user=current_user)
+                return render_template('place_create.html', vapid_public_key=vapid_public_key, form=form, head='new-place', title='Create New Place', user=current_user)
 
             # Create a new Place object with form data
             new_place = Place(
@@ -1124,7 +1124,7 @@ def new_place():
             flash('New place created successfully.', 'success')
             return redirect(url_for('views.place_manager', place_slug=new_place.slug))
     
-    return render_template('place_create.html', form=form, head='new-place', title='Create New Place', user=current_user)
+    return render_template('place_create.html', vapid_public_key=vapid_public_key, form=form, head='new-place', title='Create New Place', user=current_user)
 
 
 
@@ -1140,7 +1140,7 @@ def place_manager(place_slug):
         flash("Place not found.", category="error")
         return redirect(url_for('views.index'))
     
-    return render_template("place.html", season_places=season_places, place=place, user=current_user)
+    return render_template("place.html", vapid_public_key=vapid_public_key, season_places=season_places, place=place, user=current_user)
 
 
 
@@ -1183,11 +1183,11 @@ def tournament_new():
         else:
             flash("Tournament name must be unique.", category="error")
 
-    return render_template("tournament_create.html", head='new-tournament', title='Create New Tournament', form=form, players=players, user=current_user, adminz=adminz, user_places=user_places)
+    return render_template("tournament_create.html", vapid_public_key=vapid_public_key, head='new-tournament', title='Create New Tournament', form=form, players=players, user=current_user, adminz=adminz, user_places=user_places)
 
         
 
-    return render_template("tournament_create.html", head='new-tournament', title='Create New Tournament', form=form, players=players, user=current_user, adminz=adminz)
+    # return render_template("tournament_create.html", vapid_public_key=vapid_public_key, head='new-tournament', title='Create New Tournament', form=form, players=players, user=current_user, adminz=adminz)
 
 
 ####### NEW SEASON
@@ -1224,7 +1224,7 @@ def season_new():
 
         
 
-    return render_template("season_create.html", head='new-season', title='Create Season', form=form, players=players, user=current_user, adminz=adminz, user_places=user_places)
+    return render_template("season_create.html", vapid_public_key=vapid_public_key, head='new-season', title='Create Season', form=form, players=players, user=current_user, adminz=adminz, user_places=user_places)
 
 
 
@@ -1305,7 +1305,7 @@ def pricing_list():
         products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
         orders = Order.query.filter(Order.user_id==current_user.id).all()
 
-        return render_template("pricing.html",  orders3=orders3, products=products, adminz=adminz, checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), user=current_user, cards=cards, orders=orders)
+        return render_template("pricing.html",  vapid_public_key=vapid_public_key, orders3=orders3, products=products, adminz=adminz, checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), user=current_user, cards=cards, orders=orders)
     else:
         return redirect(url_for('auth.user_details'))
 
@@ -1348,7 +1348,7 @@ def season_list():
 
         return redirect(url_for('views.season_manager', season=season1))
 
-    return render_template("season_list.html", seasons=seasons, user=current_user, adminz=adminz)
+    return render_template("season_list.html", vapid_public_key=vapid_public_key, seasons=seasons, user=current_user, adminz=adminz)
 
 
 
@@ -1369,7 +1369,7 @@ def season_players(season):
 
     rounds = db.session.query(Season, Round).filter(Groupz.season_id==Season.id).filter(Groupz.round_id==Round.id).filter(User.id==user_group.c.user_id).filter(user_group.c.groupz_id==Groupz.id).filter(Season.id==season).order_by(Groupz.round_id.desc()).all()
     if manager or current_user.id==21:
-        return render_template('users/season_players.html', manager=manager, seas=seas, seasons=rounds, season=season, seasons2=seasons, users=users, user=current_user)
+        return render_template('users/season_players.html', vapid_public_key=vapid_public_key, manager=manager, seas=seas, seasons=rounds, season=season, seasons2=seasons, users=users, user=current_user)
     else:
         flash('You don`t have permission!', 'error')
         return redirect(url_for('auth.login'))
@@ -1555,7 +1555,7 @@ def update_season(season):
         form.place_id.data = season.place_id
 
         
-    return render_template("season_create.html", head='edit-season', title='Update Season', season=season.id, seas=season, form=form, user=current_user, adminz=adminz, user_places=user_places)
+    return render_template("season_create.html", vapid_public_key=vapid_public_key, head='edit-season', title='Update Season', season=season.id, seas=season, form=form, user=current_user, adminz=adminz, user_places=user_places)
 
 
 @views.route("/tournament/<int:season>/update", methods=['GET', 'POST'])
@@ -1600,7 +1600,7 @@ def update_tournament(season):
         form.visible.data = season.visible
         form.place_id.data = season.place_id
         
-    return render_template("tournament_create.html", head='edit-tournament', title='Update Tournament', season=season, seas=season, form=form, user=current_user, adminz=adminz,user_places=user_places)
+    return render_template("tournament_create.html", vapid_public_key=vapid_public_key, head='edit-tournament', title='Update Tournament', season=season, seas=season, form=form, user=current_user, adminz=adminz,user_places=user_places)
 
 
 
@@ -1786,7 +1786,7 @@ def season_manager(season):
     # print(last_day.strftime('%Y-%m-%d %H:%M:%S'))
     # end_date=last_day.strftime('%Y-%m-%d %H:%M:%S')
     season_author = db.session.query(User.first_name).join(Season).filter(Season.user_id == User.id).filter(Season.id==season).first()
-    return render_template("season.html", season_author=season_author,season_type=season_type.season_type, season_type_name=season_type_name,products=products, orders=orders, order=order, rounds_open=rounds_open, manager=manager, end_date=end_date, players_wait=players_wait, players=players, seas=seas, groupz=groupz, dic=dic, season=season, seasons=rounds, user=current_user, adminz=adminz)
+    return render_template("season.html", vapid_public_key=vapid_public_key, season_author=season_author,season_type=season_type.season_type, season_type_name=season_type_name,products=products, orders=orders, order=order, rounds_open=rounds_open, manager=manager, end_date=end_date, players_wait=players_wait, players=players, seas=seas, groupz=groupz, dic=dic, season=season, seasons=rounds, user=current_user, adminz=adminz)
 
 
 
