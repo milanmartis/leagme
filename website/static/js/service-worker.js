@@ -3,6 +3,7 @@ self.addEventListener('push', event => {
     console.log('Push notifikácia prijatá:', data);
 
     const options = {
+        title: "kuk",
         body: data.body,
         icon: '/static/img/icon.png'  // Cesta k ikonke notifikácie
     };
