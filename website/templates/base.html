@@ -817,7 +817,25 @@
 
 
   </script>
+  <button id="sendNotificationButton">Poslať skúšobnú notifikáciu</button>
 
+  <script>
+  document.getElementById('sendNotificationButton').addEventListener('click', async () => {
+      try {
+          const response = await fetch('/send_test_notification', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': csrfToken 
+              }
+          });
+          const data = await response.json();
+          console.log('Notifikácia odoslaná:', data.message);
+      } catch (error) {
+          console.error('Chyba pri odosielaní notifikácie:', error);
+      }
+  });
+  </script>
 
   </body>
 </html>

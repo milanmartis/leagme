@@ -25,7 +25,7 @@ import json
 import boto3
 import firebase_admin
 from firebase_admin import credentials, firestore, auth, messaging, initialize_app
-
+from pywebpush import webpush, WebPushException
 # Load environment variables
 load_dotenv()
 
@@ -210,6 +210,66 @@ def create_app():
         return jsonify(firebase_config)
     
     
+    VAPID_PUBLIC_KEY = os.getenv('VAPID_PUBLIC_KEY')
+    VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY')
+    VAPID_CLAIMS = {
+        "sub": "mailto:tvoj-email@example.com"
+    }
+
+    # Route na odoslanie subscription údajov na backend
+    subscriptions = []
+
+    @app.route('/subscribe', methods=['POST'])
+    def subscribe():
+        subscription_info = request.get_json()
+        subscriptions.append(subscription_info)
+        return jsonify({"message": "Subscription successful"}), 201
+    
+    # Route pre odoslanie skúšobnej notifikácie
+    @app.route('/send_test_notification', methods=['POST'])
+    def send_test_notification():
+        notification_payload = {
+            "title": "Skúšobná notifikácia",
+            "body": "Toto je test push notifikácie",
+            "icon": "/static/img/icon.png"  # cesta k tvojej ikonke
+        }
+        
+        for subscription in subscriptions:
+            try:
+                webpush(
+                    subscription_info=subscription,
+                    data=json.dumps(notification_payload),
+                    vapid_private_key=VAPID_PRIVATE_KEY,
+                    vapid_claims=VAPID_CLAIMS
+                )
+            except WebPushException as ex:
+                print(f"Chyba pri posielaní notifikácie: {ex}")
+                return jsonify({"message": "Chyba pri odoslaní notifikácie"}), 500
+
+        return jsonify({"message": "Notifikácia bola odoslaná"}), 200
+
+    # Route na odosielanie push notifikácií
+    @app.route('/send_notification', methods=['POST'])
+    def send_notification():
+        notification_payload = {
+            "title": "Nová správa",
+            "body": "Toto je ukážka push notifikácie",
+            "icon": "/path-to-icon.png"
+        }
+        for subscription in subscriptions:
+            try:
+                webpush(
+                    subscription_info=subscription,
+                    data=json.dumps(notification_payload),
+                    vapid_private_key=VAPID_PRIVATE_KEY,
+                    vapid_claims=VAPID_CLAIMS
+                )
+            except WebPushException as ex:
+                print(f"Error sending notification: {ex}")
+                return jsonify({"message": "Error sending notification"}), 500
+
+        return jsonify({"message": "Notifications sent"}), 200
+    
     # @app.route('/get-firebase-config')
     # def get_firebase_config():
     #     config = {
@@ -223,23 +283,23 @@ def create_app():
     #     }
     #     return jsonify(config)
 
-    @app.route('/send-notification', methods=['POST'])
-    def send_notification():
-        data = request.get_json()
-        token = data.get('token')
-        title = data.get('title')
-        body = data.get('body')
+    # @app.route('/send-notification', methods=['POST'])
+    # def send_notification():
+    #     data = request.get_json()
+    #     token = data.get('token')
+    #     title = data.get('title')
+    #     body = data.get('body')
 
-        # Odoslanie notifikácie cez Firebase Messaging
-        message = messaging.Message(
-            notification=messaging.Notification(
-                title=title,
-                body=body
-            ),
-            token=token
-        )
-        response = messaging.send(message)
-        return jsonify({"message": "Notification sent", "response": response})
+    #     # Odoslanie notifikácie cez Firebase Messaging
+    #     message = messaging.Message(
+    #         notification=messaging.Notification(
+    #             title=title,
+    #             body=body
+    #         ),
+    #         token=token
+    #     )
+    #     response = messaging.send(message)
+    #     return jsonify({"message": "Notification sent", "response": response})
 
     @app.route('/vapid-public-key')
     def get_vapid_public_key():
