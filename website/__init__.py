@@ -26,6 +26,7 @@ import boto3
 import firebase_admin
 from firebase_admin import credentials, firestore, auth, messaging, initialize_app
 from pywebpush import webpush, WebPushException
+import traceback
 # Load environment variables
 load_dotenv()
 
@@ -222,16 +223,22 @@ def create_app():
     @app.route('/subscribe', methods=['POST'])
     def subscribe():
         subscription_info = request.get_json()
-        subscriptions.append(subscription_info)
+        
+        # Over, či subscription už nie je uložené
+        if subscription_info not in subscriptions:
+            subscriptions.append(subscription_info)
+            print(f"Nové subscription pridané: {subscription_info}")
+        else:
+            print("Subscription už existuje.")
+
         return jsonify({"message": "Subscription successful"}), 201
     
-    # Route pre odoslanie skúšobnej notifikácie
     @app.route('/send_test_notification', methods=['POST'])
     def send_test_notification():
         notification_payload = {
             "title": "Skúšobná notifikácia",
             "body": "Toto je test push notifikácie",
-            "icon": "/static/img/icon.png"  # cesta k tvojej ikonke
+            "icon": "/static/img/icon.png"
         }
         
         for subscription in subscriptions:
@@ -244,7 +251,12 @@ def create_app():
                 )
             except WebPushException as ex:
                 print(f"Chyba pri posielaní notifikácie: {ex}")
+                print(f"Detailná odpoveď zo servera: {ex.response.json()}")
                 return jsonify({"message": "Chyba pri odoslaní notifikácie"}), 500
+            except Exception as e:
+                # Toto poskytne úplný traceback chyby
+                print(f"Neočakávaná chyba: {traceback.format_exc()}")
+                return jsonify({"message": "Interná chyba servera"}), 500
 
         return jsonify({"message": "Notifikácia bola odoslaná"}), 200
 
