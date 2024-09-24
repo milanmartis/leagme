@@ -55,3 +55,26 @@ function urlBase64ToUint8Array(base64String) {
 
 // Zavolať funkciu pri načítaní stránky
 subscribeToPushNotifications();
+
+
+        if ('setAppBadge' in navigator) {
+            // Nastavenie počtu notifikácií (napr. počet neprečítaných správ)
+            navigator.setAppBadge(5).catch(error => {
+                console.error('Chyba pri nastavovaní odznaku:', error);
+            });
+        } else {
+            console.log('Badging API nie je podporované v tomto prehliadači.');
+        }
+
+
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/js/service-worker.js')
+            .then(function(registration) {
+                alert("ok");
+                console.log('Service Worker zaregistrovaný na iOS:', registration);
+            }).catch(function(error) {
+                alert("bad");
+                console.log('Chyba pri registrácii Service Workera na iOS:', error);
+            });
+        }
