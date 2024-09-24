@@ -211,11 +211,7 @@ def create_app():
         return jsonify(firebase_config)
     
     
-    VAPID_PUBLIC_KEY = os.getenv('VAPID_PUBLIC_KEY')
-    VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY')
-    VAPID_CLAIMS = {
-        "sub": "mailto:tvoj-email@example.com"
-    }
+
 
     # Route na odoslanie subscription údajov na backend
     subscriptions = []
@@ -233,6 +229,15 @@ def create_app():
 
         return jsonify({"message": "Subscription successful"}), 201
     
+    # Dynamicky nastavíme audience podľa subscription endpointu
+    def get_audience_from_subscription(endpoint):
+        if "fcm.googleapis.com" in endpoint:
+            return "https://fcm.googleapis.com"
+        elif "push.services.mozilla.com" in endpoint:
+            return "https://updates.push.services.mozilla.com"
+        else:
+            raise ValueError(f"Neznámy push server pre endpoint: {endpoint}")
+
     @app.route('/send_test_notification', methods=['POST'])
     def send_test_notification():
         notification_payload = {
@@ -243,44 +248,53 @@ def create_app():
         
         for subscription in subscriptions:
             try:
+                # Získaj endpoint a na základe toho nastav audience
+                endpoint = subscription['endpoint']
+                audience = get_audience_from_subscription(endpoint)
+
+                # Nastavenie VAPID claimov s dynamickým audience
+                vapid_claims = {
+                    "sub": "mailto:tvoj-email@example.com",
+                    "aud": audience
+                }
+
                 webpush(
                     subscription_info=subscription,
                     data=json.dumps(notification_payload),
-                    vapid_private_key=VAPID_PRIVATE_KEY,
-                    vapid_claims=VAPID_CLAIMS
+                    vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY"),
+                    vapid_claims=vapid_claims
                 )
             except WebPushException as ex:
                 print(f"Chyba pri posielaní notifikácie: {ex}")
                 print(f"Detailná odpoveď zo servera: {ex.response.json()}")
                 return jsonify({"message": "Chyba pri odoslaní notifikácie"}), 500
-            except Exception as e:
-                # Toto poskytne úplný traceback chyby
-                print(f"Neočakávaná chyba: {traceback.format_exc()}")
-                return jsonify({"message": "Interná chyba servera"}), 500
+            except ValueError as ve:
+                print(f"Chyba: {ve}")
+                return jsonify({"message": f"Chyba: {ve}"}), 400
 
         return jsonify({"message": "Notifikácia bola odoslaná"}), 200
 
     # Route na odosielanie push notifikácií
-    @app.route('/send_notification', methods=['POST'])
-    def send_notification():
-        notification_payload = {
-            "title": "Nová správa",
-            "body": "Toto je ukážka push notifikácie",
-            "icon": "/path-to-icon.png"
-        }
-        for subscription in subscriptions:
-            try:
-                webpush(
-                    subscription_info=subscription,
-                    data=json.dumps(notification_payload),
-                    vapid_private_key=VAPID_PRIVATE_KEY,
-                    vapid_claims=VAPID_CLAIMS
-                )
-            except WebPushException as ex:
-                print(f"Error sending notification: {ex}")
-                return jsonify({"message": "Error sending notification"}), 500
+    # @app.route('/send_notification', methods=['POST'])
+    # def send_notification():
+    #     notification_payload = {
+    #         "title": "Nová správa",
+    #         "body": "Toto je ukážka push notifikácie",
+    #         "icon": "/path-to-icon.png"
+    #     }
+    #     for subscription in subscriptions:
+    #         try:
+    #             webpush(
+    #                 subscription_info=subscription,
+    #                 data=json.dumps(notification_payload),
+    #                 vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY"),
+    #                 vapid_claims=vapid_claims
+    #             )
+    #         except WebPushException as ex:
+    #             print(f"Error sending notification: {ex}")
+    #             return jsonify({"message": "Error sending notification"}), 500
 
-        return jsonify({"message": "Notifications sent"}), 200
+    #     return jsonify({"message": "Notifications sent"}), 200
     
     # @app.route('/get-firebase-config')
     # def get_firebase_config():
