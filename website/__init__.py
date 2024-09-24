@@ -26,6 +26,7 @@ import boto3
 import firebase_admin
 from firebase_admin import credentials, firestore, auth, messaging, initialize_app
 from pywebpush import webpush, WebPushException
+import traceback
 # Load environment variables
 load_dotenv()
 
@@ -162,8 +163,8 @@ def create_app():
     global celery
     celery = make_celery(app)
 
-    socketio.init_app(app)
-    # socketio.init_app(app, cors_allowed_origins="*", async_mode="gevent")
+    # socketio.init_app(app)
+    socketio.init_app(app, cors_allowed_origins="*", async_mode="gevent")
 
 
     # Register Blueprints
@@ -210,11 +211,7 @@ def create_app():
         return jsonify(firebase_config)
     
     
-    VAPID_PUBLIC_KEY = os.getenv('VAPID_PUBLIC_KEY')
-    VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY')
-    VAPID_CLAIMS = {
-        "sub": "mailto:tvoj-email@example.com"
-    }
+
 
     # Route na odoslanie subscription údajov na backend
     subscriptions = []
@@ -222,53 +219,82 @@ def create_app():
     @app.route('/subscribe', methods=['POST'])
     def subscribe():
         subscription_info = request.get_json()
-        subscriptions.append(subscription_info)
+        
+        # Over, či subscription už nie je uložené
+        if subscription_info not in subscriptions:
+            subscriptions.append(subscription_info)
+            print(f"Nové subscription pridané: {subscription_info}")
+        else:
+            print("Subscription už existuje.")
+
         return jsonify({"message": "Subscription successful"}), 201
     
-    # Route pre odoslanie skúšobnej notifikácie
+    # Dynamicky nastavíme audience podľa subscription endpointu
+    def get_audience_from_subscription(endpoint):
+        if "fcm.googleapis.com" in endpoint:
+            return "https://fcm.googleapis.com"
+        elif "push.services.mozilla.com" in endpoint:
+            return "https://updates.push.services.mozilla.com"
+        else:
+            raise ValueError(f"Neznámy push server pre endpoint: {endpoint}")
+
     @app.route('/send_test_notification', methods=['POST'])
     def send_test_notification():
         notification_payload = {
             "title": "Skúšobná notifikácia",
             "body": "Toto je test push notifikácie",
-            "icon": "/static/img/icon.png"  # cesta k tvojej ikonke
+            "icon": "/static/img/icon.png"
         }
         
         for subscription in subscriptions:
             try:
+                # Získaj endpoint a na základe toho nastav audience
+                endpoint = subscription['endpoint']
+                audience = get_audience_from_subscription(endpoint)
+
+                # Nastavenie VAPID claimov s dynamickým audience
+                vapid_claims = {
+                    "sub": "mailto:tvoj-email@example.com",
+                    "aud": audience
+                }
+
                 webpush(
                     subscription_info=subscription,
                     data=json.dumps(notification_payload),
-                    vapid_private_key=VAPID_PRIVATE_KEY,
-                    vapid_claims=VAPID_CLAIMS
+                    vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY"),
+                    vapid_claims=vapid_claims
                 )
             except WebPushException as ex:
                 print(f"Chyba pri posielaní notifikácie: {ex}")
+                print(f"Detailná odpoveď zo servera: {ex.response.json()}")
                 return jsonify({"message": "Chyba pri odoslaní notifikácie"}), 500
+            except ValueError as ve:
+                print(f"Chyba: {ve}")
+                return jsonify({"message": f"Chyba: {ve}"}), 400
 
         return jsonify({"message": "Notifikácia bola odoslaná"}), 200
 
     # Route na odosielanie push notifikácií
-    @app.route('/send_notification', methods=['POST'])
-    def send_notification():
-        notification_payload = {
-            "title": "Nová správa",
-            "body": "Toto je ukážka push notifikácie",
-            "icon": "/path-to-icon.png"
-        }
-        for subscription in subscriptions:
-            try:
-                webpush(
-                    subscription_info=subscription,
-                    data=json.dumps(notification_payload),
-                    vapid_private_key=VAPID_PRIVATE_KEY,
-                    vapid_claims=VAPID_CLAIMS
-                )
-            except WebPushException as ex:
-                print(f"Error sending notification: {ex}")
-                return jsonify({"message": "Error sending notification"}), 500
+    # @app.route('/send_notification', methods=['POST'])
+    # def send_notification():
+    #     notification_payload = {
+    #         "title": "Nová správa",
+    #         "body": "Toto je ukážka push notifikácie",
+    #         "icon": "/path-to-icon.png"
+    #     }
+    #     for subscription in subscriptions:
+    #         try:
+    #             webpush(
+    #                 subscription_info=subscription,
+    #                 data=json.dumps(notification_payload),
+    #                 vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY"),
+    #                 vapid_claims=vapid_claims
+    #             )
+    #         except WebPushException as ex:
+    #             print(f"Error sending notification: {ex}")
+    #             return jsonify({"message": "Error sending notification"}), 500
 
-        return jsonify({"message": "Notifications sent"}), 200
+    #     return jsonify({"message": "Notifications sent"}), 200
     
     # @app.route('/get-firebase-config')
     # def get_firebase_config():
@@ -301,10 +327,15 @@ def create_app():
     #     response = messaging.send(message)
     #     return jsonify({"message": "Notification sent", "response": response})
 
+    # @app.route('/vapid-public-key')
+    # def get_vapid_public_key():
+    #     vapid_public_key=os.getenv("VAPID_PUBLIC_KEY")
+    #     return jsonify({'publicKey': vapid_public_key})
+    
     @app.route('/vapid-public-key')
-    def get_vapid_public_key():
-        vapid_public_key=os.getenv("VAPID_PUBLIC_KEY")
-        return jsonify({'publicKey': vapid_public_key})
+    def get_public_vapid_key():
+        public_vapid_key = os.getenv('VAPID_PUBLIC_KEY')
+        return jsonify({"publicVapidKey": public_vapid_key})
 
     @app.route('/firebase-messaging-sw.js')
     def service_worker():
