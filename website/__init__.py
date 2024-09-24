@@ -246,6 +246,9 @@ def create_app():
             return "https://fcm.googleapis.com"
         elif "push.services.mozilla.com" in endpoint:
             return "https://updates.push.services.mozilla.com"
+        elif "notify.windows.com" in endpoint:
+            # Windows Push Notification Service (WNS) nepotrebuje VAPID claims (audience)
+            return None  # Nechaj audience prázdne pre WNS
         else:
             raise ValueError(f"Neznámy push server pre endpoint: {endpoint}")
 
@@ -265,11 +268,13 @@ def create_app():
                 endpoint = subscription['endpoint']
                 audience = get_audience_from_subscription(endpoint)
 
-                # Nastavenie VAPID claimov s dynamickým audience
                 vapid_claims = {
-                    "sub": "mailto:info@leagme.com",
-                    "aud": audience
+                    "sub": "mailto:info@appdesign.sk",
                 }
+
+                # Ak audience nie je None, pridaj ho do VAPID claimov
+                if audience:
+                    vapid_claims['aud'] = audience
 
                 webpush(
                     subscription_info=subscription,
@@ -284,26 +289,6 @@ def create_app():
             except ValueError as ve:
                 print(f"Chyba: {ve}")
                 return jsonify({"message": f"Chyba: {ve}"}), 400
-
-        # Posielanie FCM notifikácií
-        for token in fcm_tokens:
-            fcm_server_key = os.environ.get('FIREBASE_SERVER_KEY')
-            headers = {
-                'Authorization': 'key=' + fcm_server_key,
-                'Content-Type': 'application/json'
-            }
-            fcm_data = {
-                "to": token,
-                "notification": notification_payload
-            }
-
-            try:
-                response = requests.post('https://fcm.googleapis.com/fcm/send', json=fcm_data, headers=headers)
-                response.raise_for_status()
-                print(f"Notifikácia odoslaná cez FCM pre token: {token}")
-            except requests.exceptions.HTTPError as e:
-                print(f"Chyba pri posielaní FCM notifikácie: {e}")
-                return jsonify({"message": "Chyba pri odoslaní FCM notifikácie"}), 500
 
         return jsonify({"message": "Notifikácia bola odoslaná"}), 200
 
