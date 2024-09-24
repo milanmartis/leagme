@@ -1,5 +1,5 @@
 // Otvorenie alebo vytvorenie IndexedDB databázy
-function openDatabase() {
+async function openDatabase() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open('notifications-db', 1);
         request.onupgradeneeded = event => {
@@ -16,63 +16,60 @@ function openDatabase() {
 }
 
 // Uloženie počtu neprečítaných notifikácií do IndexedDB
-function saveUnreadCount(count) {
-    return openDatabase().then(db => {
-        const tx = db.transaction('notifications', 'readwrite');
-        const store = tx.objectStore('notifications');
-        store.put({ id: 1, count: count });
-        return tx.complete;
-    });
+async function saveUnreadCount(count) {
+    const db = await openDatabase();
+    const tx = db.transaction('notifications', 'readwrite');
+    const store = tx.objectStore('notifications');
+    store.put({ id: 1, count: count });
+    await tx.complete;
 }
 
 // Získanie počtu neprečítaných notifikácií z IndexedDB
-function getUnreadCount() {
-    return openDatabase().then(db => {
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction('notifications', 'readonly');
-            const store = tx.objectStore('notifications');
-            const request = store.get(1);
-            request.onsuccess = () => {
-                resolve(request.result ? request.result.count : 0);
-            };
-            request.onerror = () => {
-                reject('Error fetching unread count');
-            };
-        });
+async function getUnreadCount() {
+    const db = await openDatabase();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction('notifications', 'readonly');
+        const store = tx.objectStore('notifications');
+        const request = store.get(1);
+        request.onsuccess = () => {
+            resolve(request.result ? request.result.count : 0);
+        };
+        request.onerror = () => {
+            reject('Error fetching unread count');
+        };
     });
 }
 
 // Listener pre 'push' udalosť - spracovanie prijatej push správy
-self.addEventListener('push', event => {
+self.addEventListener('push', async event => {
     const data = event.data ? event.data.json() : {};
 
     // Zvýšenie počtu neprečítaných notifikácií
-    getUnreadCount().then(currentCount => {
-        const newCount = currentCount + 1;
+    const currentCount = await getUnreadCount();
+    const newCount = currentCount + 1;
 
-        // Uloženie nového počtu do IndexedDB
-        saveUnreadCount(newCount).then(() => {
-            // Aktualizácia odznaku pomocou Badging API
-            if ('setAppBadge' in navigator) {
-                navigator.setAppBadge(newCount).catch(error => {
-                    console.error('Chyba pri nastavovaní odznaku:', error);
-                });
-            }
+    // Uloženie nového počtu do IndexedDB
+    await saveUnreadCount(newCount);
 
-            // Zobrazenie push notifikácie
-            const options = {
-                body: data.body || 'Nová správa!',
-                icon: data.icon || '/static/img/icon.png',
-                data: {
-                    url: data.url || '/' // URL, ktorá sa otvorí po kliknutí na notifikáciu
-                }
-            };
+    // Aktualizácia odznaku pomocou Badging API
+    if ('setAppBadge' in navigator) {
+        try {
+            await navigator.setAppBadge(newCount);
+        } catch (error) {
+            console.error('Chyba pri nastavovaní odznaku:', error);
+        }
+    }
 
-            event.waitUntil(
-                self.registration.showNotification(data.title || 'Nová notifikácia', options)
-            );
-        });
-    });
+    // Zobrazenie push notifikácie
+    const options = {
+        body: data.body || 'Nová správa!',
+        icon: data.icon || '/static/img/icon.png',
+        data: {
+            url: data.url || '/' // URL, ktorá sa otvorí po kliknutí na notifikáciu
+        }
+    };
+
+    event.waitUntil(self.registration.showNotification(data.title || 'Nová notifikácia', options));
 });
 
 // Listener pre 'notificationclick' udalosť - spracovanie kliknutia na notifikáciu
@@ -100,15 +97,17 @@ self.addEventListener('notificationclose', event => {
 });
 
 // Odstránenie odznaku pri obnovení počtu neprečítaných správ
-self.addEventListener('message', event => {
+self.addEventListener('message', async event => {
     if (event.data === 'reset-badge') {
         if ('clearAppBadge' in navigator) {
-            navigator.clearAppBadge().catch(error => {
+            try {
+                await navigator.clearAppBadge();
+            } catch (error) {
                 console.error('Chyba pri odstraňovaní odznaku:', error);
-            });
+            }
         }
 
         // Resetovanie počtu neprečítaných notifikácií
-        saveUnreadCount(0);
+        await saveUnreadCount(0);
     }
 });
