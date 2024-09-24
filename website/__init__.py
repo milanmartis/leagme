@@ -267,7 +267,7 @@ def create_app():
 
                 # Nastavenie VAPID claimov s dynamickým audience
                 vapid_claims = {
-                    "sub": "mailto:tvoj-email@example.com",
+                    "sub": "mailto:info@leagme.com",
                     "aud": audience
                 }
 
