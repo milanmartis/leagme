@@ -42,13 +42,15 @@ function getUnreadCount() {
     });
 }
 
-
+// Listener pre 'push' udalosť - spracovanie prijatej push správy
 self.addEventListener('push', event => {
     const data = event.data ? event.data.json() : {};
 
     // Zvýšenie počtu neprečítaných notifikácií
     getUnreadCount().then(currentCount => {
         const newCount = currentCount + 1;
+
+        // Uloženie nového počtu do IndexedDB
         saveUnreadCount(newCount).then(() => {
             // Aktualizácia odznaku pomocou Badging API
             if ('setAppBadge' in navigator) {
@@ -57,13 +59,56 @@ self.addEventListener('push', event => {
                 });
             }
 
+            // Zobrazenie push notifikácie
             const options = {
                 body: data.body || 'Nová správa!',
-                icon: '/static/ing/icon.png'
+                icon: data.icon || '/static/img/icon.png',
+                data: {
+                    url: data.url || '/' // URL, ktorá sa otvorí po kliknutí na notifikáciu
+                }
             };
 
-            // Zobrazenie push notifikácie
-            self.registration.showNotification(data.title || 'Nová notifikácia', options);
+            event.waitUntil(
+                self.registration.showNotification(data.title || 'Nová notifikácia', options)
+            );
         });
     });
+});
+
+// Listener pre 'notificationclick' udalosť - spracovanie kliknutia na notifikáciu
+self.addEventListener('notificationclick', event => {
+    event.notification.close(); // Zatvorenie notifikácie
+
+    // Otvorenie okna alebo zameranie na už existujúce okno
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+            for (let client of windowClients) {
+                if (client.url === event.notification.data.url && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) {
+                return clients.openWindow(event.notification.data.url);
+            }
+        })
+    );
+});
+
+// Listener pre 'notificationclose' udalosť - spracovanie zatvorenia notifikácie
+self.addEventListener('notificationclose', event => {
+    console.log('Notifikácia bola zatvorená.');
+});
+
+// Odstránenie odznaku pri obnovení počtu neprečítaných správ
+self.addEventListener('message', event => {
+    if (event.data === 'reset-badge') {
+        if ('clearAppBadge' in navigator) {
+            navigator.clearAppBadge().catch(error => {
+                console.error('Chyba pri odstraňovaní odznaku:', error);
+            });
+        }
+
+        // Resetovanie počtu neprečítaných notifikácií
+        saveUnreadCount(0);
+    }
 });
