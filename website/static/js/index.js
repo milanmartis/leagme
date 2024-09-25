@@ -107,6 +107,6 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 // Funkcia, ktorá sa zavolá po kliknutí na tlačidlo
-document.getElementById('enableNotificationsButton').addEventListener('click', () => {
+//document.getElementById('enableNotificationsButton').addEventListener('click', () => {
     subscribeToPushNotifications();
-});
+//});

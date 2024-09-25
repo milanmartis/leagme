@@ -8,6 +8,8 @@ from sqlalchemy import PrimaryKeyConstraint
 from flask import current_app
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
+from datetime import datetime
+
 # from flask_babel import gettext as _
 
 roles_users = db.Table('roles_users',
@@ -291,6 +293,24 @@ class PaymentMethod(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     card_token = db.Column(db.String(255), nullable=False)
+
+class PushSubscription(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    endpoint = db.Column(db.String, nullable=False)
+    p256dh = db.Column(db.String, nullable=False)
+    auth = db.Column(db.String, nullable=False)
+
+    user = db.relationship('User', backref='push_subscriptions')
+
+
+
+
+
+
+
+
+
 
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 

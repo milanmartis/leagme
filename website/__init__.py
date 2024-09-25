@@ -116,7 +116,7 @@ def create_app():
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)
 
-    from .models import User, ProductCategory, Product, Role, user_datastore
+    from .models import User, PushSubscription, ProductCategory, Product, Role, user_datastore
 
     # Configure Google OAuth Blueprint
     google_blueprint = make_google_blueprint(
@@ -219,26 +219,32 @@ def create_app():
     # Route na odoslanie subscription údajov na backend
     @app.route('/subscribe', methods=['POST'])
     def subscribe():
-        subscription_info = request.get_json()
+        subscription_data = request.get_json()
 
-        # Skontroluj, či sa jedná o FCM token alebo Web Push subscription
-        if 'token' in subscription_info:
-            # Uložíme FCM token
-            token = subscription_info['token']
-            if token not in fcm_tokens:
-                fcm_tokens.append(token)
-                print(f"Pridaný nový FCM token: {token}")
-            else:
-                print("FCM token už existuje.")
+        # Získaj informácie o používateľovi, napr. aktuálne prihláseného používateľa
+        user_id = current_user.id if current_user.is_authenticated else None
+
+        # Získanie údajov zo subscription
+        endpoint = subscription_data['endpoint']
+        p256dh = subscription_data['keys']['p256dh']
+        auth = subscription_data['keys']['auth']
+
+        # Skontroluj, či už subscription existuje
+        existing_subscription = PushSubscription.query.filter_by(endpoint=endpoint).first()
+
+        if not existing_subscription:
+            # Vytvor nové subscription
+            new_subscription = PushSubscription(
+                user_id=user_id,
+                endpoint=endpoint,
+                p256dh=p256dh,
+                auth=auth
+            )
+            db.session.add(new_subscription)
+            db.session.commit()
+            return jsonify({'message': 'Subscription uložené úspešne.'}), 201
         else:
-            # Spracujeme Web Push subscription
-            if subscription_info not in subscriptions:
-                subscriptions.append(subscription_info)
-                print(f"Nové Web Push subscription pridané: {subscription_info}")
-            else:
-                print("Subscription už existuje.")
-
-        return jsonify({"message": "Subscription successful"}), 201
+            return jsonify({'message': 'Subscription už existuje.'}), 200
 
     # Dynamicky nastavíme audience podľa subscription endpointu
     def get_audience_from_subscription(endpoint):
@@ -306,6 +312,46 @@ def create_app():
                 return jsonify({"message": "Chyba pri odoslaní FCM notifikácie"}), 500
 
         return jsonify({"message": "Notifikácia bola odoslaná"}), 200
+    
+    
+    
+    @app.route('/send_notification', methods=['POST'])
+    def send_notification():
+        # Príklad payloadu pre notifikáciu
+        notification_payload = {
+            "title": "Nové oznámenie",
+            "body": "Máš nové oznámenie",
+            "icon": "/static/img/icon.png"
+        }
+
+        # Získaj všetky subscription z databázy
+        subscriptions = PushSubscription.query.all()
+
+        for subscription in subscriptions:
+            try:
+                # Odošli push notifikáciu
+                webpush(
+                    subscription_info={
+                        "endpoint": subscription.endpoint,
+                        "keys": {
+                            "p256dh": subscription.p256dh,
+                            "auth": subscription.auth
+                        }
+                    },
+                    data=json.dumps(notification_payload),
+                    vapid_private_key=os.environ.get('VAPID_PRIVATE_KEY'),
+                    vapid_claims={
+                        "sub": "mailto:example@example.com"
+                    }
+                )
+            except WebPushException as ex:
+                print(f"Chyba pri odosielaní notifikácie: {ex}")
+                # Ak je subscription neplatná, môžeme ju odstrániť
+                if ex.response and ex.response.status_code == 410:
+                    db.session.delete(subscription)
+                    db.session.commit()
+
+        return jsonify({'message': 'Notifikácie odoslané.'}), 200
 
     # Route na odosielanie push notifikácií
     # @app.route('/send_notification', methods=['POST'])

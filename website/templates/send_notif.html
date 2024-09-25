@@ -1,0 +1,59 @@
+{% block content %}
+    <h1>Odoslať Push Notifikáciu</h1>
+
+    <form id="notificationForm">
+        <label for="title">Titulok notifikácie:</label>
+        <input type="text" id="title" name="title" placeholder="Zadajte titulok" required>
+
+        <label for="body">Správa notifikácie:</label>
+        <textarea id="body" name="body" placeholder="Zadajte správu" required></textarea>
+
+        <button type="submit">Odoslať notifikáciu</button>
+    </form>
+
+    <div id="message" class="message"></div>
+
+    <script>
+        
+
+        // Odoslanie formulára na server cez Fetch API
+        document.getElementById('notificationForm').addEventListener('submit', async function(event) {
+            event.preventDefault();  // Zastavenie automatického reloadu stránky po odoslaní formulára
+            
+            // Získanie hodnôt z formulára
+            const title = document.getElementById('title').value;
+            const body = document.getElementById('body').value;
+            const messageElement = document.getElementById('message');
+            
+            try {
+                // Odoslanie údajov na server cez fetch
+                const response = await fetch('/send_notification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        user_id: 3,  // ID používateľa, ktorému chceš poslať notifikáciu
+                        title: "Test Notifikácia",
+                        body: "Toto je testovacia správa"
+                    })
+                });
+
+                // Spracovanie odpovede zo servera
+                if (response.ok) {
+                    messageElement.textContent = 'Notifikácia bola úspešne odoslaná!';
+                    messageElement.classList.remove('error');
+                } else {
+                    messageElement.textContent = 'Chyba pri odosielaní notifikácie!';
+                    messageElement.classList.add('error');
+                }
+
+            } catch (error) {
+                console.error('Chyba:', error);
+                messageElement.textContent = 'Chyba: Nepodarilo sa odoslať notifikáciu.';
+                messageElement.classList.add('error');
+            }
+        });
+    </script>
+    {% endblock %}
