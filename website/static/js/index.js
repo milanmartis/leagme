@@ -5,7 +5,7 @@ async function subscribeToPushNotifications() {
     if ('serviceWorker' in navigator) {
         try {
             // Registrácia service workera
-            const registration = await navigator.serviceWorker.register('/service-worker.js');
+            const registration = await navigator.serviceWorker.register('/static/js/service-worker.js');
             console.log('Service Worker registrovaný.');
 
             // Požiadať používateľa o povolenie na zobrazovanie push notifikácií
