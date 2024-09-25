@@ -4,13 +4,14 @@
     <meta charset="UTF-8" />
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <meta name="vapid-public-key" content="{{ vapid_public_key }}">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+
     <link rel="manifest" href="{{ url_for('static', filename = 'js/manifest.json') }}" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" crossorigin=""></script>
@@ -67,24 +68,7 @@
   ></script>
   </head>
   <body>
-    <button id="sendNotificationButton">Poslať skúšobnú notifikáciu</button>
-    <button id="enableNotificationsButton">Povoliť push notifikácie</button>
-    
-    <script>
-    document.getElementById('enableNotificationsButton').addEventListener('click', async () => {
-      // Požiadať používateľa o povolenie na push notifikácie
-      const permission = await Notification.requestPermission();
-      
-      if (permission === 'granted') {
-          // Ak užívateľ povolil push notifikácie, prihlásime ho na odber
-          console.log('Povolenie udelené');
-          await subscribeToPushNotifications();
-      } else {
-          // Ak povolenie nebolo udelené alebo bolo odmietnuté
-          console.log('Push notifikácie neboli povolené');
-      }
-  });
-</script>
+
     <script>
       const vapidPublicKey = "{{ vapid_public_key }}";
     // alert(vapidPublicKey);
@@ -828,28 +812,7 @@
       //     }
       // });
   }
-
   
-
-
-  </script>
-
-  <script>
-  document.getElementById('sendNotificationButton').addEventListener('click', async () => {
-      try {
-          const response = await fetch('/send_test_notification', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'X-CSRFToken': csrfToken 
-              }
-          });
-          const data = await response.json();
-          console.log('Notifikácia odoslaná:', data.message);
-      } catch (error) {
-          console.error('Chyba pri odosielaní notifikácie:', error);
-      }
-  });
   </script>
 
   </body>
