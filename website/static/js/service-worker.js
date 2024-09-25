@@ -45,38 +45,53 @@ async function getUnreadCount() {
 self.addEventListener('push', event => {
     event.waitUntil(
         (async () => {
-            const data = event.data ? event.data.json() : {};
+            try {
+                console.log('Push event prijatý.');
 
-            // Zvýšenie počtu neprečítaných notifikácií
-            const currentCount = await getUnreadCount();
-            const newCount = currentCount + 1;
-            alert(newCount);
+                // Skontroluj dáta z push udalosti
+                const data = event.data ? event.data.json() : { title: 'Bez názvu', body: 'Žiadne dáta neboli prijaté.' };
+                console.log('Prijaté dáta:', data);
 
-            // Uloženie nového počtu do IndexedDB
-            await saveUnreadCount(newCount);
+                // Zvýšenie počtu neprečítaných notifikácií
+                const currentCount = await getUnreadCount();
+                const newCount = currentCount + 1;
 
-            // Aktualizácia odznaku pomocou Badging API
-            if ('setAppBadge' in navigator) {
-                try {
-                    await navigator.setAppBadge(newCount);
-                } catch (error) {
-                    console.error('Chyba pri nastavovaní odznaku:', error);
+                console.log(`Počet neprečítaných správ: ${newCount}`);
+
+                // Uloženie nového počtu do IndexedDB
+                await saveUnreadCount(newCount);
+                console.log('Nový počet neprečítaných správ uložený.');
+
+                // Aktualizácia odznaku pomocou Badging API
+                if ('setAppBadge' in navigator) {
+                    try {
+                        await navigator.setAppBadge(newCount);
+                        console.log('Odznak aktualizovaný.');
+                    } catch (error) {
+                        console.error('Chyba pri nastavovaní odznaku:', error);
+                    }
+                } else {
+                    console.log('Badging API nie je podporované v tomto prehliadači.');
                 }
+
+                // Zobrazenie push notifikácie
+                const options = {
+                    body: data.body || 'Nová správa!',
+                    icon: data.icon || '/static/img/icon.png',
+                    data: {
+                        url: data.url || '/' // URL, ktorá sa otvorí po kliknutí na notifikáciu
+                    }
+                };
+
+                await self.registration.showNotification(data.title || 'Nová notifikácia', options);
+                console.log('Notifikácia úspešne zobrazená.');
+            } catch (error) {
+                console.error('Chyba pri spracovaní push notifikácie:', error);
             }
-
-            // Zobrazenie push notifikácie
-            const options = {
-                body: data.body || 'Nová správa!',
-                icon: data.icon || '/static/img/icon.png',
-                data: {
-                    url: data.url || '/' // URL, ktorá sa otvorí po kliknutí na notifikáciu
-                }
-            };
-
-            await self.registration.showNotification(data.title || 'Nová notifikácia', options);
         })()
     );
 });
+
 
 // Listener pre 'notificationclick' udalosť - spracovanie kliknutia na notifikáciu
 self.addEventListener('notificationclick', event => {
