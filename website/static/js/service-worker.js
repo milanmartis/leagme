@@ -50,6 +50,7 @@ self.addEventListener('push', event => {
             // Zvýšenie počtu neprečítaných notifikácií
             const currentCount = await getUnreadCount();
             const newCount = currentCount + 1;
+            alert(newCount);
 
             // Uloženie nového počtu do IndexedDB
             await saveUnreadCount(newCount);
