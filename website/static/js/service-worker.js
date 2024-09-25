@@ -41,42 +41,45 @@ async function getUnreadCount() {
 }
 
 // Listener pre 'push' udalosť - spracovanie prijatej push správy
-self.addEventListener('push', async event => {
-    const data = event.data ? event.data.json() : {};
+self.addEventListener('push', event => {
+    event.waitUntil(  // Použijeme event.waitUntil, aby sme predĺžili životnosť eventu
+        (async () => {
+            const data = event.data ? event.data.json() : {};
 
-    // Zvýšenie počtu neprečítaných notifikácií
-    const currentCount = await getUnreadCount();
-    const newCount = currentCount + 1;
+            // Zvýšenie počtu neprečítaných notifikácií
+            const currentCount = await getUnreadCount();
+            const newCount = currentCount + 1;
 
-    // Uloženie nového počtu do IndexedDB
-    await saveUnreadCount(newCount);
+            // Uloženie nového počtu do IndexedDB
+            await saveUnreadCount(newCount);
 
-    // Aktualizácia odznaku pomocou Badging API
-    if ('setAppBadge' in navigator) {
-        try {
-            await navigator.setAppBadge(newCount);
-        } catch (error) {
-            console.error('Chyba pri nastavovaní odznaku:', error);
-        }
-    }
+            // Aktualizácia odznaku pomocou Badging API
+            if ('setAppBadge' in navigator) {
+                try {
+                    await navigator.setAppBadge(newCount);
+                } catch (error) {
+                    console.error('Chyba pri nastavovaní odznaku:', error);
+                }
+            }
 
-    // Zobrazenie push notifikácie
-    const options = {
-        body: data.body || 'Nová správa!',
-        icon: data.icon || '/static/img/icon.png',
-        data: {
-            url: data.url || '/' // URL, ktorá sa otvorí po kliknutí na notifikáciu
-        }
-    };
+            // Zobrazenie push notifikácie
+            const options = {
+                body: data.body || 'Nová správa!',
+                icon: data.icon || '/static/img/icon.png',
+                data: {
+                    url: data.url || '/' // URL, ktorá sa otvorí po kliknutí na notifikáciu
+                }
+            };
 
-    event.waitUntil(self.registration.showNotification(data.title || 'Nová notifikácia', options));
+            await self.registration.showNotification(data.title || 'Nová notifikácia', options);
+        })()
+    );
 });
 
 // Listener pre 'notificationclick' udalosť - spracovanie kliknutia na notifikáciu
 self.addEventListener('notificationclick', event => {
     event.notification.close(); // Zatvorenie notifikácie
 
-    // Otvorenie okna alebo zameranie na už existujúce okno
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
             for (let client of windowClients) {
