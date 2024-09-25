@@ -255,20 +255,29 @@ def create_app():
         else:
             raise ValueError(f"Neznámy push server pre endpoint: {endpoint}")
 
-    # Poslanie skúšobnej notifikácie
+
     @app.route('/send_test_notification', methods=['POST'])
     def send_test_notification():
+        # Definovanie notifikácie, ktorú chceme poslať
         notification_payload = {
             "title": "Skúšobná notifikácia",
             "body": "Toto je test push notifikácie",
             "icon": "/static/img/icon.png"
         }
 
-        # Posielanie Web Push notifikácií
+        # Načítanie všetkých subscription z databázy
+        subscriptions = PushSubscription.query.all()
+
+        if not subscriptions:
+            return jsonify({"message": "Nie sú uložené žiadne predplatné (subscriptions)"}), 400
+
+        # Posielanie Web Push notifikácií pre všetky uložené subscriptions
         for subscription in subscriptions:
             try:
-                # Získaj endpoint a na základe toho nastav audience
-                endpoint = subscription['endpoint']
+                # Získaj endpoint z databázy
+                endpoint = subscription.endpoint
+
+                # Dynamické získanie audience (na základe endpointu)
                 audience = get_audience_from_subscription(endpoint)
 
                 # Nastavenie VAPID claimov s dynamickým audience
@@ -277,12 +286,20 @@ def create_app():
                     "aud": audience
                 }
 
+                # Posielanie push notifikácie pomocou webpush
                 webpush(
-                    subscription_info=subscription,
+                    subscription_info={
+                        "endpoint": subscription.endpoint,
+                        "keys": {
+                            "p256dh": subscription.p256dh,
+                            "auth": subscription.auth
+                        }
+                    },
                     data=json.dumps(notification_payload),
                     vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY"),
                     vapid_claims=vapid_claims
                 )
+
             except WebPushException as ex:
                 print(f"Chyba pri posielaní Web Push notifikácie: {ex}")
                 print(f"Detailná odpoveď zo servera: {ex.response.json()}")
@@ -291,28 +308,8 @@ def create_app():
                 print(f"Chyba: {ve}")
                 return jsonify({"message": f"Chyba: {ve}"}), 400
 
-        # Posielanie FCM notifikácií
-        for token in fcm_tokens:
-            fcm_server_key = os.environ.get('FIREBASE_SERVER_KEY')
-            headers = {
-                'Authorization': 'key=' + fcm_server_key,
-                'Content-Type': 'application/json'
-            }
-            fcm_data = {
-                "to": token,
-                "notification": notification_payload
-            }
+        return jsonify({"message": "Notifikácia bola úspešne odoslaná všetkým používateľom"}), 200
 
-            try:
-                response = requests.post('https://fcm.googleapis.com/fcm/send', json=fcm_data, headers=headers)
-                response.raise_for_status()
-                print(f"Notifikácia odoslaná cez FCM pre token: {token}")
-            except requests.exceptions.HTTPError as e:
-                print(f"Chyba pri posielaní FCM notifikácie: {e}")
-                return jsonify({"message": "Chyba pri odoslaní FCM notifikácie"}), 500
-
-        return jsonify({"message": "Notifikácia bola odoslaná"}), 200
-    
     
     
     @app.route('/send_notification', methods=['POST'])
