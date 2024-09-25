@@ -6,7 +6,7 @@ function isIOS() {
     return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 }
 
-// Prihlásenie na odber push notifikácií
+// Funkcia na registráciu Service Workera a požiadavku na povolenie push notifikácií
 async function subscribeToPushNotifications() {
     if ('serviceWorker' in navigator) {
         try {
@@ -106,7 +106,7 @@ function urlBase64ToUint8Array(base64String) {
     return outputArray;
 }
 
-// Overíme, či prehliadač podporuje Push API a spustíme proces prihlásenia na notifikácie
-window.addEventListener('load', () => {
+// Funkcia, ktorá sa zavolá po kliknutí na tlačidlo
+document.getElementById('enableNotificationsButton').addEventListener('click', () => {
     subscribeToPushNotifications();
 });
