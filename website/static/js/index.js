@@ -3,7 +3,7 @@ const publicVapidKey = vapidPublicKey;
 
 // Detekcia iOS zariadenia
 function isIOS() {
-    return 'nic';
+    return None;
     // return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 }
 
