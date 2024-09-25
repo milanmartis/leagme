@@ -3,8 +3,7 @@ const publicVapidKey = vapidPublicKey;
 
 // Detekcia iOS zariadenia
 function isIOS() {
-    return None;
-    // return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 }
 
 // Funkcia na registráciu Service Workera a požiadavku na povolenie push notifikácií
