@@ -85,7 +85,6 @@ async function subscribeToPushNotifications() {
             }
 
         } catch (error) {
-            
             console.error('Prihlásenie na push notifikácie zlyhalo:', error);
         }
     } else {
