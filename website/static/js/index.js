@@ -25,7 +25,8 @@ async function subscribeToPushNotifications() {
                 method: 'POST',
                 body: JSON.stringify(subscription),
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken // Pridaj CSRF token do hlavičky
                 }
             });
 
