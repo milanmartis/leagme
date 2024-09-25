@@ -199,8 +199,7 @@ def create_app():
     # _security = LocalProxy(lambda: current_app.extensions['security'])
 
     # Zoznam subscription údajov a FCM tokenov
-    subscriptions = []
-    fcm_tokens = []
+
 
     # Endpoint pre získanie Firebase konfigurácie
     @app.route('/get-firebase-config', methods=['GET'])
@@ -217,95 +216,42 @@ def create_app():
         return jsonify(firebase_config)
 
     # Route na odoslanie subscription údajov na backend
+    VAPID_PUBLIC_KEY = os.getenv('VAPID_PUBLIC_KEY')
+    VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY')
+    VAPID_CLAIMS = {
+        "sub": "mailto:tvoj-email@example.com"
+    }
+
+    # Route na odoslanie subscription údajov na backend
+    subscriptions = []
+
     @app.route('/subscribe', methods=['POST'])
     def subscribe():
         subscription_info = request.get_json()
-
-        # Skontroluj, či sa jedná o FCM token alebo Web Push subscription
-        if 'token' in subscription_info:
-            # Uložíme FCM token
-            token = subscription_info['token']
-            if token not in fcm_tokens:
-                fcm_tokens.append(token)
-                print(f"Pridaný nový FCM token: {token}")
-            else:
-                print("FCM token už existuje.")
-        else:
-            # Spracujeme Web Push subscription
-            if subscription_info not in subscriptions:
-                subscriptions.append(subscription_info)
-                print(f"Nové Web Push subscription pridané: {subscription_info}")
-            else:
-                print("Subscription už existuje.")
-
+        subscriptions.append(subscription_info)
         return jsonify({"message": "Subscription successful"}), 201
 
-    # Dynamicky nastavíme audience podľa subscription endpointu
-    def get_audience_from_subscription(endpoint):
-        if "fcm.googleapis.com" in endpoint:
-            return "https://fcm.googleapis.com"
-        elif "push.services.mozilla.com" in endpoint:
-            return "https://updates.push.services.mozilla.com"
-        else:
-            raise ValueError(f"Neznámy push server pre endpoint: {endpoint}")
-
-    # Poslanie skúšobnej notifikácie
-    @app.route('/send_test_notification', methods=['POST'])
-    def send_test_notification():
+    # Route na odosielanie push notifikácií
+    @app.route('/send_notification', methods=['POST'])
+    def send_notification():
         notification_payload = {
-            "title": "Skúšobná notifikácia",
-            "body": "Toto je test push notifikácie",
-            "icon": "/static/img/icon.png"
+            "title": "Nová správa",
+            "body": "Toto je ukážka push notifikácie",
+            "icon": "/path-to-icon.png"
         }
-
-        # Posielanie Web Push notifikácií
         for subscription in subscriptions:
             try:
-                # Získaj endpoint a na základe toho nastav audience
-                endpoint = subscription['endpoint']
-                audience = get_audience_from_subscription(endpoint)
-
-                # Nastavenie VAPID claimov s dynamickým audience
-                vapid_claims = {
-                    "sub": "mailto:tvoj-email@example.com",
-                    "aud": audience
-                }
-
                 webpush(
                     subscription_info=subscription,
                     data=json.dumps(notification_payload),
-                    vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY"),
-                    vapid_claims=vapid_claims
+                    vapid_private_key=VAPID_PRIVATE_KEY,
+                    vapid_claims=VAPID_CLAIMS
                 )
             except WebPushException as ex:
-                print(f"Chyba pri posielaní Web Push notifikácie: {ex}")
-                print(f"Detailná odpoveď zo servera: {ex.response.json()}")
-                return jsonify({"message": "Chyba pri odoslaní Web Push notifikácie"}), 500
-            except ValueError as ve:
-                print(f"Chyba: {ve}")
-                return jsonify({"message": f"Chyba: {ve}"}), 400
+                print(f"Error sending notification: {ex}")
+                return jsonify({"message": "Error sending notification"}), 500
 
-        # Posielanie FCM notifikácií
-        for token in fcm_tokens:
-            fcm_server_key = os.environ.get('FIREBASE_SERVER_KEY')
-            headers = {
-                'Authorization': 'key=' + fcm_server_key,
-                'Content-Type': 'application/json'
-            }
-            fcm_data = {
-                "to": token,
-                "notification": notification_payload
-            }
-
-            try:
-                response = requests.post('https://fcm.googleapis.com/fcm/send', json=fcm_data, headers=headers)
-                response.raise_for_status()
-                print(f"Notifikácia odoslaná cez FCM pre token: {token}")
-            except requests.exceptions.HTTPError as e:
-                print(f"Chyba pri posielaní FCM notifikácie: {e}")
-                return jsonify({"message": "Chyba pri odoslaní FCM notifikácie"}), 500
-
-        return jsonify({"message": "Notifikácia bola odoslaná"}), 200
+        return jsonify({"message": "Notifications sent"}), 200
 
     # Route na odosielanie push notifikácií
     # @app.route('/send_notification', methods=['POST'])
