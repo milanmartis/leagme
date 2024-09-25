@@ -40,9 +40,10 @@ async function getUnreadCount() {
     });
 }
 
+
 // Listener pre 'push' udalosť - spracovanie prijatej push správy
 self.addEventListener('push', event => {
-    event.waitUntil(  // Použijeme event.waitUntil, aby sme predĺžili životnosť eventu
+    event.waitUntil(
         (async () => {
             const data = event.data ? event.data.json() : {};
 
