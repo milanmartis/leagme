@@ -1,58 +1,133 @@
-// Import Firebase SDK pre Cloud Messaging
-importScripts('https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js');
-importScripts('https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging.js');
+// Otvorenie alebo vytvorenie IndexedDB databázy
+async function openDatabase() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('notifications-db', 1);
+        request.onupgradeneeded = event => {
+            const db = event.target.result;
+            db.createObjectStore('notifications', { keyPath: 'id' });
+        };
+        request.onsuccess = event => {
+            resolve(event.target.result);
+        };
+        request.onerror = event => {
+            reject('Error opening IndexedDB');
+        };
+    });
+}
 
-// Načítanie Firebase konfigurácie z backendu (súbor musí byť už inicializovaný na klientovi)
-self.addEventListener('install', event => {
-  event.waitUntil(
-    fetch('/get-firebase-config')
-      .then(response => response.json())
-      .then(firebaseConfig => {
-        // Inicializácia Firebase vo service worker
-        firebase.initializeApp(firebaseConfig);
+// Uloženie počtu neprečítaných notifikácií do IndexedDB
+async function saveUnreadCount(count) {
+    const db = await openDatabase();
+    const tx = db.transaction('notifications', 'readwrite');
+    const store = tx.objectStore('notifications');
+    store.put({ id: 1, count: count });
+    await tx.complete;
+}
 
-        // Inicializácia Firebase Cloud Messaging
-        const messaging = firebase.messaging();
+// Získanie počtu neprečítaných notifikácií z IndexedDB
+async function getUnreadCount() {
+    const db = await openDatabase();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction('notifications', 'readonly');
+        const store = tx.objectStore('notifications');
+        const request = store.get(1);
+        request.onsuccess = () => {
+            resolve(request.result ? request.result.count : 0);
+        };
+        request.onerror = () => {
+            reject('Error fetching unread count');
+        };
+    });
+}
 
-        // Spracovanie push notifikácií na pozadí
-        messaging.onBackgroundMessage((payload) => {
-          console.log('[Service Worker] Background message received:', payload);
-          const notificationTitle = payload.notification.title;
-          const notificationOptions = {
-            body: payload.notification.body,
-            icon: '/static/img/icon.png'  // Nastav si cestu k tvojej ikone
-          };
-          self.registration.showNotification(notificationTitle, notificationOptions);
-        });
-      })
-      .catch(error => {
-        console.error('Error during Firebase initialization in Service Worker:', error);
-      })
-  );
+
+// Listener pre 'push' udalosť - spracovanie prijatej push správy
+self.addEventListener('push', event => {
+    event.waitUntil(
+        (async () => {
+            try {
+                console.log('Push event prijatý.');
+
+                // Skontroluj dáta z push udalosti
+                const data = event.data ? event.data.json() : { title: 'Bez názvu', body: 'Žiadne dáta neboli prijaté.' };
+                console.log('Prijaté dáta:', data);
+
+                // Zvýšenie počtu neprečítaných notifikácií
+                const currentCount = await getUnreadCount();
+                const newCount = currentCount + 1;
+
+                console.log(`Počet neprečítaných správ: ${newCount}`);
+
+                // Uloženie nového počtu do IndexedDB
+                await saveUnreadCount(newCount);
+                console.log('Nový počet neprečítaných správ uložený.');
+
+                // Aktualizácia odznaku pomocou Badging API
+                if ('setAppBadge' in navigator) {
+                    try {
+                        await navigator.setAppBadge(newCount);
+                        console.log('Odznak aktualizovaný.');
+                    } catch (error) {
+                        console.error('Chyba pri nastavovaní odznaku:', error);
+                    }
+                } else {
+                    console.log('Badging API nie je podporované v tomto prehliadači.');
+                }
+
+                // Zobrazenie push notifikácie
+                const options = {
+                    body: data.body || 'Nová správa!',
+                    icon: data.icon || '/static/img/icon.png',
+                    data: {
+                        url: data.url || '/' // URL, ktorá sa otvorí po kliknutí na notifikáciu
+                    }
+                };
+
+                await self.registration.showNotification(data.title || 'Nová notifikácia', options);
+                console.log('Notifikácia úspešne zobrazená.');
+            } catch (error) {
+                console.error('Chyba pri spracovaní push notifikácie:', error);
+            }
+        })()
+    );
 });
 
-// Spracovanie push notifikácií na pozadí pre Web Push API (napr. pre desktopové prehliadače)
-self.addEventListener('push', function(event) {
-  const data = event.data.json();
-  console.log('[Service Worker] Push notification received:', data);
 
-  const options = {
-    body: data.body,
-    icon: '/static/img/icon.png'
-  };
+// Listener pre 'notificationclick' udalosť - spracovanie kliknutia na notifikáciu
+self.addEventListener('notificationclick', event => {
+    event.notification.close(); // Zatvorenie notifikácie
 
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+            for (let client of windowClients) {
+                if (client.url === event.notification.data.url && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) {
+                return clients.openWindow(event.notification.data.url);
+            }
+        })
+    );
 });
 
-// Ošetrenie notifikácie pri kliknutí
-self.addEventListener('notificationclick', function(event) {
-  console.log('[Service Worker] Notification click received.');
-  event.notification.close();
+// Listener pre 'notificationclose' udalosť - spracovanie zatvorenia notifikácie
+self.addEventListener('notificationclose', event => {
+    console.log('Notifikácia bola zatvorená.');
+});
 
-  // Otvoriť alebo presmerovať na konkrétnu stránku
-  event.waitUntil(
-    clients.openWindow('/')
-  );
+// Odstránenie odznaku pri obnovení počtu neprečítaných správ
+self.addEventListener('message', async event => {
+    if (event.data === 'reset-badge') {
+        if ('clearAppBadge' in navigator) {
+            try {
+                await navigator.clearAppBadge();
+            } catch (error) {
+                console.error('Chyba pri odstraňovaní odznaku:', error);
+            }
+        }
+
+        // Resetovanie počtu neprečítaných notifikácií
+        await saveUnreadCount(0);
+    }
 });
