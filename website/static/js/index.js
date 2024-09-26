@@ -53,10 +53,10 @@ async function subscribeToPushNotifications() {
 
                         console.log('FCM token odoslaný na server.');
                     } else {
+                        alert('Nebolo možné získať FCM token.');
                         console.error('Nebolo možné získať FCM token.');
                     }
                 } catch (error) {
-                    alert("chyba token");
                     console.error('Chyba pri získavaní FCM tokenu:', error);
                 }
             } else {
