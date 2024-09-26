@@ -30,35 +30,29 @@ async function subscribeToPushNotifications() {
                     firebase.initializeApp(firebaseConfig);
                 }
 
-                // Získanie FCM tokenu pre iOS po povolení
+                // Získanie FCM tokenu pre iOS
                 const messaging = firebase.messaging();
                 try {
-                    // Požiadať o povolenie pre notifikácie
-                    const permission = await messaging.requestPermission();
-                    if (permission === 'granted') {
-                        // Získať FCM token (VAPID key pre Web Push)
-                        const fcmToken = await messaging.getToken({
-                            vapidKey: publicVapidKey,
-                            serviceWorkerRegistration: registration
+                    const fcmToken = await messaging.getToken({
+                        vapidKey: publicVapidKey,
+                        serviceWorkerRegistration: registration
+                    });
+                    
+                    if (fcmToken) {
+
+                        // Odoslanie FCM tokenu na backend
+                        await fetch('/subscribe', {
+                            method: 'POST',
+                            body: JSON.stringify({ token: fcmToken }),
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': csrfToken // Pridaj CSRF token, ak je potrebný pre backend
+                            }
                         });
 
-                        if (fcmToken) {
-                            // Odoslanie FCM tokenu na backend
-                            await fetch('/subscribe', {
-                                method: 'POST',
-                                body: JSON.stringify({ token: fcmToken }),
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRFToken': csrfToken // Pridaj CSRF token, ak je potrebný pre backend
-                                }
-                            });
-
-                            console.log('FCM token odoslaný na server.');
-                        } else {
-                            console.error('Nebolo možné získať FCM token.');
-                        }
+                        console.log('FCM token odoslaný na server.');
                     } else {
-                        console.error('Používateľ neudelil povolenie pre notifikácie.');
+                        console.error('Nebolo možné získať FCM token.');
                     }
                 } catch (error) {
                     console.error('Chyba pri získavaní FCM tokenu:', error);
@@ -120,7 +114,7 @@ function urlBase64ToUint8Array(base64String) {
 // Funkcia, ktorá sa zavolá po kliknutí na tlačidlo
 document.getElementById('enableNotificationsButton').addEventListener('click', async () => {
     const permission = await Notification.requestPermission();
-
+      
     if (permission === 'granted') {
         // Ak užívateľ povolil push notifikácie, prihlásime ho na odber
         console.log('Povolenie udelené');
