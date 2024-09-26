@@ -32,20 +32,13 @@ async function subscribeToPushNotifications() {
 
                 // Získanie FCM tokenu pre iOS
                 const messaging = firebase.messaging();
-                messaging
-                .requestPermission()
-                .then(function () {
-                    return messaging.getToken({
-                        vapidKey: publicVapidKey,
-                        serviceWorkerRegistration: registration
-                    }) // Získanie tokenu
-                })
-                .then(function (fcmToken) {
-
+                try {
+                    const fcmToken = await messaging.getToken();
+                    
                     if (fcmToken) {
 
                         // Odoslanie FCM tokenu na backend
-                        fetch('/subscribe', {
+                        await fetch('/subscribe', {
                             method: 'POST',
                             body: JSON.stringify({ token: fcmToken }),
                             headers: {
@@ -58,8 +51,9 @@ async function subscribeToPushNotifications() {
                     } else {
                         console.error('Nebolo možné získať FCM token.');
                     }
-                });
-       
+                } catch (error) {
+                    console.error('Chyba pri získavaní FCM tokenu:', error);
+                }
             } else {
                 // Požiadať používateľa o povolenie na zobrazovanie push notifikácií (Web Push API pre ostatné platformy)
                 const permission = await Notification.requestPermission();
