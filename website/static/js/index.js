@@ -24,8 +24,7 @@ async function subscribeToPushNotifications() {
                     throw new Error('Chyba pri načítavaní Firebase konfigurácie.');
                 }
                 const firebaseConfig = await response.json();
-                alert(firebaseConfig);
-
+                
                 // Inicializácia Firebase
                 if (!firebase.apps.length) {
                     firebase.initializeApp(firebaseConfig);
@@ -37,6 +36,7 @@ async function subscribeToPushNotifications() {
                     await messaging.requestPermission();
                     const fcmToken = await messaging.getToken();
                     console.log('FCM token:', fcmToken);
+                    alert(fcmToken);
 
                     // Odoslanie FCM tokenu na backend
                     await fetch('/subscribe', {
