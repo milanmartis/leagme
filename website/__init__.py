@@ -228,6 +228,9 @@ def create_app():
         if 'token' in subscription_data:
             # Spracovanie FCM tokenu (pre iOS zariadenia)
             fcm_token = subscription_data['token']
+            print("*********************")
+            print(fcm_token)
+            print("*********************")
 
             # Skontroluj, či už FCM token existuje v databáze
             existing_fcm_token = PushSubscription.query.filter_by(auth=fcm_token).first()
@@ -235,10 +238,7 @@ def create_app():
             if not existing_fcm_token:
                 # Vytvor nové FCM subscription pre iOS
                 new_fcm_subscription = PushSubscription(
-                    user_id=user_id,
-                    endpoint=None,  # FCM token nemá endpoint
-                    p256dh=None,    # FCM token nemá p256dh kľúč
-                    auth=fcm_token  # Ulož FCM token do auth stĺpca
+                    user_id=user_id
                 )
                 db.session.add(new_fcm_subscription)
                 db.session.commit()
