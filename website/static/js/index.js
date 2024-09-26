@@ -16,41 +16,35 @@ async function subscribeToPushNotifications() {
 
             // Detekcia iOS a použitie Firebase Cloud Messaging (FCM) pre iOS
             if (isIOS()) {
-                console.log('iOS zistené. Používa sa Firebase pre push notifikácie.');
-
-                // Načítanie Firebase konfigurácie z backendu
-                const response = await fetch('/get-firebase-config');
-                if (!response.ok) {
-                    throw new Error('Chyba pri načítavaní Firebase konfigurácie.');
-                }
-                const firebaseConfig = await response.json();
-
-                // Inicializácia Firebase
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(firebaseConfig);
-                }
-
-                // Registrácia pre Firebase Cloud Messaging (FCM)
-                const messaging = firebase.messaging();
-                try {
-                    await messaging.requestPermission();
-                    const fcmToken = await messaging.getToken();
-                    console.log('FCM token:', fcmToken);
-
-                    // Odoslanie FCM tokenu na backend
-                    await fetch('/subscribe', {
-                        method: 'POST',
-                        body: JSON.stringify({ token: fcmToken }),
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': csrfToken // Pridaj CSRF token, ak je potrebný pre backend
-                        }
-                    });
-
-                    console.log('FCM token odoslaný na server.');
-                } catch (error) {
-                    console.error('Chyba pri získavaní FCM tokenu:', error);
-                }
+                                // Požiadať používateľa o povolenie na zobrazovanie push notifikácií (Web Push API pre ostatné platformy)
+                                const permission = await Notification.requestPermission();
+                                if (permission !== 'granted') {
+                                    throw new Error('Povolenie na push notifikácie nebolo udelené.');
+                                }
+                
+                                // Prihlásenie na odber push notifikácií
+                                const subscription = await registration.pushManager.subscribe({
+                                    userVisibleOnly: true, // Uistíme sa, že notifikácie budú viditeľné pre používateľa
+                                    applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+                                });
+                
+                                console.log('Subscription údaje:', subscription);
+                
+                                // Odoslanie subscription údajov na backend
+                                const response = await fetch('/subscribe', {
+                                    method: 'POST',
+                                    body: JSON.stringify(subscription),
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRFToken': csrfToken // Pridaj CSRF token do hlavičky, ak je potrebný pre backend
+                                    }
+                                });
+                
+                                if (!response.ok) {
+                                    throw new Error('Chyba pri odosielaní subscription na server.');
+                                }
+                
+                                console.log('Prihlásenie na push notifikácie prebehlo úspešne.');
 
             } else {
                 // Požiadať používateľa o povolenie na zobrazovanie push notifikácií (Web Push API pre ostatné platformy)
