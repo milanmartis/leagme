@@ -70,7 +70,7 @@
     <button id="sendNotificationButton">Poslať skúšobnú notifikáciu</button>
     <button id="enableNotificationsButton">Povoliť push notifikácie</button>
     <script>
-    document.getElementById('enableNotificationsButton').addEventListener('click', async () => {
+    //document.getElementById('enableNotificationsButton').addEventListener('click', async () => {
       // Požiadať používateľa o povolenie na push notifikácie
       const permission = await Notification.requestPermission();
       
@@ -82,7 +82,7 @@
           // Ak povolenie nebolo udelené alebo bolo odmietnuté
           console.log('Push notifikácie neboli povolené');
       }
-  });
+  //});
 </script>
     <script>
       const vapidPublicKey = "{{ vapid_public_key }}";
