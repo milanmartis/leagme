@@ -49,6 +49,7 @@ async function subscribeToPushNotifications() {
                             'X-CSRFToken': csrfToken // Pridaj CSRF token, ak je potrebný pre backend
                         }
                     });
+                    alert('FCM token odoslaný na server.');
 
                     console.log('FCM token odoslaný na server.');
                 } catch (error) {
