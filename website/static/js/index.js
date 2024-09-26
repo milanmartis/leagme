@@ -27,6 +27,7 @@ async function subscribeToPushNotifications() {
                 
                 // Inicializácia Firebase
                 if (!firebase.apps.length) {
+                    alert('Firebase error');
                     firebase.initializeApp(firebaseConfig);
                 }
 
