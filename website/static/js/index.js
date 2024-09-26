@@ -33,7 +33,10 @@ async function subscribeToPushNotifications() {
                 // Získanie FCM tokenu pre iOS
                 const messaging = firebase.messaging();
                 try {
-                    const fcmToken = await messaging.getToken();
+                    const fcmToken = await messaging.getToken({
+                        vapidKey: urlBase64ToUint8Array(publicVapidKey),
+                        serviceWorkerRegistration: registration
+                    });
                     
                     if (fcmToken) {
 
