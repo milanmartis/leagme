@@ -259,9 +259,8 @@ def create_app():
         elif "push.opera.com" in endpoint:
             return "https://push.opera.com"
         else:
-            # Ignorovať neznáme endpointy a preskočiť tieto subscriptions
-            print(f"Preskočené subscription pre neznámy push server: {endpoint}")
-            return None
+            raise ValueError(f"Neznámy push server pre endpoint: {endpoint}")
+
 
 
     @app.route('/send_test_notification', methods=['POST'])
@@ -287,10 +286,6 @@ def create_app():
 
                 # Dynamické získanie audience (na základe endpointu)
                 audience = get_audience_from_subscription(endpoint)
-                if audience is None:
-                    # Ignoruj subscriptions, ktoré nemajú podporovaný push server
-                    print(f"Preskočené subscription pre neznámy endpoint: {endpoint}")
-                    continue
 
                 # Nastavenie VAPID claimov s dynamickým audience
                 vapid_claims = {
