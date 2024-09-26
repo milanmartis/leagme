@@ -10,7 +10,7 @@ function isIOS() {
 async function subscribeToPushNotifications() {
     if ('serviceWorker' in navigator) {
         try {
-            // Registrácia Service Workera
+            // Registrácia Service Workera pre Web Push
             const registration = await navigator.serviceWorker.register('/static/js/service-worker.js');
             console.log('Service Worker úspešne zaregistrovaný.');
 
@@ -30,7 +30,7 @@ async function subscribeToPushNotifications() {
                     firebase.initializeApp(firebaseConfig);
                 }
 
-                // Získanie FCM tokenu priamo bez requestPermission()
+                // Získanie FCM tokenu pre iOS
                 const messaging = firebase.messaging();
                 try {
                     const fcmToken = await messaging.getToken({
@@ -65,7 +65,7 @@ async function subscribeToPushNotifications() {
                     throw new Error('Povolenie na push notifikácie nebolo udelené.');
                 }
 
-                // Prihlásenie na odber push notifikácií
+                // Prihlásenie na odber push notifikácií pre Web Push API
                 const subscription = await registration.pushManager.subscribe({
                     userVisibleOnly: true, // Uistíme sa, že notifikácie budú viditeľné pre používateľa
                     applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
@@ -125,4 +125,3 @@ document.getElementById('enableNotificationsButton').addEventListener('click', a
         console.log('Push notifikácie neboli povolené');
     }
 });
-    
