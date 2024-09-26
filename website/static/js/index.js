@@ -1,5 +1,6 @@
 // VAPID public key
 const publicVapidKey = vapidPublicKey;
+alert(publicVapidKey);
 
 // Detekcia iOS zariadenia
 function isIOS() {
@@ -13,6 +14,7 @@ async function subscribeToPushNotifications() {
             // Registrácia Service Workera pre Web Push
             const registration = await navigator.serviceWorker.register('/static/js/service-worker.js');
             console.log('Service Worker úspešne zaregistrovaný.');
+            alert(registration);
 
             // Detekcia iOS a použitie Firebase Cloud Messaging (FCM) pre iOS
             if (isIOS()) {
@@ -34,7 +36,7 @@ async function subscribeToPushNotifications() {
                 const messaging = firebase.messaging();
                 try {
                     const fcmToken = await messaging.getToken({
-                        vapidKey: urlBase64ToUint8Array(publicVapidKey),
+                        vapidKey: publicVapidKey,
                         serviceWorkerRegistration: registration
                     });
                     
