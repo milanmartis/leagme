@@ -113,15 +113,15 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 // Funkcia, ktorá sa zavolá po kliknutí na tlačidlo
-//document.getElementById('enableNotificationsButton').addEventListener('click', () => {
-    const permission = await Notification.requestPermission();
+document.getElementById('enableNotificationsButton').addEventListener('click', () => {
+    const permission = Notification.requestPermission();
       
     if (permission === 'granted') {
         // Ak užívateľ povolil push notifikácie, prihlásime ho na odber
         console.log('Povolenie udelené');
-        await subscribeToPushNotifications();
+        subscribeToPushNotifications();
     } else {
         // Ak povolenie nebolo udelené alebo bolo odmietnuté
         console.log('Push notifikácie neboli povolené');
     }
-//});
+});
