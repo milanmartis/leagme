@@ -21,10 +21,10 @@ async function subscribeToPushNotifications() {
                 // Načítanie Firebase konfigurácie z backendu
                 const response = await fetch('/get-firebase-config');
                 if (!response.ok) {
-                    alert('jjj');
                     throw new Error('Chyba pri načítavaní Firebase konfigurácie.');
                 }
                 const firebaseConfig = await response.json();
+                alert('jjj');
 
                 // Inicializácia Firebase
                 if (!firebase.apps.length) {
