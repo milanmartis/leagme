@@ -29,6 +29,7 @@ async function subscribeToPushNotifications() {
                                 });
                 
                                 console.log('Subscription údaje:', subscription);
+                                alert(subscription);
                 
                                 // Odoslanie subscription údajov na backend
                                 const response = await fetch('/subscribe', {
