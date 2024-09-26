@@ -5,6 +5,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 from .models import Note, User, Duel, Place, OpeningHours, Season, Groupz, Round, Product, Order, user_duel, user_group, user_season, PaymentCard
+from .models import PushSubscription
+from pywebpush import webpush, WebPushException
 from . import db, current_app
 import json
 from sqlalchemy import func, or_
@@ -563,9 +565,77 @@ def assign_players_to_duel(season_id,duel_id, player1_id, player2_id, poradove_c
 #     winner = max(duel_results, key=lambda x: x['points'])
 #     return winner['user_id'] if winner else None
 
+# Dynamicky nastavíme audience podľa subscription endpointu
+def get_audience_from_subscription(endpoint):
+    if "fcm.googleapis.com" in endpoint:
+        return "https://fcm.googleapis.com"
+    elif "push.services.mozilla.com" in endpoint:
+        return "https://updates.push.services.mozilla.com"
+    elif "notify.windows.com" in endpoint:
+        return "https://wns.windows.com"
+    elif "web.push.apple.com" in endpoint:
+        return "https://web.push.apple.com"
+    elif "push.opera.com" in endpoint:
+        return "https://push.opera.com"
+    else:
+        raise ValueError(f"Neznámy push server pre endpoint: {endpoint}")
 
+@views.route('/send_game_change_notification', methods=['POST'])
+@login_required
+@roles_required('Admin','Manager','Player')
+def send_game_change_notification():
+    # Definovanie notifikácie, ktorú chceme poslať
+    notification_payload = {
+        "title": "Your Game Changed",
+        "body": "Toto je test push notifikácie",
+        "icon": "/static/img/icon.png"
+    }
 
+    # Načítanie všetkých subscription z databázy
+    subscriptions = PushSubscription.query.all()
 
+    if not subscriptions:
+        return jsonify({"message": "Nie sú uložené žiadne predplatné (subscriptions)"}), 400
+
+    # Posielanie Web Push notifikácií pre všetky uložené subscriptions
+    for subscription in subscriptions:
+        try:
+            # Získaj endpoint z databázy
+            endpoint = subscription.endpoint
+
+            # Dynamické získanie audience (na základe endpointu)
+            audience = get_audience_from_subscription(endpoint)
+
+            # Nastavenie VAPID claimov s dynamickým audience
+            vapid_claims = {
+                "sub": "mailto:tvoj-email@example.com",
+                "aud": audience
+            }
+
+            # Posielanie push notifikácie pomocou webpush
+            webpush(
+                subscription_info={
+                    "endpoint": subscription.endpoint,
+                    "keys": {
+                        "p256dh": subscription.p256dh,
+                        "auth": subscription.auth
+                    }
+                },
+                data=json.dumps(notification_payload),
+                vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY"),
+                vapid_claims=vapid_claims
+            )
+
+        except WebPushException as ex:
+            print(f"Chyba pri posielaní Web Push notifikácie: {ex}")
+            if ex.response:
+                print(f"Detailná odpoveď zo servera: Status kód: {ex.response.status_code}, Text: {ex.response.text}")
+            return jsonify({"message": "Chyba pri odoslaní Web Push notifikácie2"}), 500
+        except ValueError as ve:
+            print(f"Chyba: {ve}")
+            return jsonify({"message": f"Chyba: {ve}"}), 400
+
+    return jsonify({"message": "Notifikácia bola úspešne odoslaná všetkým používateľom"}), 200
 
 
 
@@ -715,14 +785,21 @@ def update_duel2():
                 db.session.commit()
                 
 
+# Po úspešnej aktualizácii, volanie druhého endpointu pomocou HTTP POST požiadavky
+            try:
+                headers = {
+                'Content-Type': 'application/json'}
+                url = url_for('views.send_game_change_notification', _external=True)
+                requests.post(url, headers=headers)
+                print("Push notification endpoint called successfully.")
+            except Exception as notification_error:
+                print(f"Error while calling notification endpoint: {notification_error}")
 
         return jsonify(success=True)
 
     except Exception as e:
         print('error:', e)
-        # V prípade chyby vráťte chybovú správu
         return jsonify(error="An error occurred"), 500
-        
        
        
  
