@@ -9,7 +9,7 @@ from .models import PushSubscription
 from pywebpush import webpush, WebPushException
 from . import db, current_app
 import json
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, and_
 from sqlalchemy import insert, update
 import stripe
 from slugify import slugify
@@ -784,15 +784,22 @@ def update_duel2():
                 # Uložte zmeny
                 db.session.commit()
                 
-                notification_payload = {
+
+        # Načítanie všetkých subscription z databázy
+        # subscriptions = PushSubscription.query.filter(PushSubscription.user_id == int(data[2]) or int(data[5]) a nerovna sa current_user.id).first()
+        subscriptions = PushSubscription.query.filter(
+            and_(
+                or_(PushSubscription.user_id == int(data[2]), PushSubscription.user_id == int(data[5])),
+                PushSubscription.user_id != current_user.id
+            )
+        ).all()  # Použijeme first(), pretože očakávate iba jeden výsledok
+        print(int(data[5]))
+
+        notification_payload = {
             "title": "Your Game Changed",
             "body": "Toto je test push notifikácie",
             "icon": "/static/img/icon.png"
         }
-
-        # Načítanie všetkých subscription z databázy
-        subscriptions = PushSubscription.query.all()
-
         if not subscriptions:
             return jsonify({"message": "Nie sú uložené žiadne predplatné (subscriptions)"}), 400
 

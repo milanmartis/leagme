@@ -13,6 +13,7 @@ async function subscribeToPushNotifications() {
             // Registrácia Service Workera
             const registration = await navigator.serviceWorker.register('/static/js/service-worker.js');
             console.log('Service Worker úspešne zaregistrovaný.');
+            alert(registration);
 
             // Detekcia iOS a použitie Firebase Cloud Messaging (FCM) pre iOS
             if (isIOS()) {
