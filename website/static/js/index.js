@@ -16,6 +16,7 @@ async function subscribeToPushNotifications() {
 
             // Detekcia iOS a použitie Firebase Cloud Messaging (FCM) pre iOS
             if (isIOS()) {
+                alert('ios');
                 // Požiadať používateľa o povolenie na zobrazovanie push notifikácií (Web Push API pre ostatné platformy)
                 const permission = await Notification.requestPermission();
                 if (permission !== 'granted') {
