@@ -252,8 +252,16 @@ def create_app():
             return "https://fcm.googleapis.com"
         elif "push.services.mozilla.com" in endpoint:
             return "https://updates.push.services.mozilla.com"
+        elif "notify.windows.com" in endpoint:
+            return "https://wns.windows.com"
+        elif "web.push.apple.com" in endpoint:
+            return "https://web.push.apple.com"
+        elif "push.opera.com" in endpoint:
+            return "https://push.opera.com"
         else:
-            raise ValueError(f"Neznámy push server pre endpoint: {endpoint}")
+            # Ignorovať neznáme endpointy a preskočiť tieto subscriptions
+            print(f"Preskočené subscription pre neznámy push server: {endpoint}")
+            return None
 
 
     @app.route('/send_test_notification', methods=['POST'])
@@ -279,6 +287,10 @@ def create_app():
 
                 # Dynamické získanie audience (na základe endpointu)
                 audience = get_audience_from_subscription(endpoint)
+                if audience is None:
+                    # Ignoruj subscriptions, ktoré nemajú podporovaný push server
+                    print(f"Preskočené subscription pre neznámy endpoint: {endpoint}")
+                    continue
 
                 # Nastavenie VAPID claimov s dynamickým audience
                 vapid_claims = {
