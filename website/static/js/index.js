@@ -112,3 +112,14 @@ function urlBase64ToUint8Array(base64String) {
     return outputArray;
 }
 
+// Funkcia, ktorá sa zavolá po kliknutí na tlačidlo
+document.getElementById('enableNotificationsButton').addEventListener('click', () => {
+    const permission = Notification.requestPermission();
+      
+      if (permission === 'granted') {
+    subscribeToPushNotifications();
+} else {
+    // Ak povolenie nebolo udelené alebo bolo odmietnuté
+    console.log('Push notifikácie neboli povolené');
+}
+});
