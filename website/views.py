@@ -1425,20 +1425,20 @@ def season_player_delete(player, season):
 @views.route('/pricing', methods=['GET', 'POST'])
 def pricing_list():
     
-    customer_id = current_user.stripe_subscription_id  # Predpokladám, že máte stripe_customer_id uložené v používateľskom objekte
-    subscriptions = stripe.Subscription.list(customer=customer_id)
-    if not subscriptions:
+    # customer_id = current_user.stripe_subscription_id  # Predpokladám, že máte stripe_customer_id uložené v používateľskom objekte
+    # subscriptions = stripe.Subscription.list(customer=customer_id)
+    # if not subscriptions:
        
         # products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
-        orders3 = Order.query.filter(Order.user_id==current_user.id).all()
-        print(orders3)
-        cards = PaymentCard.query.filter(PaymentCard.user_id==current_user.id).all()
-        products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
-        orders = Order.query.filter(Order.user_id==current_user.id).all()
+    orders3 = Order.query.filter(Order.user_id==current_user.id).all()
+    print(orders3)
+    cards = PaymentCard.query.filter(PaymentCard.user_id==current_user.id).all()
+    products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
+    orders = Order.query.filter(Order.user_id==current_user.id).all()
 
-        return render_template("pricing.html",  vapid_public_key=vapid_public_key, orders3=orders3, products=products, adminz=adminz, checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), user=current_user, cards=cards, orders=orders)
-    else:
-        return render_template("pricing.html",  vapid_public_key=vapid_public_key, orders3=orders3, products=products, adminz=adminz, checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), user=current_user, cards=cards, orders=orders)
+    return render_template("pricing.html",  vapid_public_key=vapid_public_key, orders3=orders3, products=products, adminz=adminz, checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), user=current_user, cards=cards, orders=orders)
+    # else:
+        # return render_template("pricing.html",  vapid_public_key=vapid_public_key, orders3=orders3, products=products, adminz=adminz, checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), user=current_user, cards=cards, orders=orders)
         # return redirect(url_for('auth.user_details'))
 
 
