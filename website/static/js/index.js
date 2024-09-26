@@ -52,6 +52,7 @@ async function subscribeToPushNotifications() {
 
                     console.log('FCM token odoslaný na server.');
                 } catch (error) {
+                    alert('chyba token');
                     console.error('Chyba pri získavaní FCM tokenu:', error);
                 }
 
