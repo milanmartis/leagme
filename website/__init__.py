@@ -220,26 +220,20 @@ def create_app():
     @app.route('/subscribe', methods=['POST'])
     def subscribe():
         subscription_data = request.get_json()
-
-        # Získaj informácie o používateľovi, napr. aktuálne prihláseného používateľa
         user_id = current_user.id if current_user.is_authenticated else None
 
-        # Skontroluj, či sa jedná o FCM token alebo Web Push subscription
+        # Spracovanie FCM tokenu (pre iOS zariadenia)
         if 'token' in subscription_data:
-            # Spracovanie FCM tokenu (pre iOS zariadenia)
             fcm_token = subscription_data['token']
             print(fcm_token)
-
-            # Skontroluj, či už FCM token existuje v databáze
             existing_fcm_token = PushSubscription.query.filter_by(auth=fcm_token).first()
 
             if not existing_fcm_token:
-                # Vytvor nové FCM subscription pre iOS
                 new_fcm_subscription = PushSubscription(
                     user_id=user_id,
-                    endpoint=None,  # FCM token nemá endpoint
-                    p256dh=None,    # FCM token nemá p256dh kľúč
-                    auth=fcm_token  # Ulož FCM token do auth stĺpca
+                    endpoint=None,
+                    p256dh=None,
+                    auth=fcm_token
                 )
                 db.session.add(new_fcm_subscription)
                 db.session.commit()
@@ -248,16 +242,13 @@ def create_app():
                 return jsonify({'message': 'FCM token už existuje.'}), 200
 
         else:
-            # Spracovanie Web Push subscription (pre ostatné zariadenia)
+            # Spracovanie Web Push subscription
             endpoint = subscription_data['endpoint']
             p256dh = subscription_data['keys']['p256dh']
             auth = subscription_data['keys']['auth']
-
-            # Skontroluj, či už Web Push subscription existuje v databáze
             existing_subscription = PushSubscription.query.filter_by(endpoint=endpoint).first()
 
             if not existing_subscription:
-                # Vytvor nové Web Push subscription
                 new_subscription = PushSubscription(
                     user_id=user_id,
                     endpoint=endpoint,
@@ -270,77 +261,58 @@ def create_app():
             else:
                 return jsonify({'message': 'Web Push subscription už existuje.'}), 200
 
-    # Dynamicky nastavíme audience podľa subscription endpointu
-    def get_audience_from_subscription(endpoint):
-        if "fcm.googleapis.com" in endpoint:
-            return "https://fcm.googleapis.com"
-        elif "push.services.mozilla.com" in endpoint:
-            return "https://updates.push.services.mozilla.com"
-        elif "notify.windows.com" in endpoint:
-            return "https://wns.windows.com"
-        elif "web.push.apple.com" in endpoint:
-            return "https://web.push.apple.com"
-        elif "push.opera.com" in endpoint:
-            return "https://push.opera.com"
-        else:
-            raise ValueError(f"Neznámy push server pre endpoint: {endpoint}")
-
-
-
+    # Funkcia na poslanie testovacej notifikácie
     @app.route('/send_test_notification', methods=['POST'])
     def send_test_notification():
-        # Definovanie notifikácie, ktorú chceme poslať
         notification_payload = {
-            "title": "Skúšobná notifikácia",
-            "body": "Toto je test push notifikácie",
+            "title": "Test Notifikácia",
+            "body": "Toto je testovacia push notifikácia",
             "icon": "/static/img/icon.png"
         }
 
-        # Načítanie všetkých subscription z databázy
         subscriptions = PushSubscription.query.all()
 
         if not subscriptions:
-            return jsonify({"message": "Nie sú uložené žiadne predplatné (subscriptions)"}), 400
+            return jsonify({"message": "Nie sú uložené žiadne subscriptions"}), 400
 
-        # Posielanie Web Push notifikácií pre všetky uložené subscriptions
         for subscription in subscriptions:
-            try:
-                # Získaj endpoint z databázy
-                endpoint = subscription.endpoint
-
-                # Dynamické získanie audience (na základe endpointu)
-                audience = get_audience_from_subscription(endpoint)
-
-                # Nastavenie VAPID claimov s dynamickým audience
-                vapid_claims = {
-                    "sub": "mailto:tvoj-email@example.com",
-                    "aud": audience
-                }
-
-                # Posielanie push notifikácie pomocou webpush
-                webpush(
-                    subscription_info={
-                        "endpoint": subscription.endpoint,
-                        "keys": {
-                            "p256dh": subscription.p256dh,
-                            "auth": subscription.auth
-                        }
-                    },
-                    data=json.dumps(notification_payload),
-                    vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY"),
-                    vapid_claims=vapid_claims
+            if subscription.auth:  # Spracovanie FCM tokenov
+                # Posielanie notifikácií pre iOS cez Firebase Cloud Messaging (FCM)
+                message = messaging.Message(
+                    notification=messaging.Notification(
+                        title=notification_payload['title'],
+                        body=notification_payload['body']
+                    ),
+                    token=subscription.auth
                 )
+                response = messaging.send(message)
+                print(f"FCM správa odoslaná: {response}")
 
-            except WebPushException as ex:
-                print(f"Chyba pri posielaní Web Push notifikácie: {ex}")
-                if ex.response:
-                    print(f"Detailná odpoveď zo servera: Status kód: {ex.response.status_code}, Text: {ex.response.text}")
-                return jsonify({"message": "Chyba pri odoslaní Web Push notifikácie2"}), 500
-            except ValueError as ve:
-                print(f"Chyba: {ve}")
-                return jsonify({"message": f"Chyba: {ve}"}), 400
+            else:  # Spracovanie Web Push subscription
+                try:
+                    endpoint = subscription.endpoint
+                    vapid_claims = {
+                        "sub": "mailto:tvoj-email@example.com"
+                    }
 
-        return jsonify({"message": "Notifikácia bola úspešne odoslaná všetkým používateľom"}), 200
+                    webpush(
+                        subscription_info={
+                            "endpoint": subscription.endpoint,
+                            "keys": {
+                                "p256dh": subscription.p256dh,
+                                "auth": subscription.auth
+                            }
+                        },
+                        data=json.dumps(notification_payload),
+                        vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY"),
+                        vapid_claims=vapid_claims
+                    )
+
+                except WebPushException as ex:
+                    print(f"Chyba pri posielaní Web Push notifikácie: {ex}")
+                    return jsonify({"message": "Chyba pri odoslaní Web Push notifikácie"}), 500
+
+        return jsonify({"message": "Notifikácia odoslaná"}), 200
 
     
     

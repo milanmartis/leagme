@@ -1,5 +1,5 @@
 // VAPID public key
-const publicVapidKey = vapidPublicKey;
+const publicVapidKey = vapidPublicKey;  // Definujte váš VAPID public key
 
 // Detekcia iOS zariadenia
 function isIOS() {
@@ -16,36 +16,51 @@ async function subscribeToPushNotifications() {
 
             // Detekcia iOS a použitie Firebase Cloud Messaging (FCM) pre iOS
             if (isIOS()) {
-                alert('ios');
-                // Požiadať používateľa o povolenie na zobrazovanie push notifikácií (Web Push API pre ostatné platformy)
-                const permission = await Notification.requestPermission();
-                if (permission !== 'granted') {
-                    throw new Error('Povolenie na push notifikácie nebolo udelené.');
-                }
 
-                // Prihlásenie na odber push notifikácií
-                const subscription = await registration.pushManager.subscribe({
-                    userVisibleOnly: true, // Uistíme sa, že notifikácie budú viditeľné pre používateľa
-                    applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
-                });
+                console.log('iOS zistené. Používa sa Firebase pre push notifikácie.');
 
-                console.log('Subscription údaje:', subscription);
-
-                // Odoslanie subscription údajov na backend
-                const response = await fetch('/subscribe', {
-                    method: 'POST',
-                    body: JSON.stringify(subscription),
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken // Pridaj CSRF token do hlavičky, ak je potrebný pre backend
-                    }
-                });
-
+                // Načítanie Firebase konfigurácie z backendu
+                const response = await fetch('/get-firebase-config');
                 if (!response.ok) {
-                    throw new Error('Chyba pri odosielaní subscription na server.');
+                    throw new Error('Chyba pri načítavaní Firebase konfigurácie.');
+                }
+                const firebaseConfig = await response.json();
+                
+                // Inicializácia Firebase
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
                 }
 
-                console.log('Prihlásenie na push notifikácie prebehlo úspešne.');
+                // Registrácia pre Firebase Cloud Messaging (FCM)
+                const messaging = firebase.messaging();
+                try {
+                    // Získajte povolenie na push notifikácie
+                    await messaging.requestPermission();
+
+                    // Získať FCM token pre iOS
+                    const fcmToken = await messaging.getToken({
+                        vapidKey: publicVapidKey,  // Zahrni VAPID kľúč
+                        serviceWorkerRegistration: registration
+                    });
+
+                    if (fcmToken) {
+                        // Odoslanie FCM tokenu na backend
+                        await fetch('/subscribe', {
+                            method: 'POST',
+                            body: JSON.stringify({ token: fcmToken }),
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': csrfToken // Pridaj CSRF token, ak je potrebný pre backend
+                            }
+                        });
+                        console.log('FCM token odoslaný na server.');
+                    } else {
+                        console.error('Nebolo možné získať FCM token.');
+                    }
+
+                } catch (error) {
+                    console.error('Chyba pri získavaní FCM tokenu:', error);
+                }
 
             } else {
                 // Požiadať používateľa o povolenie na zobrazovanie push notifikácií (Web Push API pre ostatné platformy)
@@ -56,7 +71,7 @@ async function subscribeToPushNotifications() {
 
                 // Prihlásenie na odber push notifikácií
                 const subscription = await registration.pushManager.subscribe({
-                    userVisibleOnly: true, // Uistíme sa, že notifikácie budú viditeľné pre používateľa
+                    userVisibleOnly: true,
                     applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
                 });
 
@@ -68,7 +83,7 @@ async function subscribeToPushNotifications() {
                     body: JSON.stringify(subscription),
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken // Pridaj CSRF token do hlavičky, ak je potrebný pre backend
+                        'X-CSRFToken': csrfToken // Pridaj CSRF token, ak je potrebný pre backend
                     }
                 });
 
@@ -87,20 +102,6 @@ async function subscribeToPushNotifications() {
     }
 }
 
-// Konverzia VAPID kľúča na Uint8Array
-function urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
-
-    return outputArray;
-}
-
 // Funkcia, ktorá sa zavolá po kliknutí na tlačidlo
 document.getElementById('enableNotificationsButton').addEventListener('click', async () => {
     const permission = await Notification.requestPermission();
@@ -114,3 +115,18 @@ document.getElementById('enableNotificationsButton').addEventListener('click', a
         console.log('Push notifikácie neboli povolené');
     }
 });
+
+
+// Konverzia VAPID kľúča na Uint8Array
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+
+    return outputArray;
+}
