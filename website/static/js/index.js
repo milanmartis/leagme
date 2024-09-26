@@ -43,6 +43,7 @@ async function subscribeToPushNotifications() {
                         });
 
                         if (fcmToken) {
+                            alert(fcmToken);
                             // Odoslanie FCM tokenu na backend
                             await fetch('/subscribe', {
                                 method: 'POST',
