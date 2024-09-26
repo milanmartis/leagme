@@ -57,24 +57,19 @@ async function subscribeToPushNotifications() {
                     throw new Error('Failed to fetch Firebase configuration.');
                 }
                 const firebaseConfig = await response.json();
-                alert(`FCM firebaseConfig: ${firebaseConfig}`);
+
                 // Initialize Firebase
                 if (!firebase.apps.length) {
                     firebase.initializeApp(firebaseConfig);
                 }
-                
+
                 const messaging = firebase.messaging();
-                alert(`FCM messaging: ${messaging}`);
 
                 try {
-                    // Get FCM token (VAPID key for Web Push)
-                    const fcmToken = await messaging.getToken({
-                        vapidKey: publicVapidKey,
-                        serviceWorkerRegistration: registration
-                    });
+                    // Get FCM token (iOS does not use VAPID)
+                    const fcmToken = await messaging.getToken();
 
                     if (fcmToken) {
-                        alert(`FCM Token: ${fcmToken}`);
                         console.log('FCM Token received:', fcmToken);
 
                         // Send FCM token to the backend
@@ -101,6 +96,7 @@ async function subscribeToPushNotifications() {
                     return;
                 }
 
+                // Use VAPID only for platforms that support it (non-iOS)
                 const subscription = await registration.pushManager.subscribe({
                     userVisibleOnly: true,
                     applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
