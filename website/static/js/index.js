@@ -57,7 +57,7 @@ async function subscribeToPushNotifications() {
                     throw new Error('Failed to fetch Firebase configuration.');
                 }
                 const firebaseConfig = await response.json();
-
+                alert(`FCM firebaseConfig: ${firebaseConfig}`);
                 // Initialize Firebase
                 if (!firebase.apps.length) {
                     firebase.initializeApp(firebaseConfig);
