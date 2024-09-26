@@ -23,8 +23,8 @@ async function subscribeToPushNotifications() {
                 if (!response.ok) {
                     throw new Error('Chyba pri načítavaní Firebase konfigurácie.');
                 }
-                alert(response);
                 const firebaseConfig = await response.json();
+                alert(firebaseConfig);
                 
                 // Inicializácia Firebase
                 if (!firebase.apps.length) {
