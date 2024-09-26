@@ -24,7 +24,7 @@ async function subscribeToPushNotifications() {
                     throw new Error('Chyba pri načítavaní Firebase konfigurácie.');
                 }
                 const firebaseConfig = await response.json();
-                alert('jjj');
+                alert(firebaseConfig);
 
                 // Inicializácia Firebase
                 if (!firebase.apps.length) {
