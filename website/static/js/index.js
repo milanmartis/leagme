@@ -37,13 +37,13 @@ async function subscribeToPushNotifications() {
                     const permission = await messaging.requestPermission();
                     if (permission === 'granted') {
                         // Získať FCM token (VAPID key pre Web Push)
+                        alert(permission);
                         const fcmToken = await messaging.getToken({
                             vapidKey: urlBase64ToUint8Array(publicVapidKey),
                             serviceWorkerRegistration: registration
                         });
 
                         if (fcmToken) {
-                            alert(fcmToken);
                             // Odoslanie FCM tokenu na backend
                             await fetch('/subscribe', {
                                 method: 'POST',
