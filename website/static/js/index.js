@@ -34,9 +34,11 @@ async function subscribeToPushNotifications() {
                 const messaging = firebase.messaging();
                 try {
                     await messaging.requestPermission();
-                    const fcmToken = await messaging.getToken();
-                    console.log('FCM token:', fcmToken);
-                    alert(fcmToken);
+
+                    // Získať FCM token (zahrni VAPID kľúč)
+                    const fcmToken = await messaging.getToken({
+                        vapidKey: publicVapidKey
+                    });
 
                     // Odoslanie FCM tokenu na backend
                     await fetch('/subscribe', {
