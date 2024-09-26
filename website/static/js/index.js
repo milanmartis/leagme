@@ -16,47 +16,35 @@ async function subscribeToPushNotifications() {
 
             // Detekcia iOS a použitie Firebase Cloud Messaging (FCM) pre iOS
             if (isIOS()) {
-                console.log('iOS zistené. Používa sa Firebase pre push notifikácie.');
+                // Požiadať používateľa o povolenie na zobrazovanie push notifikácií (Web Push API pre ostatné platformy)
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    throw new Error('Povolenie na push notifikácie nebolo udelené.');
+                }
 
-                // Načítanie Firebase konfigurácie z backendu
-                const response = await fetch('/get-firebase-config');
+                // Prihlásenie na odber push notifikácií
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true, // Uistíme sa, že notifikácie budú viditeľné pre používateľa
+                    applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+                });
+
+                console.log('Subscription údaje:', subscription);
+
+                // Odoslanie subscription údajov na backend
+                const response = await fetch('/subscribe', {
+                    method: 'POST',
+                    body: JSON.stringify(subscription),
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken // Pridaj CSRF token do hlavičky, ak je potrebný pre backend
+                    }
+                });
+
                 if (!response.ok) {
-                    throw new Error('Chyba pri načítavaní Firebase konfigurácie.');
-                }
-                const firebaseConfig = await response.json();
-                
-                // Inicializácia Firebase
-                if (!firebase.apps.length) {
-                    alert('Firebase error');
-                    firebase.initializeApp(firebaseConfig);
+                    throw new Error('Chyba pri odosielaní subscription na server.');
                 }
 
-                // Registrácia pre Firebase Cloud Messaging (FCM)
-                const messaging = firebase.messaging();
-                try {
-                    await messaging.requestPermission();
-
-                    // Získať FCM token (zahrni VAPID kľúč)
-                    const fcmToken = await messaging.getToken({
-                        vapidKey: publicVapidKey
-                    });
-
-                    // Odoslanie FCM tokenu na backend
-                    await fetch('/subscribe', {
-                        method: 'POST',
-                        body: JSON.stringify({ token: fcmToken }),
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': csrfToken // Pridaj CSRF token, ak je potrebný pre backend
-                        }
-                    });
-                    alert('FCM token odoslaný na server.');
-
-                    console.log('FCM token odoslaný na server.');
-                } catch (error) {
-                    alert('chyba token');
-                    console.error('Chyba pri získavaní FCM tokenu:', error);
-                }
+                console.log('Prihlásenie na push notifikácie prebehlo úspešne.');
 
             } else {
                 // Požiadať používateľa o povolenie na zobrazovanie push notifikácií (Web Push API pre ostatné platformy)
