@@ -62,8 +62,9 @@ async function subscribeToPushNotifications() {
                 if (!firebase.apps.length) {
                     firebase.initializeApp(firebaseConfig);
                 }
-
+                
                 const messaging = firebase.messaging();
+                alert(`FCM messaging: ${messaging}`);
 
                 try {
                     // Get FCM token (VAPID key for Web Push)
