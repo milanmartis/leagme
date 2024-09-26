@@ -309,8 +309,9 @@ def create_app():
 
             except WebPushException as ex:
                 print(f"Chyba pri posielaní Web Push notifikácie: {ex}")
-                print(f"Detailná odpoveď zo servera: {ex.response.json()}")
-                return jsonify({"message": "Chyba pri odoslaní Web Push notifikácie"}), 500
+                if ex.response:
+                    print(f"Detailná odpoveď zo servera: Status kód: {ex.response.status_code}, Text: {ex.response.text}")
+                return jsonify({"message": "Chyba pri odoslaní Web Push notifikácie2"}), 500
             except ValueError as ve:
                 print(f"Chyba: {ve}")
                 return jsonify({"message": f"Chyba: {ve}"}), 400
