@@ -13,17 +13,17 @@ async function subscribeToPushNotifications() {
             // Registrácia Service Workera
             const registration = await navigator.serviceWorker.register('/static/js/service-worker.js');
             console.log('Service Worker úspešne zaregistrovaný.');
-            alert(registration);
-
+            
             // Detekcia iOS a použitie Firebase Cloud Messaging (FCM) pre iOS
             if (isIOS()) {
                 console.log('iOS zistené. Používa sa Firebase pre push notifikácie.');
-
+                
                 // Načítanie Firebase konfigurácie z backendu
                 const response = await fetch('/get-firebase-config');
                 if (!response.ok) {
                     throw new Error('Chyba pri načítavaní Firebase konfigurácie.');
                 }
+                alert(response);
                 const firebaseConfig = await response.json();
                 
                 // Inicializácia Firebase
