@@ -784,22 +784,68 @@ def update_duel2():
                 # Uložte zmeny
                 db.session.commit()
                 
+                notification_payload = {
+            "title": "Your Game Changed",
+            "body": "Toto je test push notifikácie",
+            "icon": "/static/img/icon.png"
+        }
 
-# Po úspešnej aktualizácii, volanie druhého endpointu pomocou HTTP POST požiadavky
+        # Načítanie všetkých subscription z databázy
+        subscriptions = PushSubscription.query.all()
+
+        if not subscriptions:
+            return jsonify({"message": "Nie sú uložené žiadne predplatné (subscriptions)"}), 400
+
+        # Posielanie Web Push notifikácií pre všetky uložené subscriptions
+        for subscription in subscriptions:
             try:
-                headers = {
-                'Content-Type': 'application/json'}
-                url = url_for('views.send_game_change_notification', _external=True)
-                requests.post(url, headers=headers)
-                print("Push notification endpoint called successfully.")
-            except Exception as notification_error:
-                print(f"Error while calling notification endpoint: {notification_error}")
+                # Získaj endpoint z databázy
+                endpoint = subscription.endpoint
+
+                # Dynamické získanie audience (na základe endpointu)
+                audience = get_audience_from_subscription(endpoint)
+
+                # Nastavenie VAPID claimov s dynamickým audience
+                vapid_claims = {
+                    "sub": "mailto:tvoj-email@example.com",
+                    "aud": audience
+                }
+
+                # Posielanie push notifikácie pomocou webpush
+                webpush(
+                    subscription_info={
+                        "endpoint": subscription.endpoint,
+                        "keys": {
+                            "p256dh": subscription.p256dh,
+                            "auth": subscription.auth
+                        }
+                    },
+                    data=json.dumps(notification_payload),
+                    vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY"),
+                    vapid_claims=vapid_claims
+                )
+
+            except WebPushException as ex:
+                print(f"Chyba pri posielaní Web Push notifikácie: {ex}")
+                if ex.response:
+                    print(f"Detailná odpoveď zo servera: Status kód: {ex.response.status_code}, Text: {ex.response.text}")
+                return jsonify({"message": "Chyba pri odoslaní Web Push notifikácie2"}), 500
+            except ValueError as ve:
+                print(f"Chyba: {ve}")
+                return jsonify({"message": f"Chyba: {ve}"}), 400
+
+        # return jsonify({"message": "Notifikácia bola úspešne odoslaná všetkým používateľom"}), 200
+                
+
 
         return jsonify(success=True)
+    
 
     except Exception as e:
         print('error:', e)
+        # V prípade chyby vráťte chybovú správu
         return jsonify(error="An error occurred"), 500
+        
        
        
  
