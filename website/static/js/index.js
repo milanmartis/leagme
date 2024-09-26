@@ -6,64 +6,59 @@ function isIOS() {
     return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 }
 
-// Funkcia na registráciu Service Workera a získanie FCM tokenu
+// Funkcia na registráciu Service Workera a požiadavku na povolenie push notifikácií
 async function subscribeToPushNotifications() {
     if ('serviceWorker' in navigator) {
         try {
-            // Registrácia Service Workera pre Web Push
+            // Registrácia Service Workera
             const registration = await navigator.serviceWorker.register('/static/js/service-worker.js');
             console.log('Service Worker úspešne zaregistrovaný.');
-
+            
             // Detekcia iOS a použitie Firebase Cloud Messaging (FCM) pre iOS
             if (isIOS()) {
                 console.log('iOS zistené. Používa sa Firebase pre push notifikácie.');
-
+                
                 // Načítanie Firebase konfigurácie z backendu
                 const response = await fetch('/get-firebase-config');
                 if (!response.ok) {
                     throw new Error('Chyba pri načítavaní Firebase konfigurácie.');
                 }
                 const firebaseConfig = await response.json();
-
+                
                 // Inicializácia Firebase
                 if (!firebase.apps.length) {
+                    // alert('Firebase error');
                     firebase.initializeApp(firebaseConfig);
                 }
-
-                // Získanie FCM tokenu pre iOS po povolení
+                
+                // Registrácia pre Firebase Cloud Messaging (FCM)
                 const messaging = firebase.messaging();
                 try {
-                    // Požiadať o povolenie pre notifikácie
-                    const permission = await messaging.requestPermission();
-                    if (permission === 'granted') {
-                        // Získať FCM token (VAPID key pre Web Push)
-                        const fcmToken = await messaging.getToken({
-                            vapidKey: publicVapidKey,
-                            serviceWorkerRegistration: registration
-                        });
+                    await messaging.requestPermission();
+                    
+                    // Získať FCM token (zahrni VAPID kľúč)
+                    const fcmToken = await messaging.getToken({
+                        vapidKey: publicVapidKey
+                    });
+                    //alert(fcmToken);
 
-                        if (fcmToken) {
-                            alert(fcmToken);
-                            // Odoslanie FCM tokenu na backend
-                            await fetch('/subscribe', {
-                                method: 'POST',
-                                body: JSON.stringify({ token: fcmToken }),
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRFToken': csrfToken // Pridaj CSRF token, ak je potrebný pre backend
-                                }
-                            });
-
-                            console.log('FCM token odoslaný na server.');
-                        } else {
-                            console.error('Nebolo možné získať FCM token.');
+                    // Odoslanie FCM tokenu na backend
+                    await fetch('/subscribe', {
+                        method: 'POST',
+                        body: JSON.stringify({ token: fcmToken }),
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken // Pridaj CSRF token, ak je potrebný pre backend
                         }
-                    } else {
-                        console.error('Používateľ neudelil povolenie pre notifikácie.');
-                    }
+                    });
+                    //alert('FCM token odoslaný na server.');
+
+                    console.log('FCM token odoslaný na server.');
                 } catch (error) {
+                    //alert('chyba token');
                     console.error('Chyba pri získavaní FCM tokenu:', error);
                 }
+
             } else {
                 // Požiadať používateľa o povolenie na zobrazovanie push notifikácií (Web Push API pre ostatné platformy)
                 const permission = await Notification.requestPermission();
@@ -71,7 +66,7 @@ async function subscribeToPushNotifications() {
                     throw new Error('Povolenie na push notifikácie nebolo udelené.');
                 }
 
-                // Prihlásenie na odber push notifikácií pre Web Push API
+                // Prihlásenie na odber push notifikácií
                 const subscription = await registration.pushManager.subscribe({
                     userVisibleOnly: true, // Uistíme sa, že notifikácie budú viditeľné pre používateľa
                     applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
@@ -121,7 +116,7 @@ function urlBase64ToUint8Array(base64String) {
 // Funkcia, ktorá sa zavolá po kliknutí na tlačidlo
 document.getElementById('enableNotificationsButton').addEventListener('click', async () => {
     const permission = await Notification.requestPermission();
-
+      
     if (permission === 'granted') {
         // Ak užívateľ povolil push notifikácie, prihlásime ho na odber
         console.log('Povolenie udelené');
