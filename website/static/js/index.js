@@ -113,8 +113,8 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 // Funkcia, ktorá sa zavolá po kliknutí na tlačidlo
-document.getElementById('enableNotificationsButton').addEventListener('click', () => {
-    const permission = Notification.requestPermission();
+document.getElementById('enableNotificationsButton').addEventListener('click', async () => {
+    const permission = await Notification.requestPermission();
       
     if (permission === 'granted') {
         // Ak užívateľ povolil push notifikácie, prihlásime ho na odber
