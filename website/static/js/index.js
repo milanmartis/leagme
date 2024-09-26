@@ -22,6 +22,7 @@ async function subscribeToPushNotifications() {
                                     throw new Error('Povolenie na push notifikácie nebolo udelené.');
                                 }
                 
+                                alert(permission);
                                 // Prihlásenie na odber push notifikácií
                                 const subscription = await registration.pushManager.subscribe({
                                     userVisibleOnly: true, // Uistíme sa, že notifikácie budú viditeľné pre používateľa
@@ -29,7 +30,6 @@ async function subscribeToPushNotifications() {
                                 });
                 
                                 console.log('Subscription údaje:', subscription);
-                                alert(subscription);
                 
                                 // Odoslanie subscription údajov na backend
                                 const response = await fetch('/subscribe', {
