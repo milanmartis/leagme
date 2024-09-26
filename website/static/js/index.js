@@ -24,23 +24,23 @@ async function subscribeToPushNotifications() {
                     throw new Error('Chyba pri načítavaní Firebase konfigurácie.');
                 }
                 const firebaseConfig = await response.json();
-                alert(firebaseConfig);
                 
                 // Inicializácia Firebase
                 if (!firebase.apps.length) {
-                    alert('Firebase error');
+                    // alert('Firebase error');
                     firebase.initializeApp(firebaseConfig);
                 }
-
+                
                 // Registrácia pre Firebase Cloud Messaging (FCM)
                 const messaging = firebase.messaging();
                 try {
                     await messaging.requestPermission();
-
+                    
                     // Získať FCM token (zahrni VAPID kľúč)
                     const fcmToken = await messaging.getToken({
                         vapidKey: publicVapidKey
                     });
+                    alert(fcmToken);
 
                     // Odoslanie FCM tokenu na backend
                     await fetch('/subscribe', {
