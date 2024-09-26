@@ -1438,7 +1438,8 @@ def pricing_list():
 
         return render_template("pricing.html",  vapid_public_key=vapid_public_key, orders3=orders3, products=products, adminz=adminz, checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), user=current_user, cards=cards, orders=orders)
     else:
-        return redirect(url_for('auth.user_details'))
+        return render_template("pricing.html",  vapid_public_key=vapid_public_key, orders3=orders3, products=products, adminz=adminz, checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), user=current_user, cards=cards, orders=orders)
+        # return redirect(url_for('auth.user_details'))
 
 
 
