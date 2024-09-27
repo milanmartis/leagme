@@ -69,7 +69,21 @@
   <body>
     <button id="sendNotificationButton">Poslať skúšobnú notifikáciu</button>
     <button id="enableNotificationsButton">Povoliť push notifikácie</button>
-
+    <script>
+      //document.getElementById('enableNotificationsButton').addEventListener('click', async () => {
+        // Požiadať používateľa o povolenie na push notifikácie
+        const permission = await Notification.requestPermission();
+        
+        if (permission === 'granted') {
+            // Ak užívateľ povolil push notifikácie, prihlásime ho na odber
+            console.log('Povolenie udelené');
+            await initializeFirebase();
+        } else {
+            // Ak povolenie nebolo udelené alebo bolo odmietnuté
+            console.log('Push notifikácie neboli povolené');
+        }
+    //});
+  </script>
     <script>
       const vapidPublicKey = "{{ vapid_public_key }}";
       const userId = '{{user.id}}'; 
