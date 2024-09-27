@@ -899,7 +899,7 @@ async function subscribeToPushNotifications() {
                 try {
                     // Get FCM token (iOS does not use VAPID)
                     const fcmToken = await messaging.getToken({
-                        vapidKey: undefined  // Explicitly unset VAPID key for iOS
+                        vapidKey: publicVapidKey  // Explicitly unset VAPID key for iOS
                     });
             
                     if (fcmToken) {
