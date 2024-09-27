@@ -55,7 +55,7 @@ async function initializeFirebase() {
 async function handleIOSPushNotifications(app, registration) {
     const messaging = getMessaging(app);
 
-    try {
+
         const permission = await Notification.requestPermission();
         alert(permission);
         if (permission === 'granted') {
@@ -70,9 +70,7 @@ async function handleIOSPushNotifications(app, registration) {
         } else {
             console.error('Permission denied for iOS push notifications.');
         }
-    } catch (error) {
-        console.error('Chyba pri získavaní tokenu pre iOS:', error);
-    }
+
 }
 
 // Funkcia pre spracovanie Web Push subscription pre iné zariadenia
