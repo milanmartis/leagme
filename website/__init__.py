@@ -224,10 +224,12 @@ def create_app():
         # Získaj informácie o používateľovi, napr. aktuálne prihláseného používateľa
         user_id = current_user.id if current_user.is_authenticated else None
 
-        # Skontroluj, či sa jedná o FCM token alebo Web Push subscription
-        if 'token' in subscription_data:
-            # Spracovanie FCM tokenu (pre iOS zariadenia)
-            fcm_token = subscription_data['token']
+        if not subscription_data:
+            return jsonify({'message': 'Žiadne dáta neboli prijaté.'}), 400
+
+        # Ak spracovávame FCM token (pre mobilné zariadenia alebo iOS)
+        if 'auth' in subscription_data:
+            fcm_token = subscription_data['auth']
             print("*********************")
             print(fcm_token)
             print("*********************")
@@ -236,9 +238,10 @@ def create_app():
             existing_fcm_token = PushSubscription.query.filter_by(auth=fcm_token).first()
 
             if not existing_fcm_token:
-                # Vytvor nové FCM subscription pre iOS
+                # Vytvor nové FCM subscription pre používateľa
                 new_fcm_subscription = PushSubscription(
-                    user_id=user_id
+                    user_id=user_id,
+                    auth=fcm_token
                 )
                 db.session.add(new_fcm_subscription)
                 db.session.commit()
@@ -246,8 +249,8 @@ def create_app():
             else:
                 return jsonify({'message': 'FCM token už existuje.'}), 200
 
-        else:
-            # Spracovanie Web Push subscription (pre ostatné zariadenia)
+        # Ak spracovávame Web Push subscription
+        elif 'endpoint' in subscription_data and 'keys' in subscription_data:
             endpoint = subscription_data['endpoint']
             p256dh = subscription_data['keys']['p256dh']
             auth = subscription_data['keys']['auth']
@@ -265,9 +268,35 @@ def create_app():
                 )
                 db.session.add(new_subscription)
                 db.session.commit()
-                return jsonify({'message': 'Web Push subscription uložené úspešne.'}), 201
+                return jsonify({'message': 'Web Push subscription uložená úspešne.'}), 201
             else:
                 return jsonify({'message': 'Web Push subscription už existuje.'}), 200
+
+        else:
+            return jsonify({'message': 'Nebol poskytnutý platný token alebo endpoint.'}), 400
+
+        # else:
+        #     # Spracovanie Web Push subscription (pre ostatné zariadenia)
+        #     endpoint = subscription_data['endpoint']
+        #     p256dh = subscription_data['keys']['p256dh']
+        #     auth = subscription_data['keys']['auth']
+
+        #     # Skontroluj, či už Web Push subscription existuje v databáze
+        #     existing_subscription = PushSubscription.query.filter_by(endpoint=endpoint).first()
+
+        #     if not existing_subscription:
+        #         # Vytvor nové Web Push subscription
+        #         new_subscription = PushSubscription(
+        #             user_id=user_id,
+        #             endpoint=endpoint,
+        #             p256dh=p256dh,
+        #             auth=auth
+        #         )
+        #         db.session.add(new_subscription)
+        #         db.session.commit()
+        #         return jsonify({'message': 'Web Push subscription uložené úspešne.'}), 201
+        #     else:
+        #         return jsonify({'message': 'Web Push subscription už existuje.'}), 200
 
     # Dynamicky nastavíme audience podľa subscription endpointu
     def get_audience_from_subscription(endpoint):
