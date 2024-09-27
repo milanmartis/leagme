@@ -4,6 +4,45 @@ import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/fireb
 const publicVapidKey = vapidPublicKey;  // Nahradiť vlastným VAPID kľúčom
 const user_Id = userId;
 
+const checkPermission = () => {
+    if (!('serviceWorker' in navigator)) {
+        throw new Error("No support for service worker!")
+    }
+
+    if (!('Notification' in window)) {
+        throw new Error("No support for notification API");
+    }
+
+    if (!('PushManager' in window)) {
+        throw new Error("No support for Push API")
+    }
+}
+
+const registerSW = async () => {
+    const registration = await navigator.serviceWorker.register('/static/js/service-worker.js');
+    return registration;
+}
+
+const requestNotificationPermission = async () => {
+    const permission = await Notification.requestPermission();
+
+    if (permission !== 'granted') {
+        throw new Error("Notification permission not granted")
+    }
+
+}
+
+const main = async () => {
+    checkPermission()
+    await requestNotificationPermission()
+    await registerSW()
+}
+
+main()
+
+
+
+
 // Funkcia pre načítanie Firebase konfigurácie z backendu
 async function fetchFirebaseConfig() {
     try {
@@ -34,10 +73,10 @@ async function initializeFirebase() {
 
                 // Detekcia platformy (iOS alebo iné zariadenia)
                 if (isIOS()) {
-                    await handleWebPushNotifications(registration);
-                    // await handleIOSPushNotifications(app, registration);
+                    await handleIOSPushNotifications(app, registration);
                     // Pre iOS použijeme Firebase Cloud Messaging
                 } else {
+                    await handleWebPushNotifications(registration);
                     // Pre iné zariadenia (Android, desktop) použijeme Web Push API
                 }
             } catch (error) {
