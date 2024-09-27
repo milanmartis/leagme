@@ -55,9 +55,8 @@ async function initializeFirebase() {
 async function handleIOSPushNotifications(app, registration) {
     const messaging = getMessaging(app);
 
-
+    try {
         const permission = await Notification.requestPermission();
-        alert(permission);
         if (permission === 'granted') {
             // Získanie FCM tokenu pre iOS zariadenia
             const token = await getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration });
@@ -70,7 +69,9 @@ async function handleIOSPushNotifications(app, registration) {
         } else {
             console.error('Permission denied for iOS push notifications.');
         }
-
+    } catch (error) {
+        console.error('Chyba pri získavaní tokenu pre iOS:', error);
+    }
 }
 
 // Funkcia pre spracovanie Web Push subscription pre iné zariadenia
@@ -103,20 +104,24 @@ async function handleWebPushNotifications(registration) {
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
             });
-            console.log('Web Push Subscription:', subscription);
+            // console.log('Web Push Subscription:', subscription);
             const p256dhKey = subscription.getKey('p256dh');
             const authKey = subscription.getKey('auth');
 
             if (p256dhKey && authKey) {
                 const p256dhBase64 = arrayBufferToBase64(p256dhKey);
                 const authBase64 = arrayBufferToBase64(authKey);
+
+                // Skontrolovať, či už predplatné existuje na serveri
+                const subscriptionExists = await checkSubscriptionOnServer(subscription.endpoint);
                 
-                saveSubscriptionToServer(user_Id, subscription.endpoint, p256dhBase64, authBase64);  // Uloženie subscription údajov na server
-                console.log('p256dh (base64):', p256dhBase64);
-                console.log('auth (base64):', authBase64);
-                
-                // Môžete ich teraz uložiť na server alebo použiť v iných častiach kódu
+                if (!subscriptionExists) {
+                    saveSubscriptionToServer(user_Id, subscription.endpoint, p256dhBase64, authBase64);  // Uloženie subscription údajov na server
+                } else {
+                    console.log('Predplatné už existuje, nové predplatné sa neuloží.');
+                }
             }
+
             function arrayBufferToBase64(buffer) {
                 const bytes = new Uint8Array(buffer);
                 let binary = '';
@@ -125,13 +130,24 @@ async function handleWebPushNotifications(registration) {
                 }
                 return btoa(binary);
             }
-
-
         } else {
             console.error('Permission denied for Web Push notifications.');
         }
     } catch (error) {
         console.error('Chyba pri spracovaní Web Push subscription:', error);
+    }
+}
+
+// Funkcia na kontrolu, či už predplatné existuje na serveri
+async function checkSubscriptionOnServer(endpoint) {
+    const url = `/check-subscription?endpoint=${encodeURIComponent(endpoint)}`;
+    const response = await fetch(url);
+    if (response.ok) {
+        const data = await response.json();
+        return data.exists;  // Očakávame, že server vráti { exists: true/false }
+    } else {
+        console.error('Chyba pri kontrole existujúceho predplatného.');
+        return false;
     }
 }
 

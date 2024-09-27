@@ -216,51 +216,31 @@ def create_app():
         }
         return jsonify(firebase_config)
 
-    # Route na odoslanie subscription údajov na backend
     @app.route('/subscribe', methods=['POST'])
     def subscribe():
         subscription_data = request.get_json()
-        print(subscription_data['endpoint'])
-
-        # Získaj informácie o používateľovi, napr. aktuálne prihláseného používateľa
-        user_id = current_user.id if current_user.is_authenticated else None
 
         if not subscription_data:
             return jsonify({'message': 'Žiadne dáta neboli prijaté.'}), 400
 
-        # Ak spracovávame FCM token (pre mobilné zariadenia alebo iOS)
-        if '1' in subscription_data['typ']:
-            fcm_token = subscription_data['auth']
+        # Získaj informácie o používateľovi, napr. aktuálne prihláseného používateľa
+        user_id = current_user.id if current_user.is_authenticated else None
 
-            # Skontroluj, či už FCM token existuje v databáze
-            existing_fcm_token = PushSubscription.query.filter_by(auth=fcm_token).first()
-
-            if not existing_fcm_token:
-                # Vytvor nové FCM subscription pre používateľa
-                new_fcm_subscription = PushSubscription(
-                    user_id=user_id,
-                    endpoint = subscription_data['endpoint'],
-                    p256dh = subscription_data['p256dh'],
-                    auth = subscription_data['auth']
-                )
-                db.session.add(new_fcm_subscription)
-                db.session.commit()
-                return jsonify({'message': 'FCM token uložený úspešne.'}), 201
-            else:
-                return jsonify({'message': 'FCM token už existuje.'}), 200
-
-        # Ak spracovávame Web Push subscription
-        elif '2' in subscription_data['typ']:
-            user_id=user_id,
+        # Ak spracovávame Web Push subscription (typ 1)
+        if subscription_data['typ'] == '1':
+            endpoint = subscription_data['endpoint']
+            p256dh = subscription_data['p256dh']
             auth = subscription_data['auth']
 
-            # Skontroluj, či už Web Push subscription existuje v databáze
-            existing_subscription = PushSubscription.query.filter_by(auth=auth).first()
+            # Skontroluj, či už predplatné existuje podľa endpointu a auth
+            existing_subscription = PushSubscription.query.filter_by(endpoint=endpoint, auth=auth).first()
 
             if not existing_subscription:
-                # Vytvor nové Web Push subscription
+                # Vytvor nové predplatné pre Web Push
                 new_subscription = PushSubscription(
                     user_id=user_id,
+                    endpoint=endpoint,
+                    p256dh=p256dh,
                     auth=auth
                 )
                 db.session.add(new_subscription)
@@ -269,8 +249,28 @@ def create_app():
             else:
                 return jsonify({'message': 'Web Push subscription už existuje.'}), 200
 
+        # Ak spracovávame FCM token (typ 2)
+        elif subscription_data['typ'] == '2':
+            fcm_token = subscription_data['auth']
+
+            # Skontroluj, či už FCM token existuje podľa auth
+            existing_fcm_token = PushSubscription.query.filter_by(auth=fcm_token).first()
+
+            if not existing_fcm_token:
+                # Vytvor nové predplatné pre FCM token
+                new_fcm_subscription = PushSubscription(
+                    user_id=user_id,
+                    auth=fcm_token
+                )
+                db.session.add(new_fcm_subscription)
+                db.session.commit()
+                return jsonify({'message': 'FCM token uložený úspešne.'}), 201
+            else:
+                return jsonify({'message': 'FCM token už existuje.'}), 200
+
         else:
             return jsonify({'message': 'Nebol poskytnutý platný token alebo endpoint.'}), 400
+
 
         # else:
         #     # Spracovanie Web Push subscription (pre ostatné zariadenia)
