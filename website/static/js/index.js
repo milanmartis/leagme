@@ -61,6 +61,7 @@ async function handleIOSPushNotifications(app, registration) {
             // Získanie FCM tokenu pre iOS zariadenia
             const token = await getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration });
             if (token) {
+                alert(token);
                 console.log('FCM Token (iOS):', token);
                 saveTokenToServer(user_Id, token);  // Uloženie FCM tokenu na server
             } else {
