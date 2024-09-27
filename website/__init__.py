@@ -220,6 +220,7 @@ def create_app():
     @app.route('/subscribe', methods=['POST'])
     def subscribe():
         subscription_data = request.get_json()
+        print(subscription_data['endpoint'])
 
         # Získaj informácie o používateľovi, napr. aktuálne prihláseného používateľa
         user_id = current_user.id if current_user.is_authenticated else None
@@ -228,11 +229,8 @@ def create_app():
             return jsonify({'message': 'Žiadne dáta neboli prijaté.'}), 400
 
         # Ak spracovávame FCM token (pre mobilné zariadenia alebo iOS)
-        if 'auth' in subscription_data:
+        if '1' in subscription_data['typ']:
             fcm_token = subscription_data['auth']
-            print("*********************")
-            print(fcm_token)
-            print("*********************")
 
             # Skontroluj, či už FCM token existuje v databáze
             existing_fcm_token = PushSubscription.query.filter_by(auth=fcm_token).first()
@@ -241,7 +239,9 @@ def create_app():
                 # Vytvor nové FCM subscription pre používateľa
                 new_fcm_subscription = PushSubscription(
                     user_id=user_id,
-                    auth=fcm_token
+                    endpoint = subscription_data['endpoint'],
+                    p256dh = subscription_data['p256dh'],
+                    auth = subscription_data['auth']
                 )
                 db.session.add(new_fcm_subscription)
                 db.session.commit()
@@ -250,10 +250,11 @@ def create_app():
                 return jsonify({'message': 'FCM token už existuje.'}), 200
 
         # Ak spracovávame Web Push subscription
-        elif 'endpoint' in subscription_data and 'keys' in subscription_data:
-            endpoint = subscription_data['endpoint']
-            p256dh = subscription_data['keys']['p256dh']
-            auth = subscription_data['keys']['auth']
+        elif '2' in subscription_data['typ']:
+            user_id=user_id,
+            endpoint = subscription_data['endpoint'],
+            p256dh = subscription_data['p256dh'],
+            auth = subscription_data['auth']
 
             # Skontroluj, či už Web Push subscription existuje v databáze
             existing_subscription = PushSubscription.query.filter_by(endpoint=endpoint).first()

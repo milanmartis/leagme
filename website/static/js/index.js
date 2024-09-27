@@ -77,22 +77,57 @@ async function handleIOSPushNotifications(app, registration) {
 // Funkcia pre spracovanie Web Push subscription pre iné zariadenia
 async function handleWebPushNotifications(registration) {
     try {
+        // Získaj existujúce predplatné (subscription)
+        const existingSubscription = await registration.pushManager.getSubscription();
+        
+        // Ak predplatné existuje, odhlás ho
+        if (existingSubscription) {
+            console.log('Existing subscription found. Unsubscribing...');
+            await existingSubscription.unsubscribe();
+            console.log('Successfully unsubscribed existing subscription.');
+        }
+
+        // Získaj povolenie na push notifikácie
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
-            // Prihlásenie na odber push notifikácií cez Web Push API
+            // Prihlásenie na odber push notifikácií cez Web Push API s novým VAPID kľúčom
+
+            const existingSubscription = await registration.pushManager.getSubscription();
+            if (existingSubscription) {
+                console.log('Odhlasovanie existujúceho predplatného...');
+                await existingSubscription.unsubscribe();
+                console.log('Odhlásenie úspešné');
+            }
+
+            // Prihlásenie nového predplatného
             const subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true, // Uistíme sa, že notifikácie budú viditeľné pre používateľa
+                userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
             });
             console.log('Web Push Subscription:', subscription);
-            // alert(subscription.p256dh);
+            const p256dhKey = subscription.getKey('p256dh');
+            const authKey = subscription.getKey('auth');
 
-            // Skontroluj, či subscription obsahuje kľúče a vypíš všetky detaily pre diagnostiku
-            if (subscription.keys && subscription.keys.p256dh && subscription.keys.auth) {
-                saveSubscriptionToServer(user_Id, subscription);  // Uloženie subscription údajov na server
-            } else {
-                console.error('Missing subscription keys:', subscription.keys);
+            if (p256dhKey && authKey) {
+                const p256dhBase64 = arrayBufferToBase64(p256dhKey);
+                const authBase64 = arrayBufferToBase64(authKey);
+                
+                saveSubscriptionToServer(user_Id, subscription.endpoint, p256dhBase64, authBase64);  // Uloženie subscription údajov na server
+                console.log('p256dh (base64):', p256dhBase64);
+                console.log('auth (base64):', authBase64);
+                
+                // Môžete ich teraz uložiť na server alebo použiť v iných častiach kódu
             }
+            function arrayBufferToBase64(buffer) {
+                const bytes = new Uint8Array(buffer);
+                let binary = '';
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                return btoa(binary);
+            }
+
+
         } else {
             console.error('Permission denied for Web Push notifications.');
         }
@@ -101,42 +136,16 @@ async function handleWebPushNotifications(registration) {
     }
 }
 
-
-// Funkcia pre ukladanie tokenu na server (pre iOS FCM)
-function saveTokenToServer(user_Id, token) {
-    const url = '/subscribe';
-
-    const data = {
-        user_id: user_Id,
-        auth: token  // Token je poslaný ako 'auth', aby zodpovedal backendu
-    };
-
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken  // CSRF token na ochranu pred útokmi
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('FCM token sent to server:', data);
-    })
-    .catch((error) => {
-        console.error('Error:', error);
-    });
-}
-
 // Funkcia pre ukladanie Web Push subscription údajov na server
-function saveSubscriptionToServer(user_Id, subscription) {
+function saveSubscriptionToServer(user_Id, subscriptionEndpoint, p256dh, auth) {
     const url = '/subscribe';
 
     const data = {
         user_id: user_Id,
-        endpoint: subscription.endpoint,
-        p256dh: subscription.keys.p256dh,
-        auth: subscription.keys.auth
+        endpoint: subscriptionEndpoint,
+        p256dh: p256dh,
+        auth: auth,
+        typ: '1'
     };
 
     fetch(url, {
@@ -150,6 +159,33 @@ function saveSubscriptionToServer(user_Id, subscription) {
     .then(response => response.json())
     .then(data => {
         console.log('Web Push subscription sent to server:', data);
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+}
+
+// Funkcia pre ukladanie tokenu na server (pre iOS FCM)
+function saveTokenToServer(user_Id, token) {
+    const url = '/subscribe';
+
+    const data = {
+        user_id: user_Id,
+        auth: token,  // Token je poslaný ako 'auth', aby zodpovedal backendu
+        typ: '2'
+    };
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken  // CSRF token na ochranu pred útokmi
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('FCM token sent to server:', data);
     })
     .catch((error) => {
         console.error('Error:', error);
