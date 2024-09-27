@@ -252,19 +252,15 @@ def create_app():
         # Ak spracovávame Web Push subscription
         elif '2' in subscription_data['typ']:
             user_id=user_id,
-            endpoint = subscription_data['endpoint'],
-            p256dh = subscription_data['p256dh'],
             auth = subscription_data['auth']
 
             # Skontroluj, či už Web Push subscription existuje v databáze
-            existing_subscription = PushSubscription.query.filter_by(endpoint=endpoint).first()
+            existing_subscription = PushSubscription.query.filter_by(auth=auth).first()
 
             if not existing_subscription:
                 # Vytvor nové Web Push subscription
                 new_subscription = PushSubscription(
                     user_id=user_id,
-                    endpoint=endpoint,
-                    p256dh=p256dh,
                     auth=auth
                 )
                 db.session.add(new_subscription)

@@ -35,10 +35,10 @@ async function initializeFirebase() {
                 // Detekcia platformy (iOS alebo iné zariadenia)
                 if (isIOS()) {
                     // Pre iOS použijeme Firebase Cloud Messaging
-                    await handleIOSPushNotifications(app, registration);
                 } else {
                     // Pre iné zariadenia (Android, desktop) použijeme Web Push API
-                    await handleWebPushNotifications(registration);
+                    await handleIOSPushNotifications(app, registration);
+                    // await handleWebPushNotifications(registration);
                 }
             } catch (error) {
                 console.error('Service Worker registration failed:', error);
