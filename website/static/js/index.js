@@ -55,9 +55,9 @@ async function initializeFirebase() {
 async function handleIOSPushNotifications(app, registration) {
     const messaging = getMessaging(app);
 
-    alert('token');
     try {
         const permission = await Notification.requestPermission();
+        alert(permission);
         if (permission === 'granted') {
             // Získanie FCM tokenu pre iOS zariadenia
             const token = await getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration });
