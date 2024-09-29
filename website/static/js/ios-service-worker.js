@@ -14,15 +14,15 @@ self.addEventListener('message', function(event) {
         // Inicializácia Firebase Messaging
         const messaging = firebase.messaging();
 
-        // Spracovanie prichádzajúcich push notifikácií
+        // Spracovanie prichádzajúcich push notifikácií na pozadí
         messaging.onBackgroundMessage(function(payload) {
             console.log('[ios-service-worker.js] Received background message ', payload);
 
             const notificationTitle = payload.notification.title;
             const notificationOptions = {
                 body: payload.notification.body,
-                icon: '/static/img/icon.png' // Definuj cestu k tvojej ikone pre notifikáciu
-                // badge: '/your-badge-icon.png'  // Badge ikona (odporúča sa pre iOS)
+                icon: '/static/img/icon.png', // Cesta k tvojej ikone pre notifikáciu
+                // badge: '/static/img/badge-icon.png'  // Badge ikona (odporúča sa pre iOS)
             };
 
             // Zobrazenie notifikácie
@@ -31,4 +31,13 @@ self.addEventListener('message', function(event) {
     } else {
         console.error('Firebase config not provided to Service Worker.');
     }
+});
+
+// Zabezpečenie, že Service Worker bude pripravený prijímať konfiguračné údaje
+self.addEventListener('install', event => {
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', event => {
+    clients.claim();
 });
