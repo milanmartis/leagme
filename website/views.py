@@ -143,6 +143,9 @@ def send_notification():
     
     return jsonify({'message': 'Notifikácia odoslaná', 'response': response}), 200
 
+
+
+
 adminz = [2]
 # season = 58
 def is_integer(form, field):

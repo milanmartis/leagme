@@ -16,15 +16,14 @@ self.addEventListener('message', function(event) {
 
         // Spracovanie prichádzajúcich push notifikácií na pozadí
         messaging.onBackgroundMessage(function(payload) {
-            console.log('[ios-service-worker.js] Received background message ', payload);
-
+            console.log('[firebase-messaging-sw.js] Received background message ', payload);
+        
             const notificationTitle = payload.notification.title;
             const notificationOptions = {
                 body: payload.notification.body,
-                icon: '/static/img/icon.png' // Cesta k tvojej ikone pre notifikáciu
+                icon: '/static/img/icon.png'
             };
-
-            // Zobrazenie notifikácie
+        
             self.registration.showNotification(notificationTitle, notificationOptions);
         });
     } else {
