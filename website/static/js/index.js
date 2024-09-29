@@ -1,80 +1,59 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
-
 const publicVapidKey = vapidPublicKey;  // Nahraď vlastným VAPID kľúčom
 
-// Funkcia pre načítanie Firebase konfigurácie z backendu
-async function fetchFirebaseConfig() {
-    try {
-        // Firebase konfiguráciu načítavame priamo z API backendu
-        const response = await fetch('/get-firebase-config');
-        if (!response.ok) {
-            throw new Error('Failed to fetch Firebase config.');
-        }
-        const firebaseConfig = await response.json();
-        return firebaseConfig;
-    } catch (error) {
-        console.error('Error fetching Firebase config:', error);
-    }
-}
+// Tvoja Firebase konfigurácia
+const firebaseConfig = {
+    apiKey: "AIzaSyDpiYa-ePpi1dS1OrLO5EhIM0hmMMNUVio",
+    authDomain: "leagme-project.firebaseapp.com",
+    projectId: "leagme-project",
+    storageBucket: "leagme-project.appspot.com",
+    messagingSenderId: "145118008865",
+    appId: "1:145118008865:web:158b335f6a2d06e6883560"
+};
 
-// Funkcia pre inicializáciu Firebase a registráciu Service Workera
+// Inicializácia Firebase a registrácia Service Workera
 async function initializeFirebase() {
-    const firebaseConfig = await fetchFirebaseConfig();
-    if (firebaseConfig) {
-        // Inicializácia Firebase na strane klienta
-        const app = initializeApp(firebaseConfig);
+    // Inicializácia Firebase priamo na klientovi
+    const app = initializeApp(firebaseConfig);
 
-        // Registrácia Service Workera
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/js/ios-service-worker.js')
-                .then(function (registration) {
-                    console.log('Service Worker registered with scope:', registration.scope);
+    // Registrácia Service Workera
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/static/js/ios-service-worker.js')
+        .then(function(registration) {
+            console.log('Service Worker registered with scope:', registration.scope);
 
-                    // Poslanie Firebase konfigurácie do Service Workera
-                    if (registration.active) {
-                        registration.active.postMessage({
-                            firebaseConfig: firebaseConfig
-                        });
-                    }
+            // Získanie Firebase Messaging inštancie s registrovaným Service Workerom
+            const messaging = getMessaging(app);
 
-                    // Získanie Firebase Messaging inštancie s registrovaným Service Workerom
-                    const messaging = getMessaging(app);
+            // Získanie FCM tokenu pomocou už registrovaného Service Workera
+            getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration }).then((currentToken) => {
+                if (currentToken) {
+                    console.log('FCM token:', currentToken);
+                    sendTokenToServer(currentToken);  // Funkcia na odoslanie tokenu na server
+                } else {
+                    console.log('Nebolo možné získať token.');
+                }
+            }).catch((err) => {
+                console.error('Chyba pri získavaní tokenu:', err);
+            });
 
-                    // Získanie FCM tokenu pomocou už registrovaného Service Workera
-                    getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration })
-                        .then((currentToken) => {
-                            if (currentToken) {
-                                console.log('FCM token:', currentToken);
-                                sendTokenToServer(currentToken);  // Funkcia na odoslanie tokenu na server
-                            } else {
-                                console.log('Nebolo možné získať token.');
-                            }
-                        })
-                        .catch((err) => {
-                            console.error('Chyba pri získavaní tokenu:', err);
-                        });
+            // Spracovanie správ v popredí
+            onMessage(messaging, (payload) => {
+                console.log('Message received: ', payload);
 
-                    // Spracovanie správ v popredí
-                    onMessage(messaging, (payload) => {
-                        console.log('Message received: ', payload);
+                const notificationTitle = payload.notification.title;
+                const notificationOptions = {
+                    body: payload.notification.body,
+                    icon: '/static/img/icon.png'
+                };
 
-                        const notificationTitle = payload.notification.title;
-                        const notificationOptions = {
-                            body: payload.notification.body,
-                            icon: '/static/img/icon.png'
-                        };
-
-                        // Zobrazenie notifikácie priamo na stránke
-                        new Notification(notificationTitle, notificationOptions);
-                    });
-                })
-                .catch(function (err) {
-                    console.error('Service Worker registration failed:', err);
-                });
-        }
-    } else {
-        console.error('Firebase configuration not available.');
+                // Zobrazenie notifikácie priamo na stránke
+                new Notification(notificationTitle, notificationOptions);
+            });
+        }).catch(function(err) {
+            console.error('Service Worker registration failed:', err);
+        });
     }
 }
 
@@ -88,13 +67,13 @@ function sendTokenToServer(token) {
         },
         body: JSON.stringify({ token: token })  // Posielame FCM token a/alebo ID používateľa
     })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Token uložený na serveri:', data);
-        })
-        .catch((error) => {
-            console.error('Chyba pri odoslaní tokenu na server:', error);
-        });
+    .then(response => response.json())
+    .then(data => {
+        console.log('Token uložený na serveri:', data);
+    })
+    .catch((error) => {
+        console.error('Chyba pri odoslaní tokenu na server:', error);
+    });
 }
 
 // Zavolaj funkciu na inicializáciu Firebase pri načítaní stránky
