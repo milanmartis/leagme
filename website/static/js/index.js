@@ -1,44 +1,12 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";  // Pridaj Firebase App SDK
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
 
-// Získaj inštanciu messaging
-const messaging = getMessaging();
-
-// Spracovanie správ v popredí
-onMessage(messaging, (payload) => {
-    console.log('Message received. ', payload);
-
-    // Prispôsobenie zobrazenia notifikácie
-    const notificationTitle = payload.notification.title;
-    const notificationOptions = {
-        body: payload.notification.body,
-        icon: '/static/img/icon.png'
-    };
-
-    // Zobrazenie notifikácie priamo na stránke
-    new Notification(notificationTitle, notificationOptions);
-});
 const publicVapidKey = vapidPublicKey;  // Nahradiť vlastným VAPID kľúčom
-Notification.requestPermission().then(permission => {
-    if (permission === 'granted') {
-        console.log('Notifications granted');
-    } else {
-        console.error('Notifications denied');
-    }
-});
 
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/static/js/ios-service-worker.js')
-    .then(function(registration) {
-        console.log('Service Worker registered with scope:', registration.scope);
-    }).catch(function(err) {
-        console.error('Service Worker registration failed:', err);
-    });
-}
 // Funkcia pre načítanie Firebase konfigurácie z backendu
 async function fetchFirebaseConfig() {
     try {
-        const response = await fetch('/get-firebase-config');  // Tu načítaš konfiguráciu zo svojho servera
+        const response = await fetch('/get-firebase-config');  // Načítanie Firebase konfigurácie zo servera
         if (!response.ok) {
             throw new Error('Failed to fetch Firebase config.');
         }
@@ -54,10 +22,12 @@ async function initializeFirebase() {
     const firebaseConfig = await fetchFirebaseConfig();
     if (firebaseConfig) {
         // Inicializácia Firebase pomocou dynamickej konfigurácie
-        initializeApp(firebaseConfig);  // Použi initializeApp z Firebase App SDK
+        const app = initializeApp(firebaseConfig);  // Použi initializeApp z Firebase App SDK
 
-        // Získanie Firebase Cloud Messaging tokenu
-        const messaging = getMessaging();
+        // Získanie Firebase Cloud Messaging inštancie
+        const messaging = getMessaging(app);
+
+        // Získanie FCM tokenu
         getToken(messaging, { vapidKey: publicVapidKey }).then((currentToken) => {
             if (currentToken) {
                 console.log('FCM token:', currentToken);
@@ -67,6 +37,20 @@ async function initializeFirebase() {
             }
         }).catch((err) => {
             console.error('Chyba pri získavaní tokenu:', err);
+        });
+
+        // Spracovanie správ v popredí
+        onMessage(messaging, (payload) => {
+            console.log('Message received: ', payload);
+
+            const notificationTitle = payload.notification.title;
+            const notificationOptions = {
+                body: payload.notification.body,
+                icon: '/static/img/icon.png'
+            };
+
+            // Zobrazenie notifikácie priamo na stránke
+            new Notification(notificationTitle, notificationOptions);
         });
     } else {
         console.error('Firebase configuration not available.');
@@ -95,25 +79,21 @@ function sendTokenToServer(token) {
 // Zavolaj funkciu na inicializáciu Firebase pri načítaní stránky
 initializeFirebase();
 
+// Registrácia Service Worker
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/js/ios-service-worker.js')
+    .then(function(registration) {
+        console.log('Service Worker registered with scope:', registration.scope);
+    }).catch(function(err) {
+        console.error('Service Worker registration failed:', err);
+    });
+}
 
-// async function sendPushNotification(fcmToken, title, body) {
-//     try {
-//         const response = await fetch('/send-notification', {
-//             method: 'POST',
-//             headers: {
-//                 'Content-Type': 'application/json',
-//             },
-//             body: JSON.stringify({
-//                 fcm_token: fcmToken,
-//                 title: title,
-//                 body: body
-//             })
-//         });
-
-//         const data = await response.json();
-//         console.log('Odoslanie notifikácie:', data);
-//     } catch (error) {
-//         console.error('Chyba pri odosielaní notifikácie:', error);
-//     }
-// }
-
+// Skontroluj oprávnenie na notifikácie
+Notification.requestPermission().then(permission => {
+    if (permission === 'granted') {
+        console.log('Notifications granted');
+    } else {
+        console.error('Notifications denied');
+    }
+});
