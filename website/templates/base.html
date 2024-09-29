@@ -73,6 +73,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken  // Ak používaš CSRF ochranu
                 },
                 body: JSON.stringify({
                     user_id: userId,  // Načítame FCM token pre tohto používateľa
@@ -90,7 +91,7 @@
 
     // Pripojenie tlačidla k funkcii na odoslanie notifikácie
     document.addEventListener('DOMContentLoaded', () => {
-        const userId = 'USER_ID';  // Tu použiješ reálne ID používateľa z tvojej aplikácie
+      //  const userId = userId;  // Tu použiješ reálne ID používateľa z tvojej aplikácie
 
         // Pridanie event listenera na tlačidlo
         const sendNotificationButton = document.getElementById('sendNotificationButton');
@@ -867,24 +868,6 @@
   
 
 
-  </script>
-
-  <script>
-  document.getElementById('sendNotificationButton').addEventListener('click', async () => {
-      try {
-          const response = await fetch('/send_test_notification', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'X-CSRFToken': csrfToken 
-              }
-          });
-          const data = await response.json();
-          console.log('Notifikácia odoslaná:', data.message);
-      } catch (error) {
-          console.error('Chyba pri odosielaní notifikácie:', error);
-      }
-  });
   </script>
 
   </body>
