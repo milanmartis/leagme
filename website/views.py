@@ -54,6 +54,7 @@ from sqlalchemy.exc import IntegrityError  # Importujte pre zachytávanie chýb 
 from website import mail, celery
 import firebase_admin
 from firebase_admin import credentials, firestore, auth, messaging, initialize_app
+import traceback
 
 # Stripe konfigurácia
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
@@ -109,9 +110,9 @@ def send_push_notification(fcm_token, title, body):
     message = messaging.Message(
         notification=messaging.Notification(
             title=title,
-            body=body,
+            body=body
         ),
-        token=fcm_token,
+        token=fcm_token
     )
 
     # Odoslanie push notifikácie cez Firebase Cloud Messaging (FCM)
@@ -122,26 +123,31 @@ def send_push_notification(fcm_token, title, body):
 # Endpoint na odosielanie testovacích notifikácií
 @views.route('/send-notification', methods=['POST'])
 def send_notification():
-    data = request.get_json()
-    user_id = data.get('user_id')  # Načítaj user_id z požiadavky
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')  # Načítaj user_id z požiadavky
 
-    if not user_id:
-        return jsonify({'error': 'Chýba user_id.'}), 400
+        if not user_id:
+            return jsonify({'error': 'Chýba user_id.'}), 400
 
-    # Načítaj FCM token používateľa z databázy
-    push_subscription = PushSubscription.query.filter_by(user_id=user_id).first()
+        # Načítaj FCM token používateľa z databázy
+        push_subscription = PushSubscription.query.filter_by(user_id=user_id).first()
 
-    if not push_subscription:
-        return jsonify({'error': 'FCM token pre používateľa nebol nájdený.'}), 404
+        if not push_subscription:
+            return jsonify({'error': 'FCM token pre používateľa nebol nájdený.'}), 404
 
-    fcm_token = push_subscription.auth
-    title = data.get('title', 'Test Notifikácia')
-    body = data.get('body', 'Toto je testovacia správa')
+        fcm_token = push_subscription.auth
+        title = data.get('title', 'Test Notifikácia')
+        body = data.get('body', 'Toto je testovacia správa')
 
-    # Odoslanie push notifikácie
-    response = send_push_notification(fcm_token, title, body)
-    
-    return jsonify({'message': 'Notifikácia odoslaná', 'response': response}), 200
+        # Odoslanie push notifikácie
+        response = send_push_notification(fcm_token, title, body)
+        
+        return jsonify({'message': 'Notifikácia odoslaná', 'response': response}), 200
+    except Exception as e:
+        print('Chyba:', e)
+        print(traceback.format_exc())
+        return jsonify({'error': 'Server error'}), 500
 
 
 

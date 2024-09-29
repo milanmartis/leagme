@@ -2,38 +2,41 @@ self.addEventListener('message', function(event) {
     const firebaseConfig = event.data.firebaseConfig;
 
     if (firebaseConfig) {
-        importScripts('/static/js/firebase-app.js');
-        importScripts('/static/js/firebase-messaging.js');
+        console.log('Loading Firebase scripts...');
+        try {
+            importScripts('/static/js/firebase-app.js');
+            importScripts('/static/js/firebase-messaging.js');
 
-        // Inicializácia Firebase pomocou dynamicky prijatej konfigurácie
-        firebase.initializeApp(firebaseConfig);
-        console.log('Firebase initialized in Service Worker with config:', firebaseConfig);
+            firebase.initializeApp(firebaseConfig);
+            console.log('Firebase initialized in Service Worker with config:', firebaseConfig);
 
-        const messaging = firebase.messaging();
+            const messaging = firebase.messaging();
 
-        // Spracovanie prichádzajúcich push notifikácií na pozadí
-        messaging.onBackgroundMessage(function(payload) {
-            console.log('[ios-service-worker.js] Received background message ', payload);
+            messaging.onBackgroundMessage(function(payload) {
+                console.log('[Service Worker] Received background message: ', payload);
 
-            const notificationTitle = payload.notification?.title || 'Default Title';
-            const notificationOptions = {
-                body: payload.notification?.body || 'Default Body',
-                icon: '/static/img/icon.png'  // Cesta k tvojej ikone pre notifikáciu
-            };
+                const notificationTitle = payload.notification?.title || 'Default Title';
+                const notificationOptions = {
+                    body: payload.notification?.body || 'Default Body',
+                    icon: '/static/img/icon.png'
+                };
 
-            // Zobrazenie notifikácie
-            self.registration.showNotification(notificationTitle, notificationOptions);
-        });
+                self.registration.showNotification(notificationTitle, notificationOptions);
+            });
+        } catch (e) {
+            console.error('Error loading Firebase scripts or initializing Firebase:', e);
+        }
     } else {
         console.error('Firebase config not provided to Service Worker.');
     }
 });
 
-// Zabezpečenie, že Service Worker bude pripravený prijímať konfiguračné údaje
 self.addEventListener('install', event => {
+    console.log('Service Worker installing...');
     self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
+    console.log('Service Worker activated.');
     clients.claim();
 });
