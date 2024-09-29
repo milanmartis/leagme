@@ -37,11 +37,11 @@ async function initializeFirebase() {
                 // Inicializácia Firebase na strane klienta
                 const app = initializeApp(firebaseConfig);
 
-                // Získanie Firebase Messaging inštancie
+                // Získanie Firebase Messaging inštancie s registrovaným Service Workerom
                 const messaging = getMessaging(app);
 
-                // Získanie FCM tokenu
-                getToken(messaging, { vapidKey: publicVapidKey }).then((currentToken) => {
+                // Získanie FCM tokenu pomocou už registrovaného Service Workera
+                getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration }).then((currentToken) => {
                     if (currentToken) {
                         console.log('FCM token:', currentToken);
                         sendTokenToServer(currentToken);  // Funkcia na odoslanie tokenu na server
