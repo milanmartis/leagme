@@ -79,15 +79,6 @@ function sendTokenToServer(token) {
 // Zavolaj funkciu na inicializáciu Firebase pri načítaní stránky
 initializeFirebase();
 
-// Registrácia Service Worker
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/static/js/ios-service-worker.js')
-    .then(function(registration) {
-        console.log('Service Worker registered with scope:', registration.scope);
-    }).catch(function(err) {
-        console.error('Service Worker registration failed:', err);
-    });
-}
 
 // Skontroluj oprávnenie na notifikácie
 Notification.requestPermission().then(permission => {

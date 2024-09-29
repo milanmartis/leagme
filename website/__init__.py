@@ -523,9 +523,9 @@ def create_app():
         public_vapid_key = os.getenv('VAPID_PUBLIC_KEY')
         return jsonify({"publicVapidKey": public_vapid_key})
 
-    # @app.route('/firebase-messaging-sw.js')
-    # def service_worker():
-    #     return send_from_directory('static', 'js/ios-service-worker.js')
+    @app.route('/firebase-messaging-sw.js')
+    def service_worker():
+        return send_from_directory('static', 'js/ios-service-worker.js')
     
 
 
