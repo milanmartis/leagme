@@ -17,25 +17,31 @@ async function fetchFirebaseConfig() {
     }
 }
 
-// Funkcia pre inicializáciu Firebase s dynamickou konfiguráciou
+// Inicializácia Firebase a registrácia Service Workera
 async function initializeFirebase() {
     const firebaseConfig = await fetchFirebaseConfig();
     if (firebaseConfig) {
-        // Inicializácia Firebase pomocou dynamickej konfigurácie
-        const app = initializeApp(firebaseConfig);
-
         // Registrácia Service Workera
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/static/js/ios-service-worker.js')
-            .then((registration) => {
+            .then(function(registration) {
                 console.log('Service Worker registered with scope:', registration.scope);
 
-                // Získanie Firebase Cloud Messaging inštancie
+                // Poslanie Firebase konfigurácie do Service Workera
+                if (registration.active) {
+                    registration.active.postMessage({
+                        firebaseConfig: firebaseConfig  // Posielame Firebase konfiguráciu do Service Workera
+                    });
+                }
+
+                // Inicializácia Firebase na strane klienta
+                const app = initializeApp(firebaseConfig);
+
+                // Získanie Firebase Messaging inštancie
                 const messaging = getMessaging(app);
 
                 // Získanie FCM tokenu
-                getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration })
-                .then((currentToken) => {
+                getToken(messaging, { vapidKey: publicVapidKey }).then((currentToken) => {
                     if (currentToken) {
                         console.log('FCM token:', currentToken);
                         sendTokenToServer(currentToken);  // Funkcia na odoslanie tokenu na server
@@ -59,7 +65,7 @@ async function initializeFirebase() {
                     // Zobrazenie notifikácie priamo na stránke
                     new Notification(notificationTitle, notificationOptions);
                 });
-            }).catch((err) => {
+            }).catch(function(err) {
                 console.error('Service Worker registration failed:', err);
             });
         }
