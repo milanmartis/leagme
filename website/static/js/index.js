@@ -18,7 +18,7 @@ async function fetchFirebaseConfig() {
     }
 }
 
-// Funkcia pre inicializáciu Firebase a registráciu Service Worker
+// Funkcia pre inicializáciu Firebase a registráciu správneho Service Workera
 async function initializeFirebase() {
     const firebaseConfig = await fetchFirebaseConfig();
     if (firebaseConfig) {
@@ -26,19 +26,22 @@ async function initializeFirebase() {
         const app = initializeApp(firebaseConfig);
         console.log('Firebase initialized successfully');
 
-        // Registrácia Service Worker pre Web Push a FCM
+        // Registrácia správneho Service Workera podľa platformy
         if ('serviceWorker' in navigator) {
             try {
-                const registration = await navigator.serviceWorker.register('/static/js/service-worker.js');
-                console.log('Service Worker registered successfully:', registration);
-                
+                let registration;
+
                 // Detekcia platformy (iOS alebo iné zariadenia)
                 if (isIOS()) {
+                    // Pre iOS použijeme špeciálny Service Worker
+                    registration = await navigator.serviceWorker.register('/static/js/ios-service-worker.js');
+                    console.log('iOS-specific Service Worker registered successfully:', registration);
                     await handleIOSPushNotifications(app, registration);
-                    // Pre iOS použijeme Firebase Cloud Messaging
                 } else {
+                    // Pre iné zariadenia použijeme bežný Service Worker
+                    registration = await navigator.serviceWorker.register('/static/js/service-worker.js');
+                    console.log('Generic Service Worker registered successfully:', registration);
                     await handleWebPushNotifications(registration);
-                    // Pre iné zariadenia (Android, desktop) použijeme Web Push API
                 }
             } catch (error) {
                 console.error('Service Worker registration failed:', error);
@@ -74,24 +77,18 @@ async function handleIOSPushNotifications(app, registration) {
     }
 }
 
-// Funkcia pre spracovanie Web Push subscription pre iné zariadenia
+// Funkcia pre spracovanie Web Push subscription pre iné zariadenia (Android, desktop)
 async function handleWebPushNotifications(registration) {
     try {
-
-
         // Získaj povolenie na push notifikácie
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
             // Prihlásenie na odber push notifikácií cez Web Push API s novým VAPID kľúčom
-
-
-
-            // Prihlásenie nového predplatného
             const subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
             });
-            // console.log('Web Push Subscription:', subscription);
+
             const p256dhKey = subscription.getKey('p256dh');
             const authKey = subscription.getKey('auth');
 
@@ -107,15 +104,6 @@ async function handleWebPushNotifications(registration) {
                 } else {
                     console.log('Predplatné už existuje, nové predplatné sa neuloží.');
                 }
-            }
-
-            function arrayBufferToBase64(buffer) {
-                const bytes = new Uint8Array(buffer);
-                let binary = '';
-                for (let i = 0; i < bytes.byteLength; i++) {
-                    binary += String.fromCharCode(bytes[i]);
-                }
-                return btoa(binary);
             }
         } else {
             console.error('Permission denied for Web Push notifications.');
@@ -160,7 +148,6 @@ function saveSubscriptionToServer(user_Id, subscriptionEndpoint, p256dh, auth) {
     })
     .then(response => response.json())
     .then(data => {
-        
         console.log('Web Push subscription sent to server:', data);
     })
     .catch((error) => {
@@ -175,7 +162,7 @@ function saveTokenToServer(user_Id, token) {
     const data = {
         user_id: user_Id,
         auth: token,  // Token je poslaný ako 'auth', aby zodpovedal backendu
-        typ: '2'
+        typ: '2'  // Typ '2' pre iOS token
     };
 
     fetch(url, {
@@ -212,6 +199,16 @@ function urlBase64ToUint8Array(base64String) {
     }
 
     return outputArray;
+}
+
+// Funkcia pre konverziu ArrayBuffer na Base64 (pre Web Push)
+function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
 }
 
 // Spustenie inicializácie Firebase pri načítaní stránky
