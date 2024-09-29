@@ -1,8 +1,32 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";  // Pridaj Firebase App SDK
 import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
+import { onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
 
+// Získaj inštanciu messaging
+const messaging = getMessaging();
+
+// Spracovanie správ v popredí
+onMessage(messaging, (payload) => {
+    console.log('Message received. ', payload);
+
+    // Prispôsobenie zobrazenia notifikácie
+    const notificationTitle = payload.notification.title;
+    const notificationOptions = {
+        body: payload.notification.body,
+        icon: '/static/img/icon.png'
+    };
+
+    // Zobrazenie notifikácie priamo na stránke
+    new Notification(notificationTitle, notificationOptions);
+});
 const publicVapidKey = vapidPublicKey;  // Nahradiť vlastným VAPID kľúčom
-
+Notification.requestPermission().then(permission => {
+    if (permission === 'granted') {
+        console.log('Notifications granted');
+    } else {
+        console.error('Notifications denied');
+    }
+});
 
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/static/js/ios-service-worker.js')
