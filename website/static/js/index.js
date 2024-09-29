@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
 
-const publicVapidKey = vapidPublicKey;  // Nahradiť vlastným VAPID kľúčom
+const publicVapidKey = vapidPublicKey;  // Nahraď vlastným VAPID kľúčom
 
 // Funkcia pre načítanie Firebase konfigurácie z backendu
 async function fetchFirebaseConfig() {
@@ -22,36 +22,47 @@ async function initializeFirebase() {
     const firebaseConfig = await fetchFirebaseConfig();
     if (firebaseConfig) {
         // Inicializácia Firebase pomocou dynamickej konfigurácie
-        const app = initializeApp(firebaseConfig);  // Použi initializeApp z Firebase App SDK
+        const app = initializeApp(firebaseConfig);
 
-        // Získanie Firebase Cloud Messaging inštancie
-        const messaging = getMessaging(app);
+        // Registrácia Service Workera
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/js/ios-service-worker.js')
+            .then((registration) => {
+                console.log('Service Worker registered with scope:', registration.scope);
 
-        // Získanie FCM tokenu
-        getToken(messaging, { vapidKey: publicVapidKey }).then((currentToken) => {
-            if (currentToken) {
-                console.log('FCM token:', currentToken);
-                sendTokenToServer(currentToken);  // Funkcia na odoslanie tokenu na server
-            } else {
-                console.log('Nebolo možné získať token.');
-            }
-        }).catch((err) => {
-            console.error('Chyba pri získavaní tokenu:', err);
-        });
+                // Získanie Firebase Cloud Messaging inštancie
+                const messaging = getMessaging(app);
 
-        // Spracovanie správ v popredí
-        onMessage(messaging, (payload) => {
-            console.log('Message received: ', payload);
+                // Získanie FCM tokenu
+                getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration })
+                .then((currentToken) => {
+                    if (currentToken) {
+                        console.log('FCM token:', currentToken);
+                        sendTokenToServer(currentToken);  // Funkcia na odoslanie tokenu na server
+                    } else {
+                        console.log('Nebolo možné získať token.');
+                    }
+                }).catch((err) => {
+                    console.error('Chyba pri získavaní tokenu:', err);
+                });
 
-            const notificationTitle = payload.notification.title;
-            const notificationOptions = {
-                body: payload.notification.body,
-                icon: '/static/img/icon.png'
-            };
+                // Spracovanie správ v popredí
+                onMessage(messaging, (payload) => {
+                    console.log('Message received: ', payload);
 
-            // Zobrazenie notifikácie priamo na stránke
-            new Notification(notificationTitle, notificationOptions);
-        });
+                    const notificationTitle = payload.notification.title;
+                    const notificationOptions = {
+                        body: payload.notification.body,
+                        icon: '/static/img/icon.png'
+                    };
+
+                    // Zobrazenie notifikácie priamo na stránke
+                    new Notification(notificationTitle, notificationOptions);
+                });
+            }).catch((err) => {
+                console.error('Service Worker registration failed:', err);
+            });
+        }
     } else {
         console.error('Firebase configuration not available.');
     }
@@ -78,7 +89,6 @@ function sendTokenToServer(token) {
 
 // Zavolaj funkciu na inicializáciu Firebase pri načítaní stránky
 initializeFirebase();
-
 
 // Skontroluj oprávnenie na notifikácie
 Notification.requestPermission().then(permission => {
