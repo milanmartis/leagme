@@ -97,24 +97,24 @@ function sendTokenToServer(token) {
 initializeFirebase();
 
 
-async function sendPushNotification(fcmToken, title, body) {
-    try {
-        const response = await fetch('/send-notification', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                fcm_token: fcmToken,
-                title: title,
-                body: body
-            })
-        });
+// async function sendPushNotification(fcmToken, title, body) {
+//     try {
+//         const response = await fetch('/send-notification', {
+//             method: 'POST',
+//             headers: {
+//                 'Content-Type': 'application/json',
+//             },
+//             body: JSON.stringify({
+//                 fcm_token: fcmToken,
+//                 title: title,
+//                 body: body
+//             })
+//         });
 
-        const data = await response.json();
-        console.log('Odoslanie notifikácie:', data);
-    } catch (error) {
-        console.error('Chyba pri odosielaní notifikácie:', error);
-    }
-}
+//         const data = await response.json();
+//         console.log('Odoslanie notifikácie:', data);
+//     } catch (error) {
+//         console.error('Chyba pri odosielaní notifikácie:', error);
+//     }
+// }
 
