@@ -17,14 +17,16 @@ self.addEventListener('message', function(event) {
         // Spracovanie prichádzajúcich push notifikácií na pozadí
         messaging.onBackgroundMessage(function(payload) {
             console.log('[ios-service-worker.js] Received background message ', payload);
-
-            const notificationTitle = payload.notification.title;
+        
+            const notificationTitle = payload.notification?.title || 'Default Title';
             const notificationOptions = {
-                title: 'kuk',
-                body: 'kuk',
-                icon: '/static/img/icon.png' // Cesta k tvojej ikone pre notifikáciu
+                body: payload.notification?.body || 'Default Body',
+                icon: '/static/img/icon.png'  // Definuj cestu k tvojej ikone
             };
-
+        
+            // Pridáme log na overenie obsahu notifikácie
+            console.log('Notification content:', notificationTitle, notificationOptions);
+        
             // Zobrazenie notifikácie
             self.registration.showNotification(notificationTitle, notificationOptions);
         });
