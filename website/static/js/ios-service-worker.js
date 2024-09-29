@@ -39,5 +39,9 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-    clients.claim();
+    console.log('Service Worker activated.');
+    self.registration.showNotification('Test Notification', {
+        body: 'This is a test notification',
+        icon: '/static/img/icon.png'
+    });
 });
