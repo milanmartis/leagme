@@ -52,7 +52,8 @@ from functools import wraps
 from py_vapid import Vapid
 from sqlalchemy.exc import IntegrityError  # Importujte pre zachytávanie chýb pri vkladaní do databázy
 from website import mail, celery
-
+import firebase_admin
+from firebase_admin import credentials, firestore, auth, messaging, initialize_app
 
 # Stripe konfigurácia
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
@@ -79,6 +80,8 @@ def roles_required(*roles):
         
 views = Blueprint('views', __name__)
 
+cred = credentials.Certificate(os.environ.get("FIREBASE_URL_JSON"))
+# credentials, project = google.auth.load_credentials_from_file(os.environ.get("FIREBASE_URL_JSON"), scopes=["https://www.googleapis.com/auth/cloud-platform"])
 
 
 # from firebase_admin import messaging
@@ -102,7 +105,43 @@ views = Blueprint('views', __name__)
 #     except Exception as e:
 #         print('Chyba pri odosielaní notifikácie:', e)
         
-        
+def send_push_notification(fcm_token, title, body):
+    message = messaging.Message(
+        notification=messaging.Notification(
+            title=title,
+            body=body,
+        ),
+        token=fcm_token,
+    )
+
+    # Odoslanie push notifikácie cez Firebase Cloud Messaging (FCM)
+    response = messaging.send(message)
+    print('Notifikácia bola odoslaná:', response)
+    return response
+
+# Endpoint na odosielanie testovacích notifikácií
+@views.route('/send-notification', methods=['POST'])
+def send_notification():
+    data = request.get_json()
+    user_id = data.get('user_id')  # Načítaj user_id z požiadavky
+
+    if not user_id:
+        return jsonify({'error': 'Chýba user_id.'}), 400
+
+    # Načítaj FCM token používateľa z databázy
+    push_subscription = PushSubscription.query.filter_by(user_id=user_id).first()
+
+    if not push_subscription:
+        return jsonify({'error': 'FCM token pre používateľa nebol nájdený.'}), 404
+
+    fcm_token = push_subscription.auth
+    title = data.get('title', 'Test Notifikácia')
+    body = data.get('body', 'Toto je testovacia správa')
+
+    # Odoslanie push notifikácie
+    response = send_push_notification(fcm_token, title, body)
+    
+    return jsonify({'message': 'Notifikácia odoslaná', 'response': response}), 200
 
 adminz = [2]
 # season = 58

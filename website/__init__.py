@@ -47,13 +47,13 @@ csrf = CSRFProtect()
 
 # Načítanie certifikátu zo súboru
 cred = credentials.Certificate(os.environ.get("FIREBASE_URL_JSON"))
-credentials, project = google.auth.load_credentials_from_file(os.environ.get("FIREBASE_URL_JSON"), scopes=["https://www.googleapis.com/auth/cloud-platform"])
+# credentials, project = google.auth.load_credentials_from_file(os.environ.get("FIREBASE_URL_JSON"), scopes=["https://www.googleapis.com/auth/cloud-platform"])
 
 # Obnovenie access tokenu
-credentials.refresh(Request())
+# credentials.refresh(Request())
 
 # Tvoj OAuth 2.0 access token
-access_token = credentials.token
+# access_token = credentials.token
 
 # Poslanie požiadavky na Firebase Cloud Messaging API
 # fcm_url = "https://fcm.googleapis.com/v1/projects/leagme-project/messages:send"
@@ -459,43 +459,7 @@ def create_app():
 
 
 
-    def send_push_notification(fcm_token, title, body):
-        message = messaging.Message(
-            notification=messaging.Notification(
-                title=title,
-                body=body,
-            ),
-            token=fcm_token,
-        )
 
-        # Odoslanie push notifikácie cez Firebase Cloud Messaging (FCM)
-        response = messaging.send(message)
-        print('Notifikácia bola odoslaná:', response)
-        return response
-
-    # Endpoint na odosielanie testovacích notifikácií
-    @app.route('/send-notification', methods=['POST'])
-    def send_notification():
-        data = request.get_json()
-        user_id = data.get('user_id')  # Načítaj user_id z požiadavky
-
-        if not user_id:
-            return jsonify({'error': 'Chýba user_id.'}), 400
-
-        # Načítaj FCM token používateľa z databázy
-        push_subscription = PushSubscription.query.filter_by(user_id=user_id).first()
-
-        if not push_subscription:
-            return jsonify({'error': 'FCM token pre používateľa nebol nájdený.'}), 404
-
-        fcm_token = push_subscription.auth
-        title = data.get('title', 'Test Notifikácia')
-        body = data.get('body', 'Toto je testovacia správa')
-
-        # Odoslanie push notifikácie
-        response = send_push_notification(fcm_token, title, body)
-        
-        return jsonify({'message': 'Notifikácia odoslaná', 'response': response}), 200
     # Route na odosielanie push notifikácií
     # @app.route('/send_notification', methods=['POST'])
     # def send_notification():
