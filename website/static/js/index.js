@@ -57,6 +57,7 @@ async function initializeFirebase() {
 // Funkcia pre spracovanie FCM tokenu pre iOS
 async function handleIOSPushNotifications(app, registration) {
     const messaging = getMessaging(app);
+    alert(messaging);
 
     try {
         const permission = await Notification.requestPermission();
