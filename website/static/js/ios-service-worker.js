@@ -2,8 +2,8 @@ self.addEventListener('message', function(event) {
     const firebaseConfig = event.data.firebaseConfig;
 
     if (firebaseConfig) {
-        importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js');
-        importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js');
+        importScripts('/static/js/firebase-app.js');
+        importScripts('/static/js/firebase-messaging.js');
 
         // Inicializácia Firebase pomocou dynamicky prijatej konfigurácie
         firebase.initializeApp(firebaseConfig);
