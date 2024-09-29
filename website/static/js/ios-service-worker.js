@@ -21,8 +21,7 @@ self.addEventListener('message', function(event) {
             const notificationTitle = payload.notification.title;
             const notificationOptions = {
                 body: payload.notification.body,
-                icon: '/static/img/icon.png', // Cesta k tvojej ikone pre notifikáciu
-                // badge: '/static/img/badge-icon.png'  // Badge ikona (odporúča sa pre iOS)
+                icon: '/static/img/icon.png' // Cesta k tvojej ikone pre notifikáciu
             };
 
             // Zobrazenie notifikácie
