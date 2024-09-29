@@ -30,6 +30,8 @@ import requests
 import traceback
 # Load environment variables
 load_dotenv()
+import google.auth
+from google.auth.transport.requests import Request
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -45,6 +47,37 @@ csrf = CSRFProtect()
 
 # Načítanie certifikátu zo súboru
 cred = credentials.Certificate(os.environ.get("FIREBASE_URL_JSON"))
+credentials, project = google.auth.load_credentials_from_file(os.environ.get("FIREBASE_URL_JSON"), scopes=["https://www.googleapis.com/auth/cloud-platform"])
+
+# Obnovenie access tokenu
+credentials.refresh(Request())
+
+# Tvoj OAuth 2.0 access token
+access_token = credentials.token
+
+# Poslanie požiadavky na Firebase Cloud Messaging API
+# fcm_url = "https://fcm.googleapis.com/v1/projects/leagme-project/messages:send"
+# headers = {
+#     "Authorization": f"Bearer {access_token}",
+#     "Content-Type": "application/json",
+# }
+
+# # Príklad payloadu s notifikáciou
+# payload = {
+#     "message": {
+#         "token": "RECEIVER_FCM_TOKEN",
+#         "notification": {
+#             "title": "Nová správa",
+#             "body": "Máš novú správu!"
+#         }
+#     }
+# }
+
+# # Odoslanie push notifikácie
+# response = requests.post(fcm_url, headers=headers, json=payload)
+
+# Výsledok
+# print('FCM Response:', response.json())
 
 # Inicializácia aplikácie Firebase
 firebase_admin.initialize_app(cred)
@@ -244,8 +277,7 @@ def create_app():
             print(f"Predplatné pre endpoint {endpoint} nebolo nájdené.")
             
 
-  
-
+    # Endpoint pre prijímanie FCM tokenu
     @app.route('/subscribe', methods=['POST'])
     def subscribe():
         subscription_data = request.get_json()
@@ -253,68 +285,24 @@ def create_app():
         if not subscription_data:
             return jsonify({'message': 'Žiadne dáta neboli prijaté.'}), 400
 
-        # Pre Web Push subscription alebo FCM token
         token = subscription_data.get('token')
-        user_id = subscription_data.get('user_id')
+        user_id = current_user.id
 
         if not token or not user_id:
             return jsonify({'message': 'Token alebo user_id chýba.'}), 400
 
-        # Kontrola používateľa, ak nie je prihlásený, použijeme poskytnutý user_id
-        if not current_user.is_authenticated:
-            user_id = subscription_data.get('user_id')
+        # Uloženie tokenu do databázy alebo jeho aktualizácia, ak už existuje
+        existing_subscription = PushSubscription.query.filter_by(user_id=user_id).first()
+
+        if existing_subscription:
+            existing_subscription.auth = token  # Aktualizácia tokenu
+            db.session.commit()
+            return jsonify({'message': 'FCM token aktualizovaný.'}), 200
         else:
-            user_id = current_user.id
-
-        # Predpokladáme, že token je FCM alebo Web Push subscription, rozlíšime podľa dĺžky tokenu alebo štruktúry
-        if len(token) > 100:  # Napríklad ak je token veľmi dlhý, môže byť FCM
-            # Pracujeme s FCM tokenom (typ 2)
-            existing_fcm_token = PushSubscription.query.filter_by(user_id=user_id, auth=token).first()
-
-            if existing_fcm_token:
-                existing_fcm_token.auth = token
-                db.session.commit()
-                return jsonify({'message': 'FCM token aktualizovaný.'}), 200
-            else:
-                new_fcm_subscription = PushSubscription(
-                    user_id=user_id,
-                    auth=token
-                )
-                db.session.add(new_fcm_subscription)
-                db.session.commit()
-                return jsonify({'message': 'FCM token uložený úspešne.'}), 201
-        else:
-            # Web Push subscription (typ 1)
-            # Predpokladáme, že endpoint je v tomto prípade 'token'
-            endpoint = token
-            p256dh = subscription_data.get('p256dh')
-            auth = subscription_data.get('auth')
-
-            if not endpoint or not p256dh or not auth:
-                return jsonify({'message': 'Endpoint, p256dh alebo auth chýba pre Web Push subscription.'}), 400
-
-            existing_subscription = PushSubscription.query.filter_by(user_id=user_id, endpoint=endpoint).first()
-
-            if existing_subscription:
-                # Aktualizuj existujúce predplatné
-                existing_subscription.p256dh = p256dh
-                existing_subscription.auth = auth
-                db.session.commit()
-                return jsonify({'message': 'Web Push subscription aktualizovaná.'}), 200
-            else:
-                # Vytvor nové predplatné
-                new_subscription = PushSubscription(
-                    user_id=user_id,
-                    endpoint=endpoint,
-                    p256dh=p256dh,
-                    auth=auth
-                )
-                db.session.add(new_subscription)
-                db.session.commit()
-                return jsonify({'message': 'Web Push subscription uložená úspešne.'}), 201
-
-        return jsonify({'message': 'Nebol poskytnutý platný token alebo endpoint.'}), 400
-
+            new_subscription = PushSubscription(user_id=user_id, auth=token)
+            db.session.add(new_subscription)
+            db.session.commit()
+            return jsonify({'message': 'FCM token uložený úspešne.'}), 201
 
 
 
@@ -431,44 +419,76 @@ def create_app():
 
     
     
-    @app.route('/send_notification', methods=['POST'])
+    # @app.route('/send_notification', methods=['POST'])
+    # def send_notification():
+    #     # Príklad payloadu pre notifikáciu
+    #     notification_payload = {
+    #         "title": "Nové oznámenie",
+    #         "body": "Máš nové oznámenie",
+    #         "icon": "/static/img/icon.png"
+    #     }
+
+    #     # Získaj všetky subscription z databázy
+    #     subscriptions = PushSubscription.query.all()
+
+    #     for subscription in subscriptions:
+    #         try:
+    #             # Odošli push notifikáciu
+    #             webpush(
+    #                 subscription_info={
+    #                     "endpoint": subscription.endpoint,
+    #                     "keys": {
+    #                         "p256dh": subscription.p256dh,
+    #                         "auth": subscription.auth
+    #                     }
+    #                 },
+    #                 data=json.dumps(notification_payload),
+    #                 vapid_private_key=os.environ.get('VAPID_PRIVATE_KEY'),
+    #                 vapid_claims={
+    #                     "sub": "mailto:example@example.com"
+    #                 }
+    #             )
+    #         except WebPushException as ex:
+    #             print(f"Chyba pri odosielaní notifikácie: {ex}")
+    #             # Ak je subscription neplatná, môžeme ju odstrániť
+    #             if ex.response and ex.response.status_code == 410:
+    #                 db.session.delete(subscription)
+    #                 db.session.commit()
+
+    #     return jsonify({'message': 'Notifikácie odoslané.'}), 200
+
+
+
+    def send_push_notification(fcm_token, title, body):
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title=title,
+                body=body,
+            ),
+            token=fcm_token,
+        )
+
+        # Odoslanie push notifikácie cez Firebase Cloud Messaging (FCM)
+        response = messaging.send(message)
+        print('Notifikácia bola odoslaná:', response)
+        return response
+
+    # Endpoint na odosielanie testovacích notifikácií
+    @app.route('/send-notification', methods=['POST'])
     def send_notification():
-        # Príklad payloadu pre notifikáciu
-        notification_payload = {
-            "title": "Nové oznámenie",
-            "body": "Máš nové oznámenie",
-            "icon": "/static/img/icon.png"
-        }
+        data = request.get_json()
 
-        # Získaj všetky subscription z databázy
-        subscriptions = PushSubscription.query.all()
+        fcm_token = data.get('fcm_token')
+        title = data.get('title')
+        body = data.get('body')
 
-        for subscription in subscriptions:
-            try:
-                # Odošli push notifikáciu
-                webpush(
-                    subscription_info={
-                        "endpoint": subscription.endpoint,
-                        "keys": {
-                            "p256dh": subscription.p256dh,
-                            "auth": subscription.auth
-                        }
-                    },
-                    data=json.dumps(notification_payload),
-                    vapid_private_key=os.environ.get('VAPID_PRIVATE_KEY'),
-                    vapid_claims={
-                        "sub": "mailto:example@example.com"
-                    }
-                )
-            except WebPushException as ex:
-                print(f"Chyba pri odosielaní notifikácie: {ex}")
-                # Ak je subscription neplatná, môžeme ju odstrániť
-                if ex.response and ex.response.status_code == 410:
-                    db.session.delete(subscription)
-                    db.session.commit()
+        if not fcm_token or not title or not body:
+            return jsonify({'error': 'Chýba fcm_token, title alebo body.'}), 400
 
-        return jsonify({'message': 'Notifikácie odoslané.'}), 200
-
+        # Volanie funkcie na odoslanie push notifikácie
+        response = send_push_notification(fcm_token, title, body)
+        
+        return jsonify({'message': 'Notifikácia odoslaná', 'response': response}), 200
     # Route na odosielanie push notifikácií
     # @app.route('/send_notification', methods=['POST'])
     # def send_notification():
@@ -534,7 +554,7 @@ def create_app():
 
     @app.route('/firebase-messaging-sw.js')
     def service_worker():
-        return send_from_directory('static', 'firebase-messaging-sw.js')
+        return send_from_directory('static', 'js/ios-service-worker.js')
     
 
 

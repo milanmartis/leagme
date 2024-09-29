@@ -1,23 +1,21 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";  // Pridaj Firebase App SDK
+import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
+
+const publicVapidKey = vapidPublicKey;  // Nahradiť vlastným VAPID kľúčom
+
 
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/static/js/ios-service-worker.js')
-    .then((registration) => {
+    .then(function(registration) {
         console.log('Service Worker registered with scope:', registration.scope);
-    }).catch((error) => {
-        console.error('Service Worker registration failed:', error);
+    }).catch(function(err) {
+        console.error('Service Worker registration failed:', err);
     });
 }
-
-const publicVapidKey = vapidPublicKey;  // Nahradiť vlastným VAPID kľúčom
-const user_Id = userId;
-const firebaseConfig = await fetchFirebaseConfig();
-const app = initializeApp(firebaseConfig);
-
+// Funkcia pre načítanie Firebase konfigurácie z backendu
 async function fetchFirebaseConfig() {
     try {
-        const response = await fetch('/get-firebase-config');
+        const response = await fetch('/get-firebase-config');  // Tu načítaš konfiguráciu zo svojho servera
         if (!response.ok) {
             throw new Error('Failed to fetch Firebase config.');
         }
@@ -28,48 +26,71 @@ async function fetchFirebaseConfig() {
     }
 }
 
-const messaging = getMessaging(app);
+// Funkcia pre inicializáciu Firebase s dynamickou konfiguráciou
+async function initializeFirebase() {
+    const firebaseConfig = await fetchFirebaseConfig();
+    if (firebaseConfig) {
+        // Inicializácia Firebase pomocou dynamickej konfigurácie
+        initializeApp(firebaseConfig);  // Použi initializeApp z Firebase App SDK
 
-// Získanie FCM tokenu
-async function requestPermissionAndToken() {
-    try {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            console.log('Permission granted for notifications');
-            const currentToken = await getToken(messaging, { vapidKey: publicVapidKey });
+        // Získanie Firebase Cloud Messaging tokenu
+        const messaging = getMessaging();
+        getToken(messaging, { vapidKey: publicVapidKey }).then((currentToken) => {
             if (currentToken) {
-                console.log('FCM Token:', currentToken);
-                // Ulož token na server pre ďalšie použitie
-                sendTokenToServer(currentToken);
+                console.log('FCM token:', currentToken);
+                sendTokenToServer(currentToken);  // Funkcia na odoslanie tokenu na server
             } else {
-                console.log('No registration token available. Request permission to generate one.');
+                console.log('Nebolo možné získať token.');
             }
-        } else {
-            console.log('Permission denied for notifications');
-        }
-    } catch (error) {
-        console.error('An error occurred while retrieving token. ', error);
+        }).catch((err) => {
+            console.error('Chyba pri získavaní tokenu:', err);
+        });
+    } else {
+        console.error('Firebase configuration not available.');
     }
 }
 
-// Funkcia na odoslanie tokenu na server
+// Funkcia na odoslanie FCM tokenu na server
 function sendTokenToServer(token) {
-    fetch('/subscribe', {
+    fetch('/subscribe', {  // URL endpointu na back-ende
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken,  // Ak používaš CSRF ochranu
+            'X-CSRFToken': csrfToken  // Ak používaš CSRF ochranu
         },
-        body: JSON.stringify({ token: token, user_id: user_Id })
+        body: JSON.stringify({ token: token })  // Posielame FCM token a/alebo ID používateľa
     })
     .then(response => response.json())
     .then(data => {
         console.log('Token uložený na serveri:', data);
     })
     .catch((error) => {
-        console.error('Chyba pri ukladaní tokenu:', error);
+        console.error('Chyba pri odoslaní tokenu na server:', error);
     });
 }
 
-// Zavolaj funkciu na získanie povolenia a tokenu
-requestPermissionAndToken();
+// Zavolaj funkciu na inicializáciu Firebase pri načítaní stránky
+initializeFirebase();
+
+
+async function sendPushNotification(fcmToken, title, body) {
+    try {
+        const response = await fetch('/send-notification', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                fcm_token: fcmToken,
+                title: title,
+                body: body
+            })
+        });
+
+        const data = await response.json();
+        console.log('Odoslanie notifikácie:', data);
+    } catch (error) {
+        console.error('Chyba pri odosielaní notifikácie:', error);
+    }
+}
+
