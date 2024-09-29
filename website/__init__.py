@@ -234,6 +234,16 @@ def create_app():
             return jsonify({'exists': False}), 200
         
 
+    def delete_subscription(endpoint):
+        subscription = PushSubscription.query.filter_by(endpoint=endpoint).first()
+        if subscription:
+            db.session.delete(subscription)
+            db.session.commit()
+            print(f"Predplatné pre endpoint {endpoint} bolo úspešne vymazané.")
+        else:
+            print(f"Predplatné pre endpoint {endpoint} nebolo nájdené.")
+            
+
     @app.route('/subscribe', methods=['POST'])
     def subscribe():
         subscription_data = request.get_json()
@@ -242,28 +252,55 @@ def create_app():
             return jsonify({'message': 'Žiadne dáta neboli prijaté.'}), 400
 
         user_id = current_user.id if current_user.is_authenticated else None
-        endpoint = subscription_data.get('endpoint')
-        print(endpoint)
-        auth = subscription_data.get('auth')
-        p256dh = subscription_data.get('p256dh')
 
-        # Skontroluj, či predplatné s týmto endpointom už existuje v databáze
-        existing_subscription = PushSubscription.query.filter_by(endpoint=endpoint, user_id=user_id).first()
+        # Web Push subscription (typ 1)
+        if subscription_data['typ'] == '1':
+            endpoint = subscription_data['endpoint']
+            p256dh = subscription_data['p256dh']
+            auth = subscription_data['auth']
 
-        if existing_subscription:
-            return jsonify({'message': 'Predplatné už existuje.'}), 200
+            existing_subscription = PushSubscription.query.filter_by(user_id=user_id, endpoint=endpoint).first()
 
-        # Ak neexistuje, vytvor nové predplatné
-        new_subscription = PushSubscription(
-            user_id=user_id,
-            endpoint=endpoint,
-            p256dh=p256dh,
-            auth=auth
-        )
-        db.session.add(new_subscription)
-        db.session.commit()
+            if existing_subscription:
+                # Aktualizuj existujúce predplatné
+                existing_subscription.p256dh = p256dh
+                existing_subscription.auth = auth
+                db.session.commit()
+                return jsonify({'message': 'Web Push subscription aktualizovaná.'}), 200
+            else:
+                # Vytvor nové predplatné
+                new_subscription = PushSubscription(
+                    user_id=user_id,
+                    endpoint=endpoint,
+                    p256dh=p256dh,
+                    auth=auth
+                )
+                db.session.add(new_subscription)
+                db.session.commit()
+                return jsonify({'message': 'Web Push subscription uložená úspešne.'}), 201
 
-        return jsonify({'message': 'Predplatné uložené úspešne.'}), 201
+        # FCM token (typ 2)
+        elif subscription_data['typ'] == '2':
+            fcm_token = subscription_data['auth']
+
+            existing_fcm_token = PushSubscription.query.filter_by(user_id=user_id, auth=fcm_token).first()
+
+            if existing_fcm_token:
+                existing_fcm_token.auth = fcm_token
+                db.session.commit()
+                return jsonify({'message': 'FCM token aktualizovaný.'}), 200
+            else:
+                new_fcm_subscription = PushSubscription(
+                    user_id=user_id,
+                    auth=fcm_token
+                )
+                db.session.add(new_fcm_subscription)
+                db.session.commit()
+                return jsonify({'message': 'FCM token uložený úspešne.'}), 201
+
+        return jsonify({'message': 'Nebol poskytnutý platný token alebo endpoint.'}), 400
+
+
 
 
         # else:
@@ -352,14 +389,30 @@ def create_app():
 
             except WebPushException as ex:
                 print(f"Chyba pri posielaní Web Push notifikácie: {ex}")
-                if ex.response:
+                if ex.response and ex.response.status_code == 410:
+                    # Subscription je neplatné, odstráň ho z databázy
+                    delete_subscription(subscription.endpoint)
                     print(f"Detailná odpoveď zo servera: Status kód: {ex.response.status_code}, Text: {ex.response.text}")
-                return jsonify({"message": "Chyba pri odoslaní Web Push notifikácie2"}), 500
+                else:
+                    print(f"Neočakávaná chyba pri odosielaní: {ex}")
+
             except ValueError as ve:
                 print(f"Chyba: {ve}")
-                return jsonify({"message": f"Chyba: {ve}"}), 400
 
+        # Po spracovaní všetkých subscriptions
         return jsonify({"message": "Notifikácia bola úspešne odoslaná všetkým používateľom"}), 200
+
+
+    # Funkcia na vymazanie neplatného predplatného
+    def delete_subscription(endpoint):
+        subscription = PushSubscription.query.filter_by(endpoint=endpoint).first()
+        if subscription:
+            db.session.delete(subscription)
+            db.session.commit()
+            print(f"Predplatné pre endpoint {endpoint} bolo úspešne vymazané.")
+        else:
+            print(f"Predplatné pre endpoint {endpoint} nebolo nájdené.")
+
 
     
     

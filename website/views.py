@@ -9,7 +9,7 @@ from .models import PushSubscription
 from pywebpush import webpush, WebPushException
 from . import db, current_app
 import json
-from sqlalchemy import func, or_, and_
+from sqlalchemy import func, or_, and_, desc
 from sqlalchemy import insert, update
 import stripe
 from slugify import slugify
@@ -693,7 +693,6 @@ def update_duel2():
             points2 = 0
         else:
             points2 = 0
-            
   
         if data:
             u = update(user_duel)
@@ -709,6 +708,32 @@ def update_duel2():
             db.session.execute(u2)
             db.session.commit()
             
+            print(data)   
+            first_player_id = int(data[2])
+            second_player_id = int(data[5])
+
+            # Dotaz na databázu pre získanie mien hráčov podľa ID
+            first_player = db.session.query(User).filter_by(id=first_player_id).first()
+            second_player = db.session.query(User).filter_by(id=second_player_id).first()
+
+            # Skóre
+            first_player_score = data[0]
+            second_player_score = data[3] 
+            
+            if first_player and second_player:
+                push_score = (f"{first_player.first_name} {first_player_score} - {second_player_score} {second_player.first_name}")
+            else:
+                push_score = (f"....")
+                
+            user_id_1 = data[2]
+            user_id_2 = data[5]
+            sender_id = current_user.id  # ID používateľa, ktorý posiela notifikáciu
+
+            # Získanie predplatných pre user_id rovné data[0] alebo data[5], ale nie pre odosielateľa
+            subscriptions = PushSubscription.query.filter(
+                or_(PushSubscription.user_id == user_id_1, PushSubscription.user_id == user_id_2)
+            ).filter(PushSubscription.user_id != sender_id).order_by(desc(PushSubscription.id)).all()
+                            
             # duel = Duel.query.get(int(data[1]))
 
             if duel:
@@ -785,21 +810,20 @@ def update_duel2():
                 db.session.commit()
                 
 
-        # Načítanie všetkých subscription z databázy
-        # subscriptions = PushSubscription.query.filter(PushSubscription.user_id == int(data[2]) or int(data[5]) a nerovna sa current_user.id).first()
-        subscriptions = PushSubscription.query.filter(
-            and_(
-                or_(PushSubscription.user_id == int(data[2]), PushSubscription.user_id == int(data[5])),
-                PushSubscription.user_id != current_user.id
-            )
-        ).all()  # Použijeme first(), pretože očakávate iba jeden výsledok
-        print(int(data[5]))
+        
 
+        duel_url = f"http://127.0.0.1:5000/season/{duel.season_id}/duel/{data[1]}"
+
+        # Notifikácia s odkazom
         notification_payload = {
             "title": "Your Game Changed",
-            "body": "Toto je test push notifikácie",
-            "icon": "/static/img/icon.png"
+            "body": push_score.upper(),
+            "icon": "/static/img/icon.png",
+            "data": {
+                "click_action": duel_url  # URL na presmerovanie
+            }
         }
+
         if not subscriptions:
             return jsonify({"message": "Nie sú uložené žiadne predplatné (subscriptions)"}), 400
 
@@ -832,9 +856,11 @@ def update_duel2():
                     vapid_claims=vapid_claims
                 )
 
+
             except WebPushException as ex:
                 print(f"Chyba pri posielaní Web Push notifikácie: {ex}")
                 if ex.response:
+                    delete_subscription(subscription.endpoint)
                     print(f"Detailná odpoveď zo servera: Status kód: {ex.response.status_code}, Text: {ex.response.text}")
                 return jsonify({"message": "Chyba pri odoslaní Web Push notifikácie2"}), 500
             except ValueError as ve:
@@ -852,11 +878,17 @@ def update_duel2():
         print('error:', e)
         # V prípade chyby vráťte chybovú správu
         return jsonify(error="An error occurred"), 500
-        
-       
-       
- 
-       
+
+
+# Funkcia na vymazanie neplatného predplatného
+def delete_subscription(endpoint):
+    subscription = PushSubscription.query.filter_by(endpoint=endpoint).first()
+    if subscription:
+        db.session.delete(subscription)
+        db.session.commit()
+        print(f"Predplatné pre endpoint {endpoint} bolo úspešne vymazané.")
+    else:
+        print(f"Predplatné pre endpoint {endpoint} nebolo nájdené.")
        
         
         
@@ -1438,8 +1470,7 @@ def pricing_list():
 
         return render_template("pricing.html",  vapid_public_key=vapid_public_key, orders3=orders3, products=products, adminz=adminz, checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), user=current_user, cards=cards, orders=orders)
     else:
-        return render_template("pricing.html",  vapid_public_key=vapid_public_key, orders3=orders3, products=products, adminz=adminz, checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), user=current_user, cards=cards, orders=orders)
-        # return redirect(url_for('auth.user_details'))
+        return redirect(url_for('auth.user_details'))
 
 
 
