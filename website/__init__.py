@@ -488,7 +488,7 @@ def create_app():
         if not push_subscription:
             return jsonify({'error': 'FCM token pre používateľa nebol nájdený.'}), 404
 
-        fcm_token = push_subscription.fcm_token
+        fcm_token = push_subscription.auth
         title = data.get('title', 'Test Notifikácia')
         body = data.get('body', 'Toto je testovacia správa')
 
