@@ -477,15 +477,22 @@ def create_app():
     @app.route('/send-notification', methods=['POST'])
     def send_notification():
         data = request.get_json()
+        user_id = data.get('user_id')  # Načítaj user_id z požiadavky
 
-        fcm_token = data.get('fcm_token')
-        title = data.get('title')
-        body = data.get('body')
+        if not user_id:
+            return jsonify({'error': 'Chýba user_id.'}), 400
 
-        if not fcm_token or not title or not body:
-            return jsonify({'error': 'Chýba fcm_token, title alebo body.'}), 400
+        # Načítaj FCM token používateľa z databázy
+        push_subscription = PushSubscription.query.filter_by(user_id=user_id).first()
 
-        # Volanie funkcie na odoslanie push notifikácie
+        if not push_subscription:
+            return jsonify({'error': 'FCM token pre používateľa nebol nájdený.'}), 404
+
+        fcm_token = push_subscription.fcm_token
+        title = data.get('title', 'Test Notifikácia')
+        body = data.get('body', 'Toto je testovacia správa')
+
+        # Odoslanie push notifikácie
         response = send_push_notification(fcm_token, title, body)
         
         return jsonify({'message': 'Notifikácia odoslaná', 'response': response}), 200

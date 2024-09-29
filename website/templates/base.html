@@ -65,6 +65,41 @@
     type="module"
     src="{{ url_for('static', filename='js/index.js') }}"
   ></script>
+  <script type="module">
+    // Funkcia na odoslanie push notifikácie na server s použitím user_id
+    async function sendPushNotification(userId, title, body) {
+        try {
+            const response = await fetch('/send-notification', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: userId,  // Načítame FCM token pre tohto používateľa
+                    title: title,
+                    body: body
+                })
+            });
+
+            const data = await response.json();
+            console.log('Odoslanie notifikácie:', data);
+        } catch (error) {
+            console.error('Chyba pri odosielaní notifikácie:', error);
+        }
+    }
+
+    // Pripojenie tlačidla k funkcii na odoslanie notifikácie
+    document.addEventListener('DOMContentLoaded', () => {
+        const userId = 'USER_ID';  // Tu použiješ reálne ID používateľa z tvojej aplikácie
+
+        // Pridanie event listenera na tlačidlo
+        const sendNotificationButton = document.getElementById('sendNotificationButton');
+        sendNotificationButton.addEventListener('click', () => {
+            // Po kliknutí na tlačidlo odošle notifikáciu
+            sendPushNotification(userId, 'Test Notifikácia', 'Toto je testovacia správa');
+        });
+    });
+</script>
   </head>
   <body>
     <button id="sendNotificationButton">Poslať skúšobnú notifikáciu</button>
