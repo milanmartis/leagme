@@ -105,66 +105,43 @@ cred = credentials.Certificate(os.environ.get("FIREBASE_URL_JSON"))
 #         print('Úspešne odoslané:', response)
 #     except Exception as e:
 #         print('Chyba pri odosielaní notifikácie:', e)
-access_token = os.getenv('SERVER_API_KEY')       
-def send_push_notifications_to_all_subscriptions(title, body):
-    # Načítanie všetkých predplatných z databázy (zoznam FCM tokenov)
-    subscriptions = PushSubscription.query.all()
-
-    if not subscriptions:
-        print("Žiadne predplatné nenájdené")
-        return
-
-    # Pre každý token v predplatných odoslať notifikáciu
-    for subscription in subscriptions:
-        fcm_token = subscription.auth  # Predpokladám, že 'auth' je FCM token
-        send_push_notification(fcm_token, title, body)
-
+        
 def send_push_notification(fcm_token, title, body):
-    fcm_url = "https://fcm.googleapis.com/v1/projects/leagme-project/messages:send"
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json",
-    }
+    message = messaging.Message(
+        notification=messaging.Notification(
+            title=title,
+            body=body,
+        ),
+        token=fcm_token,
+    )
 
-    payload = {
-        "to": fcm_token,  # Odosielame na jednotlivý FCM token
-        "notification": {
-            "title": title,
-            "body": body,
-        }
-    }
-
-    try:
-        response = requests.post(fcm_url, headers=headers, json=payload)
-        if response.status_code == 200:
-            print(f"Notifikácia odoslaná na {fcm_token}: {response.json()}")
-        else:
-            print(f"Chyba pri odosielaní notifikácie na {fcm_token}, status code: {response.status_code}")
-    except Exception as e:
-        print(f"Chyba pri odosielaní notifikácie: {str(e)}")
+    # Odoslanie push notifikácie cez Firebase Cloud Messaging (FCM)
+    response = messaging.send(message)
+    print('Notifikácia bola odoslaná:', response)
+    return response
 
 # Endpoint na odosielanie testovacích notifikácií
 @views.route('/send-notification', methods=['POST'])
 def send_notification():
     try:
         data = request.get_json()
-        # user_id = data.get('user_id')  # Načítaj user_id z požiadavky
+        user_id = data.get('user_id')  # Načítaj user_id z požiadavky
 
-        # if not user_id:
-        #     return jsonify({'error': 'Chýba user_id.'}), 400
+        if not user_id:
+            return jsonify({'error': 'Chýba user_id.'}), 400
 
         # Načítaj FCM token používateľa z databázy
-        # push_subscription = PushSubscription.query.filter_by(user_id=user_id).first()
+        push_subscription = PushSubscription.query.filter_by(user_id=user_id).first()
 
-        # if not push_subscription:
-        #     return jsonify({'error': 'FCM token pre používateľa nebol nájdený.'}), 404
+        if not push_subscription:
+            return jsonify({'error': 'FCM token pre používateľa nebol nájdený.'}), 404
 
-        # fcm_token = push_subscription.auth
+        fcm_token = push_subscription.auth
         title = data.get('title', 'Test Notifikácia')
         body = data.get('body', 'Toto je testovacia správa')
 
         # Odoslanie push notifikácie
-        response = send_push_notifications_to_all_subscriptions(title, body)
+        response = send_push_notification(fcm_token, title, body)
         
         return jsonify({'message': 'Notifikácia odoslaná', 'response': response}), 200
     except Exception as e:
