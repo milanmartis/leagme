@@ -6,7 +6,6 @@ const publicVapidKey = vapidPublicKey;  // Nahraď vlastným VAPID kľúčom
 // Funkcia pre načítanie Firebase konfigurácie z backendu
 async function fetchFirebaseConfig() {
     try {
-        // Firebase konfiguráciu načítavame priamo z API backendu
         const response = await fetch('/get-firebase-config');
         if (!response.ok) {
             throw new Error('Failed to fetch Firebase config.');
@@ -53,8 +52,8 @@ async function initializeFirebase() {
                     console.error('Chyba pri získavaní tokenu:', err);
                 });
 
-                // Spracovanie správ v popredí
-                onMessage(messaging, (payload) => {
+                // Pridanie spracovania prichádzajúcich správ v popredí
+                messaging.onMessage(function(payload) {
                     console.log('Message received: ', payload);
 
                     const notificationTitle = payload.notification.title;
@@ -66,6 +65,7 @@ async function initializeFirebase() {
                     // Zobrazenie notifikácie priamo na stránke
                     new Notification(notificationTitle, notificationOptions);
                 });
+
             }).catch(function(err) {
                 console.error('Service Worker registration failed:', err);
             });
@@ -77,13 +77,13 @@ async function initializeFirebase() {
 
 // Funkcia na odoslanie FCM tokenu na server
 function sendTokenToServer(token) {
-    fetch('/subscribe', {  // URL endpointu na back-ende
+    fetch('/subscribe', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken  // Ak používaš CSRF ochranu
+            'X-CSRFToken': csrfToken
         },
-        body: JSON.stringify({ token: token })  // Posielame FCM token a/alebo ID používateľa
+        body: JSON.stringify({ token: token })
     })
     .then(response => response.json())
     .then(data => {
