@@ -82,7 +82,7 @@ def roles_required(*roles):
 views = Blueprint('views', __name__)
 
 cred = credentials.Certificate(os.environ.get("FIREBASE_URL_JSON"))
-        
+
 def send_push_notification(fcm_tokens, title, body):
     messages = [
         messaging.Message(
@@ -97,9 +97,25 @@ def send_push_notification(fcm_tokens, title, body):
     # Odoslanie všetkých správ naraz
     try:
         response = messaging.send_all(messages)
-        print('Notifikácie boli odoslané:', response.success_count)
+        print(f'Notifikácie boli odoslané: {response.success_count} z {len(messages)}')
+        
+        # Spracovanie chýb pri neplatných tokenoch
+        for idx, resp in enumerate(response.responses):
+            if not resp.success:
+                error = resp.exception
+                if isinstance(error, messaging.UnregisteredError):
+                    print(f'Token {fcm_tokens[idx]} bol odregistrovaný, vymazávam z databázy.')
+                    delete_token_from_db(fcm_tokens[idx])
     except Exception as e:
         print('Chyba pri odosielaní notifikácií:', e)
+
+def delete_token_from_db(fcm_token):
+    """Funkcia na vymazanie neplatného FCM tokenu z databázy"""
+    subscription = PushSubscription.query.filter_by(auth=fcm_token).first()
+    if subscription:
+        db.session.delete(subscription)
+        db.session.commit()
+        print(f'Token {fcm_token} bol úspešne vymazaný z databázy.')
 
 # Endpoint na odosielanie testovacích notifikácií všetkým používateľom
 @views.route('/send-notification', methods=['POST'])
@@ -123,7 +139,6 @@ def send_notification():
         print('Chyba:', e)
         print(traceback.format_exc())
         return jsonify({'error': 'Server error'}), 500
-
 
 
 

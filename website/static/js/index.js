@@ -17,72 +17,106 @@ async function fetchFirebaseConfig() {
     }
 }
 
+// Funkcia pre získanie web push subscription
+async function subscribeUserToPush(registration) {
+    try {
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(publicVapidKey) // Konverzia VAPID kľúča na pole uint8
+        });
+        return subscription;
+    } catch (error) {
+        console.error('Failed to subscribe the user: ', error);
+    }
+}
+
+// Konverzia VAPID kľúča z base64
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
 // Inicializácia Firebase a registrácia Service Workera
 async function initializeFirebase() {
     const firebaseConfig = await fetchFirebaseConfig();
     if (firebaseConfig) {
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/static/js/ios-service-worker.js')
-            .then(async function(registration) {
-                console.log('Service Worker registered with scope:', registration.scope);
+                .then(async function (registration) {
+                    console.log('Service Worker registered with scope:', registration.scope);
 
-                const app = initializeApp(firebaseConfig);
-                const messaging = getMessaging(app);
+                    const app = initializeApp(firebaseConfig);
+                    const messaging = getMessaging(app);
 
-                try {
                     // Pokus o vymazanie starého tokenu
-                    const oldToken = await getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration });
-                    if (oldToken) {
-                        console.log('Deleting old FCM token:', oldToken);
-                        await messaging.deleteToken(oldToken);
+                    try {
+                        const oldToken = await getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration });
+                        if (oldToken) {
+                            console.log('Deleting old FCM token:', oldToken);
+                            await messaging.deleteToken(oldToken);
+                        }
+                    } catch (error) {
+                        console.error('Error deleting old token:', error);
                     }
-                } catch (error) {
-                    console.error('Error deleting old token:', error);
-                }
 
-                // Získanie nového FCM tokenu
-                getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration }).then((currentToken) => {
+                    // Získanie nového FCM tokenu
+                    const currentToken = await getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration });
                     if (currentToken) {
                         console.log('New FCM token:', currentToken);
-                        sendTokenToServer(currentToken);
+                        // Odoslanie tokenu a subscription na server
+                        const subscription = await subscribeUserToPush(registration);
+                        sendSubscriptionToServer(currentToken, subscription);
                     } else {
                         console.log('Nebolo možné získať token.');
                     }
-                }).catch((err) => {
-                    console.error('Chyba pri získavaní tokenu:', err);
-                });
 
-                // Spracovanie správ
-                onMessage(messaging, (payload) => {
-                    console.log('Message received: ', payload);
+                    // Spracovanie správ
+                    onMessage(messaging, (payload) => {
+                        console.log('Message received: ', payload);
+                    });
+                }).catch(function (err) {
+                    console.error('Service Worker registration failed:', err);
                 });
-            }).catch(function(err) {
-                console.error('Service Worker registration failed:', err);
-            });
         }
     } else {
         console.error('Firebase configuration not available.');
     }
 }
 
+// Funkcia na odoslanie FCM tokenu a subscription na server
+function sendSubscriptionToServer(token, subscription) {
+    const subscriptionData = {
+        token: token,
+        endpoint: subscription.endpoint,
+        keys: {
+            p256dh: subscription.keys.p256dh,
+            auth: subscription.keys.auth
+        }
+    };
 
-// Funkcia na odoslanie FCM tokenu na server
-function sendTokenToServer(token) {
     fetch('/subscribe', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': csrfToken
         },
-        body: JSON.stringify({ token: token })
+        body: JSON.stringify(subscriptionData)
     })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Token uložený na serveri:', data);
-    })
-    .catch((error) => {
-        console.error('Chyba pri odoslaní tokenu na server:', error);
-    });
+        .then(response => response.json())
+        .then(data => {
+            console.log('Subscription uložená na serveri:', data);
+        })
+        .catch((error) => {
+            console.error('Chyba pri odoslaní subscription na server:', error);
+        });
 }
 
 // Zavolaj funkciu na inicializáciu Firebase pri načítaní stránky

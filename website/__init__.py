@@ -281,28 +281,22 @@ def create_app():
     @app.route('/subscribe', methods=['POST'])
     def subscribe():
         subscription_data = request.get_json()
-
-        if not subscription_data:
-            return jsonify({'message': 'Žiadne dáta neboli prijaté.'}), 400
-
+        
+        # Ulož token a subscription do databázy
         token = subscription_data.get('token')
-        user_id = current_user.id
+        endpoint = subscription_data.get('endpoint')
+        keys = subscription_data.get('keys')
 
-        if not token or not user_id:
-            return jsonify({'message': 'Token alebo user_id chýba.'}), 400
+        if not token or not endpoint or not keys:
+            return jsonify({'error': 'Invalid subscription data'}), 400
 
-        # Uloženie tokenu do databázy alebo jeho aktualizácia, ak už existuje
-        existing_subscription = PushSubscription.query.filter_by(user_id=user_id).first()
+        # Implementuj logiku ukladania tokenu a subscription do databázy (napr. PushSubscription model)
+        push_subscription = PushSubscription(token=token, endpoint=endpoint, p256dh=keys['p256dh'], auth=keys['auth'])
+        db.session.add(push_subscription)
+        db.session.commit()
 
-        if existing_subscription:
-            existing_subscription.auth = token  # Aktualizácia tokenu
-            db.session.commit()
-            return jsonify({'message': 'FCM token aktualizovaný.'}), 200
-        else:
-            new_subscription = PushSubscription(user_id=user_id, auth=token)
-            db.session.add(new_subscription)
-            db.session.commit()
-            return jsonify({'message': 'FCM token uložený úspešne.'}), 201
+        return jsonify({'message': 'Subscription uložená úspešne.'}), 201
+
 
 
 
