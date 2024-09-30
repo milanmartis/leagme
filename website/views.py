@@ -148,18 +148,18 @@ def send_push_notification(fcm_token, title, body):
 def send_notification():
     try:
         data = request.get_json()
-        user_id = data.get('user_id')  # Načítaj user_id z požiadavky
+        # user_id = data.get('user_id')  # Načítaj user_id z požiadavky
 
-        if not user_id:
-            return jsonify({'error': 'Chýba user_id.'}), 400
+        # if not user_id:
+        #     return jsonify({'error': 'Chýba user_id.'}), 400
 
         # Načítaj FCM token používateľa z databázy
-        push_subscription = PushSubscription.query.filter_by(user_id=user_id).first()
+        # push_subscription = PushSubscription.query.filter_by(user_id=user_id).first()
 
-        if not push_subscription:
-            return jsonify({'error': 'FCM token pre používateľa nebol nájdený.'}), 404
+        # if not push_subscription:
+        #     return jsonify({'error': 'FCM token pre používateľa nebol nájdený.'}), 404
 
-        fcm_token = push_subscription.auth
+        # fcm_token = push_subscription.auth
         title = data.get('title', 'Test Notifikácia')
         body = data.get('body', 'Toto je testovacia správa')
 
