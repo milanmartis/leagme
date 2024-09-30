@@ -23,47 +23,40 @@ async function initializeFirebase() {
     if (firebaseConfig) {
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/static/js/ios-service-worker.js')
-            .then(function(registration) {
+            .then(async function(registration) {
                 console.log('Service Worker registered with scope:', registration.scope);
-
-                if (registration.active) {
-                    registration.active.postMessage({
-                        firebaseConfig: firebaseConfig
-                    });
-                }
 
                 const app = initializeApp(firebaseConfig);
                 const messaging = getMessaging(app);
 
-                // Získanie FCM tokenu
-                getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration })
-                    .then((currentToken) => {
-                        if (currentToken) {
-                            console.log('FCM token:', currentToken);
-                            sendTokenToServer(currentToken);
-                        } else {
-                            console.log('Nebolo možné získať token.');
-                        }
-                    })
-                    .catch((err) => {
-                        console.error('Chyba pri získavaní tokenu:', err);
-                    });
+                try {
+                    // Pokus o vymazanie starého tokenu
+                    const oldToken = await getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration });
+                    if (oldToken) {
+                        console.log('Deleting old FCM token:', oldToken);
+                        await messaging.deleteToken(oldToken);
+                    }
+                } catch (error) {
+                    console.error('Error deleting old token:', error);
+                }
 
-                // Spracovanie správ v popredí (prijatých keď je aplikácia otvorená)
+                // Získanie nového FCM tokenu
+                getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration }).then((currentToken) => {
+                    if (currentToken) {
+                        console.log('New FCM token:', currentToken);
+                        sendTokenToServer(currentToken);
+                    } else {
+                        console.log('Nebolo možné získať token.');
+                    }
+                }).catch((err) => {
+                    console.error('Chyba pri získavaní tokenu:', err);
+                });
+
+                // Spracovanie správ
                 onMessage(messaging, (payload) => {
                     console.log('Message received: ', payload);
-
-                    const notificationTitle = payload.notification.title;
-                    const notificationOptions = {
-                        body: payload.notification.body,
-                        icon: '/static/img/icon.png'
-                    };
-
-                    // Zobrazenie notifikácie
-                    new Notification(notificationTitle, notificationOptions);
                 });
-            })
-            .catch(function(err) {
+            }).catch(function(err) {
                 console.error('Service Worker registration failed:', err);
             });
         }
@@ -71,6 +64,7 @@ async function initializeFirebase() {
         console.error('Firebase configuration not available.');
     }
 }
+
 
 // Funkcia na odoslanie FCM tokenu na server
 function sendTokenToServer(token) {
