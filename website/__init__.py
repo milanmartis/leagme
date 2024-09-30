@@ -46,7 +46,7 @@ cors = CORS()
 csrf = CSRFProtect()
 
 # Načítanie certifikátu zo súboru
-# cred = credentials.Certificate(os.environ.get("FIREBASE_URL_JSON"))
+cred = credentials.Certificate(os.environ.get("FIREBASE_URL_JSON"))
 # credentials, project = google.auth.load_credentials_from_file(os.environ.get("FIREBASE_URL_JSON"), scopes=["https://www.googleapis.com/auth/cloud-platform"])
 
 # Obnovenie access tokenu
@@ -80,7 +80,7 @@ csrf = CSRFProtect()
 # print('FCM Response:', response.json())
 
 # Inicializácia aplikácie Firebase
-# firebase_admin.initialize_app(cred)
+firebase_admin.initialize_app(cred)
 
 # Celery configuration
 def make_celery(app=None):
@@ -523,9 +523,9 @@ def create_app():
         public_vapid_key = os.getenv('VAPID_PUBLIC_KEY')
         return jsonify({"publicVapidKey": public_vapid_key})
 
-    @app.route('/firebase-messaging-sw.js')
-    def service_worker():
-        return send_from_directory('static', 'js/ios-service-worker.js')
+    # @app.route('/firebase-messaging-sw.js')
+    # def service_worker():
+    #     return send_from_directory('static', 'js/ios-service-worker.js')
     
 
 

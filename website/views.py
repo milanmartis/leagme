@@ -55,8 +55,7 @@ from website import mail, celery
 import firebase_admin
 from firebase_admin import credentials, firestore, auth, messaging, initialize_app
 import traceback
-import google.auth
-from google.auth.transport.requests import Request
+
 # Stripe konfigurácia
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 vapid_public_key=os.environ.get("VAPID_PUBLIC_KEY")
@@ -83,10 +82,8 @@ def roles_required(*roles):
 views = Blueprint('views', __name__)
 
 cred = credentials.Certificate(os.environ.get("FIREBASE_URL_JSON"))
-credentials, project = google.auth.load_credentials_from_file(os.environ.get("FIREBASE_URL_JSON"), scopes=["https://www.googleapis.com/auth/cloud-platform"])
-firebase_admin.initialize_app(cred)
-credentials.refresh(Request())
-access_token = credentials.token
+# credentials, project = google.auth.load_credentials_from_file(os.environ.get("FIREBASE_URL_JSON"), scopes=["https://www.googleapis.com/auth/cloud-platform"])
+
 
 # from firebase_admin import messaging
 
@@ -108,112 +105,52 @@ access_token = credentials.token
 #         print('Úspešne odoslané:', response)
 #     except Exception as e:
 #         print('Chyba pri odosielaní notifikácie:', e)
-server_key = os.getenv('SERVER_API_KEY')       
-def send_push_notification(fcm_token, title, body):
-    fcm_url = "https://fcm.googleapis.com/v1/projects/leagme-project/messages:send"
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json",
-        "X-CSRFToken": request.cookies.get('csrf_token') 
-    }
-
-    payload = {
-        "to": fcm_token,
-        "notification": {
-            "title":"ooo",
-            "body": "ooo"
-        },
-        "data": 
-            {  # Přidání uživatelských dat do sekce data
-        "totalUnread": 9  # Převod celkového počtu nepřečtených zpráv na řetězec
-        }
-    }
-
-    try:
-        response = requests.post(fcm_url, headers=headers, json=payload)
         
-        # Kontrola, zda je odpověď úspěšná
-        if response.status_code == 200:
-            return response.json()
-        else:
-            # Vrátíte chybovou zprávu s kódem stavu a tělem odpovědi
-            print(f"Failed to send notification, status code: {response.status_code}, response: {response.text}")
-            return {"error": f"Failed to send notification, status code: {response.status_code}"}
-    except Exception as e:
-        print(f"An error occurred: {str(e)}")
-        return {"error": "An error occurred while sending the notification."}
+def send_push_notification(fcm_token, title, body):
+    message = messaging.Message(
+        notification=messaging.Notification(
+            title=title,
+            body=body,
+        ),
+        token=fcm_token,
+    )
+
+    # Odoslanie push notifikácie cez Firebase Cloud Messaging (FCM)
+    response = messaging.send(message)
+    print('Notifikácia bola odoslaná:', response)
+    return response
 
 # Endpoint na odosielanie testovacích notifikácií
 @views.route('/send-notification', methods=['POST'])
 def send_notification():
-    data = request.get_json()
-    title = data.get('title', 'Nová notifikácia')
-    body = data.get('body', 'Toto je telo notifikácie')
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')  # Načítaj user_id z požiadavky
 
-    # Načítanie všetkých subscription z databázy
-    subscriptions = PushSubscription.query.all()
+        if not user_id:
+            return jsonify({'error': 'Chýba user_id.'}), 400
 
-    for subscription in subscriptions:
-        send_combined_notification(subscription, title, body)
+        # Načítaj FCM token používateľa z databázy
+        push_subscription = PushSubscription.query.filter_by(user_id=user_id).first()
 
-    return jsonify({"message": "Notifikácie boli odoslané"}), 200
+        if not push_subscription:
+            return jsonify({'error': 'FCM token pre používateľa nebol nájdený.'}), 404
+
+        fcm_token = push_subscription.auth
+        title = data.get('title', 'Test Notifikácia')
+        body = data.get('body', 'Toto je testovacia správa')
+
+        # Odoslanie push notifikácie
+        response = send_push_notification(fcm_token, title, body)
+        
+        return jsonify({'message': 'Notifikácia odoslaná', 'response': response}), 200
+    except Exception as e:
+        print('Chyba:', e)
+        print(traceback.format_exc())
+        return jsonify({'error': 'Server error'}), 500
 
 
-from firebase_admin import messaging
-from pywebpush import webpush, WebPushException
-import json
 
-def send_combined_notification(subscription, title, body):
-    """
-    Skombinovaná funkcia na odoslanie push notifikácií cez FCM aj Web Push.
-    """
-
-    # Web Push notifikácie (pre prehliadače alebo desktop aplikácie)
-    if subscription.endpoint and subscription.p256dh and subscription.auth:
-        try:
-            webpush(
-                subscription_info={
-                    "endpoint": subscription.endpoint,
-                    "keys": {
-                        "p256dh": subscription.p256dh,
-                        "auth": subscription.auth
-                    }
-                },
-                data=json.dumps({
-                    "title": title,
-                    "body": body
-                }),
-                vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY"),
-                vapid_claims={
-                    "sub": "mailto:tvoj-email@example.com"
-                }
-            )
-            print(f'Web Push notifikácia bola odoslaná pre endpoint: {subscription.endpoint}')
-        except WebPushException as ex:
-            print(f'Chyba pri odosielaní Web Push notifikácie: {ex}')
-            # Ak je subscription neplatná, odstráň ho z databázy
-            if ex.response and ex.response.status_code == 410:
-                delete_subscription(subscription.endpoint)
-    
-    # FCM (Firebase Cloud Messaging) pre mobilné zariadenia
-    elif subscription.auth:
-        try:
-            message = messaging.Message(
-                notification=messaging.Notification(
-                    title=title,
-                    body=body
-                ),
-                token=subscription.auth
-            )
-            response = messaging.send(message)
-            print(f'FCM notifikácia bola odoslaná: {response}')
-        except messaging.UnregisteredError:
-            print(f'Token je neplatný: {subscription.auth}. Token sa odstráni z databázy.')
-            # delete_subscription_by_token(subscription.fcm_token)
-        except Exception as e:
-            print(f'Chyba pri odosielaní FCM notifikácie: {e}')
-    else:
-        print(f'Nie je platný FCM token ani Web Push endpoint pre subscription: {subscription}')
 
 adminz = [2]
 # season = 58

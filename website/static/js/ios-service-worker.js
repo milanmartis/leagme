@@ -1,51 +1,49 @@
-// Firebase konfigurácia priamo v Service Worker
-const firebaseConfig = {
-    apiKey: "AIzaSyDpiYa-ePpi1dS1OrLO5EhIM0hmMMNUVio",
-    authDomain: "leagme-project.firebaseapp.com",
-    projectId: "leagme-project",
-    storageBucket: "leagme-project.appspot.com",
-    messagingSenderId: "145118008865",
-    appId: "1:145118008865:web:158b335f6a2d06e6883560"
-};
-
-// Načítanie Firebase SDK skriptov a inicializácia priamo v Service Worker
-try {
-    console.log('Loading Firebase scripts...');
-    importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js');
-    importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js');
-
-    // Inicializácia Firebase v Service Worker
-    firebase.initializeApp(firebaseConfig);
-    console.log('Firebase initialized in Service Worker with config:', firebaseConfig);
-
-    const messaging = firebase.messaging();
-
-    // Spracovanie správ na pozadí (Background Message Handling)
-    messaging.onBackgroundMessage(function(payload) {
-        console.log('[Service Worker] Received background message: ', payload);
-
-        const notificationTitle = payload.notification?.title || 'Default Title';
-        const notificationOptions = {
-            body: payload.notification?.body || 'Default Body',
-            icon: '/static/img/icon.png'
-        };
-
-        // Zobrazenie notifikácie
-        self.registration.showNotification(notificationTitle, notificationOptions);
-    });
-
-} catch (e) {
-    console.error('Error loading Firebase scripts or initializing Firebase:', e);
-}
-
-// Spracovanie inštalácie Service Workera
-self.addEventListener('install', event => {
+self.addEventListener('install', function(event) {
     console.log('Service Worker installing...');
-    self.skipWaiting();  // Aktivácia SW ihneď bez čakania na ukončenie starých SW
+    try {
+        // Import Firebase scripts už počas inštalácie
+        importScripts('https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js');
+        importScripts('https://www.gstatic.com/firebasejs/8.10.0/firebase-messaging.js');
+        self.skipWaiting();
+    } catch (e) {
+        console.error('Failed to load Firebase scripts:', e);
+    }
 });
 
-// Spracovanie aktivácie Service Workera
-self.addEventListener('activate', event => {
+self.addEventListener('activate', function(event) {
     console.log('Service Worker activated.');
-    clients.claim();  // Prevzatie kontroly nad stránkou bez potreby znovu načítania
+    clients.claim();
+});
+
+self.addEventListener('message', function(event) {
+    const firebaseConfig = event.data.firebaseConfig;
+    if (firebaseConfig) {
+        try {
+            // Skontroluj, či Firebase app už existuje
+            if (firebase.apps.length === 0) {
+                firebase.initializeApp(firebaseConfig);
+                console.log('Firebase initialized in Service Worker with config:', firebaseConfig);
+            } else {
+                console.log('Firebase App already initialized.');
+            }
+
+            const messaging = firebase.messaging();
+
+            messaging.onBackgroundMessage(function(payload) {
+                console.log('[ios-service-worker.js] Received background message', payload);
+
+                const notificationTitle = payload.notification.title || 'Default Title';
+                const notificationOptions = {
+                    body: payload.notification.body || 'Default Body',
+                    icon: '/static/img/icon.png'
+                };
+
+                self.registration.showNotification(notificationTitle, notificationOptions);
+            });
+        } catch (e) {
+            console.error('Error initializing Firebase:', e);
+        }
+    } else {
+        console.error('Firebase config not provided to Service Worker.');
+    }
 });
