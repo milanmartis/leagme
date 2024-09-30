@@ -15,37 +15,41 @@ self.addEventListener('activate', function(event) {
     clients.claim();
 });
 
-self.addEventListener('message', function(event) {
-    const firebaseConfig = event.data.firebaseConfig;
-    if (firebaseConfig) {
-        try {
-            if (firebase.apps.length === 0) {
-                firebase.initializeApp(firebaseConfig);
-                console.log('Firebase initialized in Service Worker with config:', firebaseConfig);
-            } else {
-                console.log('Firebase App already initialized.');
-            }
+try {
+    // Inicializácia Firebase v Service Worker
+    const firebaseConfig = {
+        apiKey: "AIzaSyDpiYa-ePpi1dS1OrLO5EhIM0hmMMNUVio",
+        authDomain: "leagme-project.firebaseapp.com",
+        projectId: "leagme-project",
+        storageBucket: "leagme-project.appspot.com",
+        messagingSenderId: "145118008865",
+        appId: "1:145118008865:web:158b335f6a2d06e6883560"
+    };
 
-            const messaging = firebase.messaging();
-
-            messaging.onBackgroundMessage(function(payload) {
-                console.log('[Service Worker] Received background message:', payload);
-
-                const notificationTitle = payload.notification.title || 'Default Title';
-                const notificationOptions = {
-                    body: payload.notification.body || 'Default Body',
-                    icon: '/static/img/icon.png'
-                };
-
-                self.registration.showNotification(notificationTitle, notificationOptions);
-            });
-        } catch (e) {
-            console.error('Error initializing Firebase:', e);
-        }
+    if (firebase.apps.length === 0) {
+        firebase.initializeApp(firebaseConfig);
+        console.log('Firebase initialized in Service Worker with config:', firebaseConfig);
     } else {
-        console.error('Firebase config not provided to Service Worker.');
+        console.log('Firebase App already initialized.');
     }
-});
+
+    const messaging = firebase.messaging();
+
+    messaging.onBackgroundMessage(function(payload) {
+        console.log('[Service Worker] Received background message:', payload);
+
+        const notificationTitle = payload.notification.title || 'Default Title';
+        const notificationOptions = {
+            body: payload.notification.body || 'Default Body',
+            icon: '/static/img/icon.png'
+        };
+
+        self.registration.showNotification(notificationTitle, notificationOptions);
+    });
+
+} catch (e) {
+    console.error('Error initializing Firebase in Service Worker:', e);
+}
 
 // Pridanie event handlerov pre 'push', 'pushsubscriptionchange' a 'notificationclick'
 self.addEventListener('push', function(event) {
@@ -66,7 +70,7 @@ self.addEventListener('push', function(event) {
 
 self.addEventListener('pushsubscriptionchange', function(event) {
     console.log('[Service Worker] Subscription change detected.');
-    // Tu môžete implementovať logiku na obnovenie subscription.
+    // Implement logic to handle subscription change, if needed
 });
 
 self.addEventListener('notificationclick', function(event) {
