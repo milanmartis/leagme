@@ -82,68 +82,43 @@ def roles_required(*roles):
 views = Blueprint('views', __name__)
 
 cred = credentials.Certificate(os.environ.get("FIREBASE_URL_JSON"))
-# credentials, project = google.auth.load_credentials_from_file(os.environ.get("FIREBASE_URL_JSON"), scopes=["https://www.googleapis.com/auth/cloud-platform"])
-
-
-# from firebase_admin import messaging
-
-# def send_push_notification(token, title, body):
-#     """Odoslanie push notifikácie na dané zariadenie pomocou FCM."""
-    
-#     # Vytvorenie správy
-#     message = messaging.Message(
-#         notification=messaging.Notification(
-#             title=title,
-#             body=body,
-#         ),
-#         token=token,  # Toto je token zariadenia, kam notifikáciu posielate
-#     )
-
-#     # Odoslanie správy
-#     try:
-#         response = messaging.send(message)
-#         print('Úspešne odoslané:', response)
-#     except Exception as e:
-#         print('Chyba pri odosielaní notifikácie:', e)
         
-def send_push_notification(fcm_token, title, body):
-    message = messaging.Message(
-        notification=messaging.Notification(
-            title=title,
-            body=body,
-        ),
-        token=fcm_token,
-    )
+def send_push_notifications(fcm_tokens, title, body):
+    messages = [
+        messaging.Message(
+            notification=messaging.Notification(
+                title=title,
+                body=body,
+            ),
+            token=fcm_token,
+        ) for fcm_token in fcm_tokens
+    ]
 
-    # Odoslanie push notifikácie cez Firebase Cloud Messaging (FCM)
-    response = messaging.send(message)
-    print('Notifikácia bola odoslaná:', response)
-    return response
+    # Odoslanie všetkých správ naraz
+    try:
+        response = messaging.send_all(messages)
+        print('Notifikácie boli odoslané:', response.success_count)
+    except Exception as e:
+        print('Chyba pri odosielaní notifikácií:', e)
 
-# Endpoint na odosielanie testovacích notifikácií
+# Endpoint na odosielanie testovacích notifikácií všetkým používateľom
 @views.route('/send-notification', methods=['POST'])
 def send_notification():
     try:
         data = request.get_json()
-        user_id = data.get('user_id')  # Načítaj user_id z požiadavky
-
-        if not user_id:
-            return jsonify({'error': 'Chýba user_id.'}), 400
-
-        # Načítaj FCM token používateľa z databázy
-        push_subscription = PushSubscription.query.filter_by(user_id=user_id).first()
-
-        if not push_subscription:
-            return jsonify({'error': 'FCM token pre používateľa nebol nájdený.'}), 404
-
-        fcm_token = push_subscription.auth
         title = data.get('title', 'Test Notifikácia')
         body = data.get('body', 'Toto je testovacia správa')
 
-        # Odoslanie push notifikácie
-        response = send_push_notification(fcm_token, title, body)
+        # Načítaj všetky FCM tokeny z databázy
+        fcm_tokens = [sub.auth for sub in PushSubscription.query.all()]
+
+        if not fcm_tokens:
+            return jsonify({'error': 'Nie sú dostupné žiadne FCM tokeny.'}), 404
+
+        # Odoslanie push notifikácií všetkým FCM tokenom
+        send_push_notification(fcm_tokens, title, body)
         
-        return jsonify({'message': 'Notifikácia odoslaná', 'response': response}), 200
+        return jsonify({'message': 'Notifikácia odoslaná všetkým používateľom'}), 200
     except Exception as e:
         print('Chyba:', e)
         print(traceback.format_exc())
