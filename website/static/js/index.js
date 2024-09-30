@@ -1,108 +1,157 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
+// VAPID public key
+const publicVapidKey = vapidPublicKey;
 
-const publicVapidKey = vapidPublicKey;  // Nahraď vlastným VAPID kľúčom
+// Function to detect iOS devices
+function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
 
-// Funkcia pre načítanie Firebase konfigurácie z backendu
-async function fetchFirebaseConfig() {
+// Function to check if notifications are supported
+function checkNotificationSupport() {
+    if (!("Notification" in window)) {
+        console.error("This browser does not support notifications.");
+        return false;
+    }
+    return true;
+}
+
+// Request Notification Permission
+async function requestNotificationPermission() {
     try {
-        // Firebase konfiguráciu načítavame priamo z API backendu
-        const response = await fetch('/get-firebase-config');
-        if (!response.ok) {
-            throw new Error('Failed to fetch Firebase config.');
-        }
-        const firebaseConfig = await response.json();
-        return firebaseConfig;
+        const permission = await Notification.requestPermission();
+        console.log("Notification permission status:", permission);
+        return permission === 'granted';
     } catch (error) {
-        console.error('Error fetching Firebase config:', error);
+        console.error('Error while requesting notification permission:', error);
+        return false;
     }
 }
 
-// Inicializácia Firebase a registrácia Service Workera
-async function initializeFirebase() {
-    const firebaseConfig = await fetchFirebaseConfig();
-    if (firebaseConfig) {
-        // Registrácia Service Workera
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/js/ios-service-worker.js')
-            .then(function(registration) {
-                console.log('Service Worker registered with scope:', registration.scope);
+// Function to register service worker and request FCM token
+async function subscribeToPushNotifications() {
+    if (!checkNotificationSupport()) {
+        console.error('Browser does not support notifications.');
+        return;
+    }
 
-                // Poslanie Firebase konfigurácie do Service Workera
-                if (registration.active) {
-                    registration.active.postMessage({
-                        firebaseConfig: firebaseConfig  // Posielame Firebase konfiguráciu do Service Workera
-                    });
+    if ('serviceWorker' in navigator) {
+        try {
+            // Register service worker for Web Push
+            const registration = await navigator.serviceWorker.register('/static/js/service-worker.js');
+            console.log('Service Worker registered successfully.');
+
+            // iOS detection and Firebase Cloud Messaging for iOS
+            if (isIOS()) {
+                console.log('iOS detected. Using Firebase for push notifications.');
+
+                // Request permission for notifications
+                const permissionGranted = await requestNotificationPermission();
+                if (!permissionGranted) {
+                    console.error('Notification permission denied on iOS.');
+                    return;
                 }
 
-                // Inicializácia Firebase na strane klienta
-                const app = initializeApp(firebaseConfig);
+                // Fetch Firebase configuration from backend
+                const response = await fetch('/get-firebase-config');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch Firebase configuration.');
+                }
+                const firebaseConfig = await response.json();
 
-                // Získanie Firebase Messaging inštancie s registrovaným Service Workerom
-                const messaging = getMessaging(app);
+                // Initialize Firebase
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
 
-                // Získanie FCM tokenu pomocou už registrovaného Service Workera
-                getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration }).then((currentToken) => {
-                    if (currentToken) {
-                       // alert(currentToken)
-                        console.log('FCM token:', currentToken);
-                        sendTokenToServer(currentToken);  // Funkcia na odoslanie tokenu na server
+                const messaging = firebase.messaging();
+
+                try {
+                    // Get FCM token (VAPID key for Web Push)
+                    const fcmToken = await messaging.getToken({
+                        vapidKey: publicVapidKey,
+                        serviceWorkerRegistration: registration
+                    });
+
+                    if (fcmToken) {
+                        alert(`FCM Token: ${fcmToken}`);
+                        console.log('FCM Token received:', fcmToken);
+
+                        // Send FCM token to the backend
+                        await fetch('/subscribe', {
+                            method: 'POST',
+                            body: JSON.stringify({ token: fcmToken }),
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': csrfToken
+                            }
+                        });
+                        console.log('FCM token sent to server.');
                     } else {
-                        console.log('Nebolo možné získať token.');
+                        console.error('Failed to get FCM token.');
                     }
-                }).catch((err) => {
-                    console.error('Chyba pri získavaní tokenu:', err);
+                } catch (error) {
+                    console.error('Error while getting FCM token:', error);
+                }
+            } else {
+                // Handle Web Push for other platforms (non-iOS)
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    console.error('Push notifications permission not granted.');
+                    return;
+                }
+
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
                 });
 
-                // Spracovanie správ v popredí
-                onMessage(messaging, (payload) => {
-                    console.log('Message received: ', payload);
+                console.log('Subscription data:', subscription);
 
-                    const notificationTitle = payload.notification.title;
-                    const notificationOptions = {
-                        body: payload.notification.body,
-                        icon: '/static/img/icon.png'
-                    };
-
-                    // Zobrazenie notifikácie priamo na stránke
-                    new Notification(notificationTitle, notificationOptions);
+                // Send subscription data to backend
+                const response = await fetch('/subscribe', {
+                    method: 'POST',
+                    body: JSON.stringify(subscription),
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    }
                 });
-            }).catch(function(err) {
-                console.error('Service Worker registration failed:', err);
-            });
+
+                if (!response.ok) {
+                    console.error('Failed to send subscription to server.');
+                } else {
+                    console.log('Successfully subscribed to push notifications.');
+                }
+            }
+        } catch (error) {
+            console.error('Push notifications subscription failed:', error);
         }
     } else {
-        console.error('Firebase configuration not available.');
+        console.error('Service Worker not supported in this browser.');
     }
 }
 
-// Funkcia na odoslanie FCM tokenu na server
-function sendTokenToServer(token) {
-    fetch('/subscribe', {  // URL endpointu na back-ende
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken  // Ak používaš CSRF ochranu
-        },
-        body: JSON.stringify({ token: token })  // Posielame FCM token a/alebo ID používateľa
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Token uložený na serveri:', data);
-    })
-    .catch((error) => {
-        console.error('Chyba pri odoslaní tokenu na server:', error);
-    });
+// Function to convert VAPID key to Uint8Array
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+
+    return outputArray;
 }
 
-// Zavolaj funkciu na inicializáciu Firebase pri načítaní stránky
-initializeFirebase();
-
-// Skontroluj oprávnenie na notifikácie
-Notification.requestPermission().then(permission => {
+// Attach the event listener to a button
+document.getElementById('enableNotificationsButton').addEventListener('click', async () => {
+    const permission = await Notification.requestPermission();
     if (permission === 'granted') {
-        console.log('Notifications granted');
+        console.log('Permission granted.');
+        await subscribeToPushNotifications();
     } else {
-        console.error('Notifications denied');
+        console.log('Push notifications not granted.');
     }
 });

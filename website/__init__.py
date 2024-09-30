@@ -30,8 +30,6 @@ import requests
 import traceback
 # Load environment variables
 load_dotenv()
-import google.auth
-from google.auth.transport.requests import Request
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -47,37 +45,6 @@ csrf = CSRFProtect()
 
 # Načítanie certifikátu zo súboru
 cred = credentials.Certificate(os.environ.get("FIREBASE_URL_JSON"))
-# credentials, project = google.auth.load_credentials_from_file(os.environ.get("FIREBASE_URL_JSON"), scopes=["https://www.googleapis.com/auth/cloud-platform"])
-
-# Obnovenie access tokenu
-# credentials.refresh(Request())
-
-# Tvoj OAuth 2.0 access token
-# access_token = credentials.token
-
-# Poslanie požiadavky na Firebase Cloud Messaging API
-# fcm_url = "https://fcm.googleapis.com/v1/projects/leagme-project/messages:send"
-# headers = {
-#     "Authorization": f"Bearer {access_token}",
-#     "Content-Type": "application/json",
-# }
-
-# # Príklad payloadu s notifikáciou
-# payload = {
-#     "message": {
-#         "token": "RECEIVER_FCM_TOKEN",
-#         "notification": {
-#             "title": "Nová správa",
-#             "body": "Máš novú správu!"
-#         }
-#     }
-# }
-
-# # Odoslanie push notifikácie
-# response = requests.post(fcm_url, headers=headers, json=payload)
-
-# Výsledok
-# print('FCM Response:', response.json())
 
 # Inicializácia aplikácie Firebase
 firebase_admin.initialize_app(cred)
@@ -248,80 +215,59 @@ def create_app():
             "measurementId": os.environ.get('FIREBASE_MEASUREMENT_ID')
         }
         return jsonify(firebase_config)
-    
-    @app.route('/check-subscription', methods=['GET'])
-    def check_subscription():
-        # Získajte endpoint z query parametrov
-        endpoint = request.args.get('endpoint')
 
-        if not endpoint:
-            return jsonify({'error': 'Žiadny endpoint nebol poskytnutý.'}), 400
-
-        # Vyhľadajte predplatné s týmto endpointom v databáze
-        existing_subscription = PushSubscription.query.filter_by(endpoint=endpoint).first()
-
-        # Skontrolujte, či predplatné existuje
-        if existing_subscription:
-            return jsonify({'exists': True}), 200
-        else:
-            return jsonify({'exists': False}), 200
-        
-
-    def delete_subscription(endpoint):
-        subscription = PushSubscription.query.filter_by(endpoint=endpoint).first()
-        if subscription:
-            db.session.delete(subscription)
-            db.session.commit()
-            print(f"Predplatné pre endpoint {endpoint} bolo úspešne vymazané.")
-        else:
-            print(f"Predplatné pre endpoint {endpoint} nebolo nájdené.")
-            
-
-    # Endpoint pre prijímanie FCM tokenu
+    # Route na odoslanie subscription údajov na backend
     @app.route('/subscribe', methods=['POST'])
     def subscribe():
         subscription_data = request.get_json()
-        
-        # Ulož token a subscription do databázy
-        token = subscription_data.get('token')
-        endpoint = subscription_data.get('endpoint')
-        keys = subscription_data.get('keys')
 
-        if not token or not endpoint or not keys:
-            return jsonify({'error': 'Invalid subscription data'}), 400
+        # Získaj informácie o používateľovi, napr. aktuálne prihláseného používateľa
+        user_id = current_user.id if current_user.is_authenticated else None
 
-        # Implementuj logiku ukladania tokenu a subscription do databázy (napr. PushSubscription model)
-        push_subscription = PushSubscription(token=token, endpoint=endpoint, p256dh=keys['p256dh'], auth=keys['auth'])
-        db.session.add(push_subscription)
-        db.session.commit()
+        # Skontroluj, či sa jedná o FCM token alebo Web Push subscription
+        if 'token' in subscription_data:
+            # Spracovanie FCM tokenu (pre iOS zariadenia)
+            fcm_token = subscription_data['token']
+            print("*********************")
+            print(fcm_token)
+            print("*********************")
 
-        return jsonify({'message': 'Subscription uložená úspešne.'}), 201
+            # Skontroluj, či už FCM token existuje v databáze
+            existing_fcm_token = PushSubscription.query.filter_by(auth=fcm_token).first()
 
+            if not existing_fcm_token:
+                # Vytvor nové FCM subscription pre iOS
+                new_fcm_subscription = PushSubscription(
+                    user_id=user_id
+                )
+                db.session.add(new_fcm_subscription)
+                db.session.commit()
+                return jsonify({'message': 'FCM token uložený úspešne.'}), 201
+            else:
+                return jsonify({'message': 'FCM token už existuje.'}), 200
 
+        else:
+            # Spracovanie Web Push subscription (pre ostatné zariadenia)
+            endpoint = subscription_data['endpoint']
+            p256dh = subscription_data['keys']['p256dh']
+            auth = subscription_data['keys']['auth']
 
+            # Skontroluj, či už Web Push subscription existuje v databáze
+            existing_subscription = PushSubscription.query.filter_by(endpoint=endpoint).first()
 
-        # else:
-        #     # Spracovanie Web Push subscription (pre ostatné zariadenia)
-        #     endpoint = subscription_data['endpoint']
-        #     p256dh = subscription_data['keys']['p256dh']
-        #     auth = subscription_data['keys']['auth']
-
-        #     # Skontroluj, či už Web Push subscription existuje v databáze
-        #     existing_subscription = PushSubscription.query.filter_by(endpoint=endpoint).first()
-
-        #     if not existing_subscription:
-        #         # Vytvor nové Web Push subscription
-        #         new_subscription = PushSubscription(
-        #             user_id=user_id,
-        #             endpoint=endpoint,
-        #             p256dh=p256dh,
-        #             auth=auth
-        #         )
-        #         db.session.add(new_subscription)
-        #         db.session.commit()
-        #         return jsonify({'message': 'Web Push subscription uložené úspešne.'}), 201
-        #     else:
-        #         return jsonify({'message': 'Web Push subscription už existuje.'}), 200
+            if not existing_subscription:
+                # Vytvor nové Web Push subscription
+                new_subscription = PushSubscription(
+                    user_id=user_id,
+                    endpoint=endpoint,
+                    p256dh=p256dh,
+                    auth=auth
+                )
+                db.session.add(new_subscription)
+                db.session.commit()
+                return jsonify({'message': 'Web Push subscription uložené úspešne.'}), 201
+            else:
+                return jsonify({'message': 'Web Push subscription už existuje.'}), 200
 
     # Dynamicky nastavíme audience podľa subscription endpointu
     def get_audience_from_subscription(endpoint):
@@ -386,73 +332,54 @@ def create_app():
 
             except WebPushException as ex:
                 print(f"Chyba pri posielaní Web Push notifikácie: {ex}")
-                if ex.response and ex.response.status_code == 410:
-                    # Subscription je neplatné, odstráň ho z databázy
-                    delete_subscription(subscription.endpoint)
+                if ex.response:
                     print(f"Detailná odpoveď zo servera: Status kód: {ex.response.status_code}, Text: {ex.response.text}")
-                else:
-                    print(f"Neočakávaná chyba pri odosielaní: {ex}")
-
+                return jsonify({"message": "Chyba pri odoslaní Web Push notifikácie2"}), 500
             except ValueError as ve:
                 print(f"Chyba: {ve}")
+                return jsonify({"message": f"Chyba: {ve}"}), 400
 
-        # Po spracovaní všetkých subscriptions
         return jsonify({"message": "Notifikácia bola úspešne odoslaná všetkým používateľom"}), 200
 
-
-    # Funkcia na vymazanie neplatného predplatného
-    def delete_subscription(endpoint):
-        subscription = PushSubscription.query.filter_by(endpoint=endpoint).first()
-        if subscription:
-            db.session.delete(subscription)
-            db.session.commit()
-            print(f"Predplatné pre endpoint {endpoint} bolo úspešne vymazané.")
-        else:
-            print(f"Predplatné pre endpoint {endpoint} nebolo nájdené.")
-
-
     
     
-    # @app.route('/send_notification', methods=['POST'])
-    # def send_notification():
-    #     # Príklad payloadu pre notifikáciu
-    #     notification_payload = {
-    #         "title": "Nové oznámenie",
-    #         "body": "Máš nové oznámenie",
-    #         "icon": "/static/img/icon.png"
-    #     }
+    @app.route('/send_notification', methods=['POST'])
+    def send_notification():
+        # Príklad payloadu pre notifikáciu
+        notification_payload = {
+            "title": "Nové oznámenie",
+            "body": "Máš nové oznámenie",
+            "icon": "/static/img/icon.png"
+        }
 
-    #     # Získaj všetky subscription z databázy
-    #     subscriptions = PushSubscription.query.all()
+        # Získaj všetky subscription z databázy
+        subscriptions = PushSubscription.query.all()
 
-    #     for subscription in subscriptions:
-    #         try:
-    #             # Odošli push notifikáciu
-    #             webpush(
-    #                 subscription_info={
-    #                     "endpoint": subscription.endpoint,
-    #                     "keys": {
-    #                         "p256dh": subscription.p256dh,
-    #                         "auth": subscription.auth
-    #                     }
-    #                 },
-    #                 data=json.dumps(notification_payload),
-    #                 vapid_private_key=os.environ.get('VAPID_PRIVATE_KEY'),
-    #                 vapid_claims={
-    #                     "sub": "mailto:example@example.com"
-    #                 }
-    #             )
-    #         except WebPushException as ex:
-    #             print(f"Chyba pri odosielaní notifikácie: {ex}")
-    #             # Ak je subscription neplatná, môžeme ju odstrániť
-    #             if ex.response and ex.response.status_code == 410:
-    #                 db.session.delete(subscription)
-    #                 db.session.commit()
+        for subscription in subscriptions:
+            try:
+                # Odošli push notifikáciu
+                webpush(
+                    subscription_info={
+                        "endpoint": subscription.endpoint,
+                        "keys": {
+                            "p256dh": subscription.p256dh,
+                            "auth": subscription.auth
+                        }
+                    },
+                    data=json.dumps(notification_payload),
+                    vapid_private_key=os.environ.get('VAPID_PRIVATE_KEY'),
+                    vapid_claims={
+                        "sub": "mailto:example@example.com"
+                    }
+                )
+            except WebPushException as ex:
+                print(f"Chyba pri odosielaní notifikácie: {ex}")
+                # Ak je subscription neplatná, môžeme ju odstrániť
+                if ex.response and ex.response.status_code == 410:
+                    db.session.delete(subscription)
+                    db.session.commit()
 
-    #     return jsonify({'message': 'Notifikácie odoslané.'}), 200
-
-
-
+        return jsonify({'message': 'Notifikácie odoslané.'}), 200
 
     # Route na odosielanie push notifikácií
     # @app.route('/send_notification', methods=['POST'])
@@ -517,9 +444,9 @@ def create_app():
         public_vapid_key = os.getenv('VAPID_PUBLIC_KEY')
         return jsonify({"publicVapidKey": public_vapid_key})
 
-    # @app.route('/firebase-messaging-sw.js')
-    # def service_worker():
-    #     return send_from_directory('static', 'js/ios-service-worker.js')
+    @app.route('/firebase-messaging-sw.js')
+    def service_worker():
+        return send_from_directory('static', 'firebase-messaging-sw.js')
     
 
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <meta name="vapid-public-key" content="{{ vapid_public_key }}">
-    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="manifest" href="{{ url_for('static', filename = 'js/manifest.json') }}" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -22,7 +22,7 @@
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/icon.png') }}" />
     <link rel="icon" type="image/png" sizes="192x192"  href="{{ url_for('static', filename='img/icon.png') }}">
     <meta name="theme-color" content="black" />
-    <meta name="google-signin-client_id" content="YOUR_CLIENT_ID.apps.googleusercontent.com">
+
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -65,64 +65,13 @@
     type="module"
     src="{{ url_for('static', filename='js/index.js') }}"
   ></script>
-  <script type="module">
-    // Funkcia na odoslanie push notifikácie na server s použitím user_id
-    async function sendPushNotification(userId, title, body) {
-        try {
-            const response = await fetch('/send-notification', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken  // Ak používaš CSRF ochranu
-                },
-                body: JSON.stringify({
-                    user_id: userId,  // Načítame FCM token pre tohto používateľa
-                    title: title,
-                    body: body
-                })
-            });
-
-            const data = await response.json();
-            console.log('Odoslanie notifikácie:', data);
-        } catch (error) {
-            console.error('Chyba pri odosielaní notifikácie:', error);
-        }
-    }
-
-    // Pripojenie tlačidla k funkcii na odoslanie notifikácie
-    document.addEventListener('DOMContentLoaded', () => {
-      //  const userId = userId;  // Tu použiješ reálne ID používateľa z tvojej aplikácie
-
-        // Pridanie event listenera na tlačidlo
-        const sendNotificationButton = document.getElementById('sendNotificationButton');
-        sendNotificationButton.addEventListener('click', () => {
-            // Po kliknutí na tlačidlo odošle notifikáciu
-            sendPushNotification(userId, 'Test Notifikácia', 'Toto je testovacia správa');
-        });
-    });
-</script>
   </head>
   <body>
-    <button id="sendNotificationButton">Poslať skúšobnú notifikáciu</button>
+    <button id="sendNotificationButton">Poslať skúšobnú notifikáciukkk</button>
     <button id="enableNotificationsButton">Povoliť push notifikácie</button>
-    <script>
-      document.getElementById('enableNotificationsButton').addEventListener('click', async () => {
-        // Požiadať používateľa o povolenie na push notifikácie
-        const permission = await Notification.requestPermission();
-        
-        if (permission === 'granted') {
-            // Ak užívateľ povolil push notifikácie, prihlásime ho na odber
-            console.log('Povolenie udelené');
-            await initializeFirebase();
-        } else {
-            // Ak povolenie nebolo udelené alebo bolo odmietnuté
-            console.log('Push notifikácie neboli povolené');
-        }
-    });
-  </script>
+
     <script>
       const vapidPublicKey = "{{ vapid_public_key }}";
-      const userId = '{{user.id}}'; 
     // alert(vapidPublicKey);
   </script>
     <!-- Detekcia pripojenia -->
@@ -868,6 +817,24 @@
   
 
 
+  </script>
+
+  <script>
+  document.getElementById('sendNotificationButton').addEventListener('click', async () => {
+      try {
+          const response = await fetch('/send_test_notification', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': csrfToken 
+              }
+          });
+          const data = await response.json();
+          console.log('Notifikácia odoslaná:', data.message);
+      } catch (error) {
+          console.error('Chyba pri odosielaní notifikácie:', error);
+      }
+  });
   </script>
 
   </body>

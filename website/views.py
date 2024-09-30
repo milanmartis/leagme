@@ -9,7 +9,7 @@ from .models import PushSubscription
 from pywebpush import webpush, WebPushException
 from . import db, current_app
 import json
-from sqlalchemy import func, or_, and_, desc
+from sqlalchemy import func, or_, and_
 from sqlalchemy import insert, update
 import stripe
 from slugify import slugify
@@ -52,9 +52,7 @@ from functools import wraps
 from py_vapid import Vapid
 from sqlalchemy.exc import IntegrityError  # Importujte pre zachytávanie chýb pri vkladaní do databázy
 from website import mail, celery
-import firebase_admin
-from firebase_admin import credentials, firestore, auth, messaging, initialize_app
-import traceback
+
 
 # Stripe konfigurácia
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
@@ -81,76 +79,30 @@ def roles_required(*roles):
         
 views = Blueprint('views', __name__)
 
-cred = credentials.Certificate(os.environ.get("FIREBASE_URL_JSON"))
-# credentials, project = google.auth.load_credentials_from_file(os.environ.get("FIREBASE_URL_JSON"), scopes=["https://www.googleapis.com/auth/cloud-platform"])
 
 
-# from firebase_admin import messaging
+from firebase_admin import messaging
 
-# def send_push_notification(token, title, body):
-#     """Odoslanie push notifikácie na dané zariadenie pomocou FCM."""
+def send_push_notification(token, title, body):
+    """Odoslanie push notifikácie na dané zariadenie pomocou FCM."""
     
-#     # Vytvorenie správy
-#     message = messaging.Message(
-#         notification=messaging.Notification(
-#             title=title,
-#             body=body,
-#         ),
-#         token=token,  # Toto je token zariadenia, kam notifikáciu posielate
-#     )
-
-#     # Odoslanie správy
-#     try:
-#         response = messaging.send(message)
-#         print('Úspešne odoslané:', response)
-#     except Exception as e:
-#         print('Chyba pri odosielaní notifikácie:', e)
-        
-def send_push_notification(fcm_token, title, body):
+    # Vytvorenie správy
     message = messaging.Message(
         notification=messaging.Notification(
             title=title,
             body=body,
         ),
-        token=fcm_token,
+        token=token,  # Toto je token zariadenia, kam notifikáciu posielate
     )
 
-    # Odoslanie push notifikácie cez Firebase Cloud Messaging (FCM)
-    response = messaging.send(message)
-    print('Notifikácia bola odoslaná:', response)
-    return response
-
-# Endpoint na odosielanie testovacích notifikácií
-@views.route('/send-notification', methods=['POST'])
-def send_notification():
+    # Odoslanie správy
     try:
-        data = request.get_json()
-        user_id = data.get('user_id')  # Načítaj user_id z požiadavky
-
-        if not user_id:
-            return jsonify({'error': 'Chýba user_id.'}), 400
-
-        # Načítaj FCM token používateľa z databázy
-        push_subscription = PushSubscription.query.filter_by(user_id=user_id).first()
-
-        if not push_subscription:
-            return jsonify({'error': 'FCM token pre používateľa nebol nájdený.'}), 404
-
-        fcm_token = push_subscription.auth
-        title = data.get('title', 'Test Notifikácia')
-        body = data.get('body', 'Toto je testovacia správa')
-
-        # Odoslanie push notifikácie
-        response = send_push_notification(fcm_token, title, body)
-        
-        return jsonify({'message': 'Notifikácia odoslaná', 'response': response}), 200
+        response = messaging.send(message)
+        print('Úspešne odoslané:', response)
     except Exception as e:
-        print('Chyba:', e)
-        print(traceback.format_exc())
-        return jsonify({'error': 'Server error'}), 500
-
-
-
+        print('Chyba pri odosielaní notifikácie:', e)
+        
+        
 
 adminz = [2]
 # season = 58
@@ -741,6 +693,7 @@ def update_duel2():
             points2 = 0
         else:
             points2 = 0
+            
   
         if data:
             u = update(user_duel)
@@ -756,32 +709,6 @@ def update_duel2():
             db.session.execute(u2)
             db.session.commit()
             
-            print(data)   
-            first_player_id = int(data[2])
-            second_player_id = int(data[5])
-
-            # Dotaz na databázu pre získanie mien hráčov podľa ID
-            first_player = db.session.query(User).filter_by(id=first_player_id).first()
-            second_player = db.session.query(User).filter_by(id=second_player_id).first()
-
-            # Skóre
-            first_player_score = data[0]
-            second_player_score = data[3] 
-            
-            if first_player and second_player:
-                push_score = (f"{first_player.first_name} {first_player_score} - {second_player_score} {second_player.first_name}")
-            else:
-                push_score = (f"....")
-                
-            user_id_1 = data[2]
-            user_id_2 = data[5]
-            sender_id = current_user.id  # ID používateľa, ktorý posiela notifikáciu
-
-            # Získanie predplatných pre user_id rovné data[0] alebo data[5], ale nie pre odosielateľa
-            subscriptions = PushSubscription.query.filter(
-                or_(PushSubscription.user_id == user_id_1, PushSubscription.user_id == user_id_2)
-            ).filter(PushSubscription.user_id != sender_id).order_by(desc(PushSubscription.id)).all()
-                            
             # duel = Duel.query.get(int(data[1]))
 
             if duel:
@@ -858,20 +785,21 @@ def update_duel2():
                 db.session.commit()
                 
 
-        
+        # Načítanie všetkých subscription z databázy
+        # subscriptions = PushSubscription.query.filter(PushSubscription.user_id == int(data[2]) or int(data[5]) a nerovna sa current_user.id).first()
+        subscriptions = PushSubscription.query.filter(
+            and_(
+                or_(PushSubscription.user_id == int(data[2]), PushSubscription.user_id == int(data[5])),
+                PushSubscription.user_id != current_user.id
+            )
+        ).all()  # Použijeme first(), pretože očakávate iba jeden výsledok
+        print(int(data[5]))
 
-        duel_url = f"http://127.0.0.1:5000/season/{duel.season_id}/duel/{data[1]}"
-
-        # Notifikácia s odkazom
         notification_payload = {
             "title": "Your Game Changed",
-            "body": push_score.upper(),
-            "icon": "/static/img/icon.png",
-            "data": {
-                "click_action": duel_url  # URL na presmerovanie
-            }
+            "body": "Toto je test push notifikácie",
+            "icon": "/static/img/icon.png"
         }
-
         if not subscriptions:
             return jsonify({"message": "Nie sú uložené žiadne predplatné (subscriptions)"}), 400
 
@@ -904,11 +832,9 @@ def update_duel2():
                     vapid_claims=vapid_claims
                 )
 
-
             except WebPushException as ex:
                 print(f"Chyba pri posielaní Web Push notifikácie: {ex}")
                 if ex.response:
-                    delete_subscription(subscription.endpoint)
                     print(f"Detailná odpoveď zo servera: Status kód: {ex.response.status_code}, Text: {ex.response.text}")
                 return jsonify({"message": "Chyba pri odoslaní Web Push notifikácie2"}), 500
             except ValueError as ve:
@@ -926,17 +852,11 @@ def update_duel2():
         print('error:', e)
         # V prípade chyby vráťte chybovú správu
         return jsonify(error="An error occurred"), 500
-
-
-# Funkcia na vymazanie neplatného predplatného
-def delete_subscription(endpoint):
-    subscription = PushSubscription.query.filter_by(endpoint=endpoint).first()
-    if subscription:
-        db.session.delete(subscription)
-        db.session.commit()
-        print(f"Predplatné pre endpoint {endpoint} bolo úspešne vymazané.")
-    else:
-        print(f"Predplatné pre endpoint {endpoint} nebolo nájdené.")
+        
+       
+       
+ 
+       
        
         
         
@@ -1505,20 +1425,21 @@ def season_player_delete(player, season):
 @views.route('/pricing', methods=['GET', 'POST'])
 def pricing_list():
     
-    customer_id = current_user.stripe_subscription_id  # Predpokladám, že máte stripe_customer_id uložené v používateľskom objekte
-    subscriptions = stripe.Subscription.list(customer=customer_id)
-    if not subscriptions:
+    # customer_id = current_user.stripe_subscription_id  # Predpokladám, že máte stripe_customer_id uložené v používateľskom objekte
+    # subscriptions = stripe.Subscription.list(customer=customer_id)
+    # if not subscriptions:
        
         # products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
-        orders3 = Order.query.filter(Order.user_id==current_user.id).all()
-        print(orders3)
-        cards = PaymentCard.query.filter(PaymentCard.user_id==current_user.id).all()
-        products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
-        orders = Order.query.filter(Order.user_id==current_user.id).all()
+    orders3 = Order.query.filter(Order.user_id==current_user.id).all()
+    print(orders3)
+    cards = PaymentCard.query.filter(PaymentCard.user_id==current_user.id).all()
+    products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
+    orders = Order.query.filter(Order.user_id==current_user.id).all()
 
-        return render_template("pricing.html",  vapid_public_key=vapid_public_key, orders3=orders3, products=products, adminz=adminz, checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), user=current_user, cards=cards, orders=orders)
-    else:
-        return redirect(url_for('auth.user_details'))
+    return render_template("pricing.html",  vapid_public_key=vapid_public_key, orders3=orders3, products=products, adminz=adminz, checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), user=current_user, cards=cards, orders=orders)
+    # else:
+        # return render_template("pricing.html",  vapid_public_key=vapid_public_key, orders3=orders3, products=products, adminz=adminz, checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), user=current_user, cards=cards, orders=orders)
+        # return redirect(url_for('auth.user_details'))
 
 
 
@@ -2103,39 +2024,39 @@ def create_new_season(season):
     
     
     
-# #################### FIRE BASE ###########################
-# user_tokens = {}
-# @views.route('/register_token', methods=['POST'])
-# def register_token():
-#     print("ssssssssssssssssssssssssssssssssssssssssssssssssssss")
-#     print("ssssssssssssssssssssssssssssssssssssssssssssssssssss")
-#     print("ssssssssssssssssssssssssssssssssssssssssssssssssssss")
-#     """API na registráciu FCM tokenu pre používateľa."""
-#     data = request.json
-#     user_id = data.get('user_id')
-#     token = data.get('token')
+#################### FIRE BASE ###########################
+user_tokens = {}
+@views.route('/register_token', methods=['POST'])
+def register_token():
+    print("ssssssssssssssssssssssssssssssssssssssssssssssssssss")
+    print("ssssssssssssssssssssssssssssssssssssssssssssssssssss")
+    print("ssssssssssssssssssssssssssssssssssssssssssssssssssss")
+    """API na registráciu FCM tokenu pre používateľa."""
+    data = request.json
+    user_id = data.get('user_id')
+    token = data.get('token')
 
-#     # Uložte token pre používateľa
-#     user_tokens[user_id] = token
-#     return jsonify({"message": "Token uložený"}), 200
+    # Uložte token pre používateľa
+    user_tokens[user_id] = token
+    return jsonify({"message": "Token uložený"}), 200
 
-# @views.route('/send_notification', methods=['POST'])
-# def send_notification():
-#     """API na odoslanie push notifikácie."""
-#     data = request.json
-#     user_id = data.get('user_id')
-#     title = data.get('title')
-#     body = data.get('body')
+@views.route('/send_notification', methods=['POST'])
+def send_notification():
+    """API na odoslanie push notifikácie."""
+    data = request.json
+    user_id = data.get('user_id')
+    title = data.get('title')
+    body = data.get('body')
 
-#     # Získanie tokenu používateľa
-#     token = user_tokens.get(user_id)
+    # Získanie tokenu používateľa
+    token = user_tokens.get(user_id)
     
-#     if token:
-#         # Odoslanie notifikácie
-#         send_push_notification(token, title, body)
-#         return jsonify({"message": "Notifikácia odoslaná"}), 200
-#     else:
-#         return jsonify({"error": "Používateľ nemá registrovaný token"}), 404
+    if token:
+        # Odoslanie notifikácie
+        send_push_notification(token, title, body)
+        return jsonify({"message": "Notifikácia odoslaná"}), 200
+    else:
+        return jsonify({"error": "Používateľ nemá registrovaný token"}), 404
 
 
 
