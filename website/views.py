@@ -83,7 +83,7 @@ views = Blueprint('views', __name__)
 
 cred = credentials.Certificate(os.environ.get("FIREBASE_URL_JSON"))
         
-def send_push_notifications(fcm_tokens, title, body):
+def send_push_notification(fcm_tokens, title, body):
     messages = [
         messaging.Message(
             notification=messaging.Notification(
