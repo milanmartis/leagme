@@ -44,6 +44,7 @@ async function initializeFirebase() {
                 // Získanie FCM tokenu pomocou už registrovaného Service Workera
                 getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration }).then((currentToken) => {
                     if (currentToken) {
+                       // alert(currentToken)
                         console.log('FCM token:', currentToken);
                         sendTokenToServer(currentToken);  // Funkcia na odoslanie tokenu na server
                     } else {
