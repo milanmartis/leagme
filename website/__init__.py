@@ -338,6 +338,26 @@ def create_app():
             raise ValueError(f"Neznámy push server pre endpoint: {endpoint}")
 
 
+    from firebase_admin import messaging
+
+    def send_push_notification(token, title, body):
+        """Odoslanie push notifikácie na dané zariadenie pomocou FCM."""
+        
+        # Vytvorenie správy
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title=title,
+                body=body,
+            ),
+            token=token,  # Toto je token zariadenia, kam notifikáciu posielate
+        )
+
+        # Odoslanie správy
+        try:
+            response = messaging.send(message)
+            print('Úspešne odoslané:', response)
+        except Exception as e:
+            print('Chyba pri odosielaní notifikácie:', e)
 
     @app.route('/send_test_notification', methods=['POST'])
     def send_test_notification():
@@ -355,42 +375,51 @@ def create_app():
             return jsonify({"message": "Nie sú uložené žiadne predplatné (subscriptions)"}), 400
 
         # Posielanie Web Push notifikácií pre všetky uložené subscriptions
+        
         for subscription in subscriptions:
-            try:
-                # Získaj endpoint z databázy
-                endpoint = subscription.endpoint
+            if subscription.operating_system=='MacOS':
+                send_push_notification(subscription.auth, 'title', 'body')
+            
+            else:
+            
+                try:
+                    
+                    # Získaj endpoint z databázy
+                    endpoint = subscription.endpoint
+                    # print("pojpojpojpojpoj")
+                    print(endpoint)
 
-                # Dynamické získanie audience (na základe endpointu)
-                audience = get_audience_from_subscription(endpoint)
+                    # Dynamické získanie audience (na základe endpointu)
+                    audience = get_audience_from_subscription(endpoint)
 
-                # Nastavenie VAPID claimov s dynamickým audience
-                vapid_claims = {
-                    "sub": "mailto:tvoj-email@example.com",
-                    "aud": audience
-                }
+                    # Nastavenie VAPID claimov s dynamickým audience
+                    vapid_claims = {
+                        "sub": "mailto:tvoj-email@example.com",
+                        "aud": audience
+                    }
 
-                # Posielanie push notifikácie pomocou webpush
-                webpush(
-                    subscription_info={
-                        "endpoint": subscription.endpoint,
-                        "keys": {
-                            "p256dh": subscription.p256dh,
-                            "auth": subscription.auth
-                        }
-                    },
-                    data=json.dumps(notification_payload),
-                    vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY"),
-                    vapid_claims=vapid_claims
-                )
+                    # Posielanie push notifikácie pomocou webpush
+                    webpush(
+                        subscription_info={
+                            "endpoint": subscription.endpoint,
+                            "keys": {
+                                "p256dh": subscription.p256dh,
+                                "auth": subscription.auth
+                            }
+                        },
+                        data=json.dumps(notification_payload),
+                        vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY"),
+                        vapid_claims=vapid_claims
+                    )
 
-            except WebPushException as ex:
-                print(f"Chyba pri posielaní Web Push notifikácie: {ex}")
-                if ex.response:
-                    print(f"Detailná odpoveď zo servera: Status kód: {ex.response.status_code}, Text: {ex.response.text}")
-                return jsonify({"message": "Chyba pri odoslaní Web Push notifikácie2"}), 500
-            except ValueError as ve:
-                print(f"Chyba: {ve}")
-                return jsonify({"message": f"Chyba: {ve}"}), 400
+                except WebPushException as ex:
+                    print(f"Chyba pri posielaní Web Push notifikácie: {ex}")
+                    if ex.response:
+                        print(f"Detailná odpoveď zo servera: Status kód: {ex.response.status_code}, Text: {ex.response.text}")
+                    return jsonify({"message": "Chyba pri odoslaní Web Push notifikácie2"}), 500
+                except ValueError as ve:
+                    print(f"Chyba: {ve}")
+                    return jsonify({"message": f"Chyba: {ve}"}), 400
 
         return jsonify({"message": "Notifikácia bola úspešne odoslaná všetkým používateľom"}), 200
 
