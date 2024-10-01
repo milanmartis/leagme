@@ -1,5 +1,8 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
 // VAPID public key
 const publicVapidKey = vapidPublicKey;
+//alert(publicVapidKey);
 
 // Function to detect iOS devices
 function isIOS() {
@@ -44,54 +47,49 @@ async function subscribeToPushNotifications() {
             if (isIOS()) {
                 console.log('iOS detected. Using Firebase for push notifications.');
 
-                // Request permission for notifications
                 const permissionGranted = await requestNotificationPermission();
                 if (!permissionGranted) {
                     console.error('Notification permission denied on iOS.');
                     return;
                 }
-
-                // Fetch Firebase configuration from backend
+            
+                // Fetch and initialize Firebase
                 const response = await fetch('/get-firebase-config');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch Firebase configuration.');
-                }
                 const firebaseConfig = await response.json();
+                
+                const app = initializeApp(firebaseConfig);
+                const messaging = getMessaging(app);
 
-                // Initialize Firebase
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(firebaseConfig);
-                }
+                const deviceInfo = getDeviceInfo();
+            
+                // Get token
+                getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration })
+                    .then((currentToken) => {
+                        if (currentToken) {
+                            console.log('FCM token:', currentToken);
+                           
+                            fetch('/subscribe', {
+                                method: 'POST',
+                                body: JSON.stringify({ 
+                                    token: currentToken,
+                                    deviceType: deviceInfo.deviceType,
+                                    operatingSystem: deviceInfo.operatingSystem,
+                                    browserName: deviceInfo.browserName
+                                }),
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': csrfToken
+                                }
+                            });
 
-                const messaging = firebase.messaging();
-
-                try {
-                    // Get FCM token (VAPID key for Web Push)
-                    const fcmToken = await messaging.getToken({
-                        vapidKey: publicVapidKey,
-                        serviceWorkerRegistration: registration
+                        } else {
+                            console.log('No FCM token available.');
+                        }
+                    })
+                    .catch((err) => {
+                        console.error('An error occurred while retrieving FCM token:', err);
                     });
 
-                    if (fcmToken) {
-                        alert(`FCM Token: ${fcmToken}`);
-                        console.log('FCM Token received:', fcmToken);
-
-                        // Send FCM token to the backend
-                        await fetch('/subscribe', {
-                            method: 'POST',
-                            body: JSON.stringify({ token: fcmToken }),
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': csrfToken
-                            }
-                        });
-                        console.log('FCM token sent to server.');
-                    } else {
-                        console.error('Failed to get FCM token.');
-                    }
-                } catch (error) {
-                    console.error('Error while getting FCM token:', error);
-                }
             } else {
                 // Handle Web Push for other platforms (non-iOS)
                 const permission = await Notification.requestPermission();
@@ -106,11 +104,18 @@ async function subscribeToPushNotifications() {
                 });
 
                 console.log('Subscription data:', subscription);
+                const deviceInfo = getDeviceInfo();
 
                 // Send subscription data to backend
+                alert(subscription.endpoint);
                 const response = await fetch('/subscribe', {
                     method: 'POST',
-                    body: JSON.stringify(subscription),
+                    body: JSON.stringify({ 
+                        subscription: subscription,
+                        deviceType: deviceInfo.deviceType,
+                        operatingSystem: deviceInfo.operatingSystem,
+                        browserName: deviceInfo.browserName
+                    }),
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': csrfToken
@@ -145,7 +150,85 @@ function urlBase64ToUint8Array(base64String) {
     return outputArray;
 }
 
-// Attach the event listener to a button
+
+
+
+async function unsubscribeFromPushNotifications() {
+    
+    try {
+        const serviceWorkerRegistration = await navigator.serviceWorker.ready;
+        const subscription = await serviceWorkerRegistration.pushManager.getSubscription();
+  
+        if (subscription) {
+            await subscription.unsubscribe();
+            console.log('User is unsubscribed.');
+  
+            // Odošleme požiadavku na backend na vymazanie subscription z databázy
+            fetch('/unsubscribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken  // Ak používaš CSRF ochranu
+                },
+                body: JSON.stringify({ endpoint: subscription.endpoint })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Unsubscribed on server:', data);
+            })
+            .catch(error => {
+                console.error('Error unsubscribing on server:', error);
+            });
+        } else {
+            console.log('No subscription found to unsubscribe.');
+        }
+    } catch (error) {
+        console.error('Failed to unsubscribe the user:', error);
+    }
+  }
+  
+  
+  
+  document.getElementById('enableNotificationsToggle').addEventListener('change', async (event) => {
+    if (event.target.checked) {
+        await subscribeToPushNotifications();
+    } else {
+        await unsubscribeFromPushNotifications();  // Funkcia na odhlásenie
+    }
+  });
+  
+  
+  // Funkcia na kontrolu stavu predplatného
+  async function checkSubscriptionStatus() {
+    try {
+        const serviceWorkerRegistration = await navigator.serviceWorker.ready;
+        const subscription = await serviceWorkerRegistration.pushManager.getSubscription();
+  
+        if (subscription) {
+            // Načítanie stavu predplatného z backendu
+          //  alert('zle');
+            const response = await fetch(`/check-subscription?endpoint=${subscription.endpoint}`);
+            const data = await response.json();
+  
+            if (data.subscribed) {
+                // Ak je používateľ už predplatený, nastav tlačidlo na zapnuté
+                document.getElementById('enableNotificationsToggle').checked = true;
+            } else {
+                // Ak nie je predplatený, nastav tlačidlo na vypnuté
+                document.getElementById('enableNotificationsToggle').checked = false;
+            }
+        } else {
+            document.getElementById('enableNotificationsToggle').checked = false;
+        }
+    } catch (error) {
+        console.error('Error checking subscription status:', error);
+    }
+  }
+  
+  // Zavolaj funkciu po načítaní stránky, aby sa načítal stav tlačidla
+  window.addEventListener('load', checkSubscriptionStatus);
+
+  // Attach the event listener to a button
 document.getElementById('enableNotificationsButton').addEventListener('click', async () => {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
@@ -155,3 +238,46 @@ document.getElementById('enableNotificationsButton').addEventListener('click', a
         console.log('Push notifications not granted.');
     }
 });
+
+
+function getDeviceInfo() {
+    const userAgent = navigator.userAgent;
+
+    // Detekcia zariadenia
+    const isMobile = /Mobi|Android/i.test(userAgent);
+    const deviceType = isMobile ? 'Mobile' : 'Desktop';
+
+    // Detekcia operačného systému
+    let operatingSystem = 'Unknown OS';
+    if (/Windows/i.test(userAgent)) {
+        operatingSystem = 'Windows';
+    } else if (/Mac/i.test(userAgent)) {
+        operatingSystem = 'MacOS';
+    } else if (/Android/i.test(userAgent)) {
+        operatingSystem = 'Android';
+    } else if (/iPhone|iPad|iPod/i.test(userAgent)) {
+        operatingSystem = 'iOS';
+    } else if (/Linux/i.test(userAgent)) {
+        operatingSystem = 'Linux';
+    }
+
+    // Detekcia prehliadača
+    let browserName = 'Unknown Browser';
+    if (/Chrome/i.test(userAgent)) {
+        browserName = 'Chrome';
+    } else if (/Firefox/i.test(userAgent)) {
+        browserName = 'Firefox';
+    } else if (/Safari/i.test(userAgent) && !/Chrome/i.test(userAgent)) {
+        browserName = 'Safari';
+    } else if (/Edge/i.test(userAgent)) {
+        browserName = 'Edge';
+    } else if (/Opera|OPR/i.test(userAgent)) {
+        browserName = 'Opera';
+    }
+
+    return {
+        deviceType,
+        operatingSystem,
+        browserName
+    };
+}

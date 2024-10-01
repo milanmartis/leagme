@@ -204,7 +204,7 @@ def index():
     
     
     
-    return render_template("index.html", vapid_public_key=vapid_public_key, seasons=seasons, user=current_user, adminz=adminz, placeable=placeable)
+    return render_template("index.html", vapid_public_key=vapid_public_key , seasons=seasons, user=current_user, adminz=adminz, placeable=placeable)
     
 
 @views.route('/home/<season>/', methods=['GET', 'POST'])

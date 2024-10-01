@@ -295,13 +295,28 @@ class PaymentMethod(db.Model):
     card_token = db.Column(db.String(255), nullable=False)
 
 class PushSubscription(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    endpoint = db.Column(db.String, nullable=False)
-    p256dh = db.Column(db.String, nullable=False)
-    auth = db.Column(db.String, nullable=False)
+    __tablename__ = 'push_subscription'
 
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Ak používaš užívateľov
+    endpoint = db.Column(db.String, nullable=True)
+    p256dh = db.Column(db.String, nullable=True)
+    auth = db.Column(db.String, nullable=True)
+    device_type = db.Column(db.String(50), nullable=True)  # Nové pole pre typ zariadenia
+    operating_system = db.Column(db.String(50), nullable=True)  # Nové pole pre operačný systém
+    browser_name = db.Column(db.String(50), nullable=True)  # Nové pole pre prehliadač
+    
     user = db.relationship('User', backref='push_subscriptions')
+
+    def __init__(self, user_id=None, endpoint=None, p256dh=None, auth=None, device_type=None, operating_system=None, browser_name=None):
+        self.user_id = user_id
+        self.endpoint = endpoint
+        self.p256dh = p256dh
+        self.auth = auth
+        self.device_type = device_type
+        self.operating_system = operating_system
+        self.browser_name = browser_name
+
 
 
 

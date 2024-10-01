@@ -33,6 +33,7 @@ from functools import wraps
 from io import BytesIO
 from argon2 import PasswordHasher
 ph = PasswordHasher()
+vapid_public_key=os.environ.get("VAPID_PUBLIC_KEY")
 
 def roles_required(*roles):
     """Dekorátor, ktorý kontroluje, či má používateľ aspoň jednu z požadovaných rolí."""
@@ -733,7 +734,7 @@ def user_details():
     products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
     orders = Order.query.filter(Order.user_id==current_user.id).all()
 
-    return render_template("users/account.html", checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), user=current_user, cards=cards, products=products, orders=orders)
+    return render_template("users/account.html", checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), vapid_public_key=vapid_public_key , user=current_user, cards=cards, products=products, orders=orders)
 
 @auth.route('/delete_payment_method', methods=['POST'])
 @login_required

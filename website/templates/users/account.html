@@ -2,8 +2,65 @@
 {% block title %}User Page{% endblock %}
 
 {% block content %}
-<br />
 
+<br />
+<style scoped>
+  /* The switch - the box around the slider */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 56px;
+  height: 24px;
+}
+
+/* Hide default HTML checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* The slider */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #016601;
+  transition: 0.4s;
+}
+
+/* The round slider */
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.4s;
+}
+
+input:checked + .slider {
+  background-color: #00EE00;
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider {
+  border-radius: 34px;
+}
+
+.slider:before {
+  border-radius: 50%;
+}
+</style>
 <div class="container readinglazy" align="center">
   <div class="row" style="display:block;max-width:320px; text-align: center;">
     <div valign="middle" align="center" class="col-12">
@@ -40,6 +97,30 @@
         </button>
       </form>
     </div>
+
+    <button id="sendNotificationButton">Poslať skúšobnú notifikáciukkk</button>
+    <button id="enableNotificationsButton">Povoliť push notifikácie</button>
+    <label class="switch">
+      <input type="checkbox" id="enableNotificationsToggle">
+      <span class="slider round"></span>
+    </label>
+    <script>
+      document.getElementById('sendNotificationButton').addEventListener('click', async () => {
+          try {
+              const response = await fetch('/send_test_notification', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'X-CSRFToken': csrfToken 
+                  }
+              });
+              const data = await response.json();
+              console.log('Notifikácia odoslaná:', data.message);
+          } catch (error) {
+              console.error('Chyba pri odosielaní notifikácie:', error);
+          }
+      });
+      </script>
     <br>
     <br>
     
@@ -256,5 +337,6 @@
     fetchStripeData(); // Initial fetch
   });
 </script>
+
 
 {% endblock %}
