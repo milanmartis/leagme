@@ -234,11 +234,23 @@ def create_app():
             # Spracovanie FCM tokenu (pre iOS zariadenia)
             fcm_token = subscription_data['token']
 
-            # Skontroluj, či už FCM token existuje v databáze
-            existing_fcm_token = PushSubscription.query.filter_by(auth=fcm_token).first()
+            # Nájdeme všetky existujúce FCM subscription pre rovnakého používateľa, zariadenie, OS a prehliadač
+            existing_fcm_tokens = PushSubscription.query.filter_by(
+                user_id=user_id,
+                device_type=device_type,
+                operating_system=operating_system,
+                browser_name=browser_name
+            ).all()
 
-            if not existing_fcm_token:
-                # Vytvor nové FCM subscription pre iOS
+            # Odstránime všetky záznamy s neplatným auth (FCM token)
+            for subscription in existing_fcm_tokens:
+                if subscription.auth != fcm_token:
+                    db.session.delete(subscription)
+            
+            db.session.commit()
+
+            # Vytvoríme novú subscription, ak neexistuje žiadna s rovnakým auth
+            if not any(sub.auth == fcm_token for sub in existing_fcm_tokens):
                 new_fcm_subscription = PushSubscription(
                     user_id=user_id,
                     auth=fcm_token,
@@ -258,11 +270,23 @@ def create_app():
             p256dh = subscription_data['subscription']['keys']['p256dh']
             auth = subscription_data['subscription']['keys']['auth']
 
-            # Skontroluj, či už Web Push subscription existuje v databáze
-            existing_subscription = PushSubscription.query.filter_by(endpoint=endpoint).first()
+            # Nájdeme všetky existujúce Web Push subscription pre rovnakého používateľa, zariadenie, OS a prehliadač
+            existing_subscriptions = PushSubscription.query.filter_by(
+                user_id=user_id,
+                device_type=device_type,
+                operating_system=operating_system,
+                browser_name=browser_name
+            ).all()
 
-            if not existing_subscription:
-                # Vytvor nové Web Push subscription
+            # Odstránime všetky záznamy s neplatným endpoint alebo auth
+            for subscription in existing_subscriptions:
+                if subscription.endpoint != endpoint or subscription.auth != auth:
+                    db.session.delete(subscription)
+            
+            db.session.commit()
+
+            # Vytvoríme novú subscription, ak neexistuje žiadna s rovnakým endpoint a auth
+            if not any(sub.endpoint == endpoint and sub.auth == auth for sub in existing_subscriptions):
                 new_subscription = PushSubscription(
                     user_id=user_id,
                     endpoint=endpoint,
@@ -278,18 +302,25 @@ def create_app():
             else:
                 return jsonify({'message': 'Web Push subscription už existuje.'}), 200
 
-            
-            
+
             
     @app.route('/check-subscription', methods=['GET'])
     def check_subscription():
-        endpoint = request.args.get('endpoint')
+        user_id = request.args.get('user_id')
+        device_type = request.args.get('device_type')
+        operating_system = request.args.get('operating_system')
+        browser_name = request.args.get('browser_name')
 
-        if not endpoint:
-            return jsonify({'error': 'Žiadny endpoint nebol poskytnutý.'}), 400
+        if not user_id:
+            return jsonify({'error': 'Žiadny user nebol najdeny.'}), 400
 
         # Skontroluj, či existuje predplatné pre daný endpoint
-        existing_subscription = PushSubscription.query.filter_by(endpoint=endpoint).first()
+        existing_subscription = PushSubscription.query.filter_by(
+            user_id=user_id,  # Použijeme 'user_id', nie 'user'
+            device_type=device_type,
+            operating_system=operating_system,
+            browser_name=browser_name
+        ).first()
 
         if existing_subscription:
             return jsonify({'subscribed': True}), 200
@@ -303,21 +334,32 @@ def create_app():
     def unsubscribe():
         subscription_data = request.get_json()
 
-        endpoint = subscription_data.get('endpoint')
+        user_id = subscription_data.get('user_id')
+        device_type = subscription_data.get('device_type')
+        operating_system = subscription_data.get('operating_system')
+        browser_name = subscription_data.get('browser_name')
 
-        if not endpoint:
-            return jsonify({'message': 'Chýba endpoint pre odhlásenie.'}), 400
+        # if not endpoint:
+        #     return jsonify({'message': 'Chýba endpoint pre odhlásenie.'}), 400
 
         try:
             # Nájdeme predplatné podľa endpointu a odstránime ho
-            subscription = PushSubscription.query.filter_by(endpoint=endpoint).first()
+            subscriptions = PushSubscription.query.filter_by(
+                user_id=user_id,
+                device_type=device_type,
+                operating_system=operating_system,
+                browser_name=browser_name
+                
+                ).all()
+            
+            for subscription in subscriptions:
 
-            if subscription:
-                db.session.delete(subscription)
-                db.session.commit()
-                return jsonify({'message': 'Predplatné bolo vymazané.'}), 200
-            else:
-                return jsonify({'message': 'Predplatné nebolo nájdené.'}), 404
+                if subscription:
+                    db.session.delete(subscription)
+                    db.session.commit()
+                    return jsonify({'message': 'Predplatné bolo vymazané.'}), 200
+                else:
+                    return jsonify({'message': 'Predplatné nebolo nájdené.'}), 404
         except Exception as e:
             print('Error:', e)
             return jsonify({'message': 'Chyba servera.'}), 500

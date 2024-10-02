@@ -1,6 +1,7 @@
 {% extends "base.html" %} {% block title %}LeagMe - Season{% endblock %} {%
   block content %}
   {% set lang = 0 %}
+  {% set role = user.roles[0] %}
 
   <style>
 
@@ -292,7 +293,19 @@ aria-hidden="true"
   {% endif %}
   <center>
     {% if rounds_open|length > 0 %}
-    <div class="round-time-counting" style="display:none;">
+    <div class="content" style="display: flex; justify-content: center; align-items: center; ">
+      <div class="row">
+        <div class="col" style="max-width: 280px; text-align: center;">
+          
+          {% if role.name in ('Admin') or ((manager != none) and role.name in ('Manager'))  %}
+          <button class="btn btn-outline-dark" id="sendNotificationButton">Send alert before round closed</button>
+          
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="content"">
+    <div class="round-time-counting" style="display:block;">
     <h3 style="opacity: 0.5;">Time Left</h3>
 
       <div class="countdown-container" id="countdown">
@@ -367,8 +380,7 @@ aria-hidden="true"
 
     {% endif %}
   </center>
-  {% set role = user.roles[0] %}
-
+ 
   {% if players|length>=seas.min_players and players|length % seas.no_group == 0 and 
     role.name in ('Admin') and (rounds_open|length == 0) or ((manager != none) 
     and role.name in ('Manager')) and players|length>=seas.min_players and players|length % seas.no_group == 0 and (rounds_open|length == 0)%}
@@ -485,5 +497,21 @@ aria-hidden="true"
     </div>
   </div>
 </div>
-
+<script>
+  document.getElementById('sendNotificationButton').addEventListener('click', async () => {
+      try {
+          const response = await fetch('/send_test_notification', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': csrfToken 
+              }
+          });
+          const data = await response.json();
+          console.log('Notifikácia odoslaná:', data.message);
+      } catch (error) {
+          console.error('Chyba pri odosielaní notifikácie:', error);
+      }
+  });
+  </script>
 {% endblock %}

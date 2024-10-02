@@ -7,20 +7,20 @@
 <style scoped>
   /* The switch - the box around the slider */
 .switch {
+  display: flex;
+  align-items: center;
   position: relative;
-  display: inline-block;
   width: 56px;
   height: 24px;
+  margin-left: 70px;
 }
 
-/* Hide default HTML checkbox */
 .switch input {
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-/* The slider */
 .slider {
   position: absolute;
   cursor: pointer;
@@ -32,7 +32,6 @@
   transition: 0.4s;
 }
 
-/* The round slider */
 .slider:before {
   position: absolute;
   content: "";
@@ -52,7 +51,6 @@ input:checked + .slider:before {
   transform: translateX(26px);
 }
 
-/* Rounded sliders */
 .slider {
   border-radius: 34px;
 }
@@ -60,86 +58,133 @@ input:checked + .slider:before {
 .slider:before {
   border-radius: 50%;
 }
+
+.switch-text {
+  margin-left: 55px;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+/* Moderné slide animácie */
+.slide-container {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s ease-out, opacity 0.5s ease-out;
+  opacity: 0;
+}
+
+.slide-container.open {
+  max-height: 500px; /* Nastav maximálnu výšku podľa obsahu */
+  opacity: 1;
+}
+
 </style>
+
 <div class="container readinglazy" align="center">
-  <div class="row" style="display:block;max-width:320px; text-align: center;">
+  <div class="row" style="display:block;max-width:300px; text-align: center;">
     <div valign="middle" align="center" class="col-12">
       <img src="{{ url_for('static', filename='img/my-account.svg') }}" width="250" class="filter-green" />
+    </div>
+    <br><br>
 
-      <form method="POST" action="{{ url_for('auth.user_details') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <h3 align="center"></h3>
-        <div class="form-group">
-          <h1 style="margin-top:-15px;margin-bottom:15px;">
-            <p style="font-size: 80%;font-weight:700;opacity:0.5;margin-bottom:0px;">User Id</p>
-            {{user.email }}
-          </h1>
+    <!-- Zobrazenie mena a ikony edit -->
+    <div id="name_display" style="display: flex; align-items: center;">
+      <h4 style="width: 100%;" id="display_name">Personal details</h4>
+      <a href="#" id="edit_button" style="border: none; background: none; cursor: pointer; margin-left: 10px;">
+        <i class="fas fa-edit" id="edit_icon" style="font-size: 22px;"></i>
+      </a>
+    </div>
+
+    <!-- Formulár je na začiatku skrytý -->
+    <form id="edit_form" method="POST" action="{{ url_for('auth.user_details') }}" class="slide-container">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group">
+        <input type="hidden" id="useride" name="useride" value="{{user.id}}" />
+        <input
+          type="text"
+          class="form-control"
+          autocomplete="off"
+          maxlength="10"
+          id="first_name_update"
+          name="first_name_update"
+          placeholder="Nick name"
+          value="{{ user.first_name }}"
+        />
+        <input
+          type="text"
+          class="form-control"
+          autocomplete="off"
+          maxlength="10"
+          id="full_name_update"
+          name="full_name_update"
+          placeholder="Full name"
+          value="{{ user.full_name }}"
+        />
+        <input
+          type="text"
+          class="form-control"
+          autocomplete="off"
+          maxlength="10"
+          id="address_update"
+          name="address_update"
+          placeholder="Billing Address"
+          value="{{ user.billing_address }}"
+        />
+        <input
+          type="text"
+          class="form-control"
+          autocomplete="off"
+          maxlength="10"
+          id="company_update"
+          name="company_update"
+          placeholder="Company name"
+          value="{{ user.company_name }}"
+        />
+        <input
+          type="text"
+          class="form-control"
+          autocomplete="off"
+          maxlength="10"
+          id="vat_update"
+          name="vat_update"
+          placeholder="VAT"
+          value="{{ user.vat }}"
+        />
+      </div>
+      <br />
+      <button type="submit" id="account_button" class="btn-demo btn-outline-dark btn-block" onclick="javascript:spinner();document.getElementById('account_button').style.color='#00EE00';">
+        SUBMIT
+        <div class="loader">
+          <div class="loading"></div>
         </div>
-        <div class="form-group">
-          <input type="hidden" id="useride" name="useride" value="{{user.id}}" />
-          <input
-            type="text"
-            class="form-control"
-            autocomplete="off"
-            maxlength="10"
-            id="first_name_update"
-            name="first_name_update"
-            placeholder="User name"
-            value="{{ user.first_name }}"
-          />
-        </div>
-        <br />
-        <button type="submit" id="account_button" class="btn-demo btn-outline-dark btn-block" onclick="javascript:spinner();document.getElementById('account_button').style.color='#00EE00';">
-          SUBMIT
-          <div class="loader">
-            <div class="loading"></div>
-          </div>
-        </button>
-      </form>
-    </div>
-
-    <button id="sendNotificationButton">Poslať skúšobnú notifikáciukkk</button>
-    <button id="enableNotificationsButton">Povoliť push notifikácie</button>
-    <label class="switch">
-      <input type="checkbox" id="enableNotificationsToggle">
-      <span class="slider round"></span>
-    </label>
-    <script>
-      document.getElementById('sendNotificationButton').addEventListener('click', async () => {
-          try {
-              const response = await fetch('/send_test_notification', {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type': 'application/json',
-                      'X-CSRFToken': csrfToken 
-                  }
-              });
-              const data = await response.json();
-              console.log('Notifikácia odoslaná:', data.message);
-          } catch (error) {
-              console.error('Chyba pri odosielaní notifikácie:', error);
-          }
-      });
-      </script>
-    <br>
-    <br>
-    
-    <div id="subscription-container">
-      <!-- Placeholder for dynamic subscription content -->
-    </div>
-    
-    <div id="pricing-template-content" style="display: none;">
-      <h3>No Subscription</h3>
-      <h1><a href="{{ url_for('views.pricing_list') }}">Make One</a></h1>
-      <br><br>
-      <!-- Placeholder for dynamic subscription content -->
-    </div>
-
-    <!-- Placeholder for Current Subscription -->
-    <div class="col-sm-12" id="current-subscription-container"></div>
-
-    <div class="col-12 justify-content-center text-center" id="adddata">
+      </button>
       <br>
+      <br>
+      <br>
+    </form>
+
+    <div id="name_display" style="display: flex; align-items: left;">
+      <h6 style="width: 100%;" id="display_name">Subscription Details</h6>
+      <a href="#" id="toggle_button" style="border: none; background: none; cursor: pointer; margin-left: 10px;">
+        <i class="fas fa-edit" id="subs_icon" style="font-size: 22px;"></i>
+      </a>
+    </div>
+    <br>
+    
+   
+
+    <div id="sub-container" class="slide-container">
+      <div class="col-12 justify-content-center text-center" id="adddata" >
+        <div id="pricing-template-content" style="display: none;">
+          <h3>No Subscription</h3>
+          <h1><a href="{{ url_for('views.pricing_list') }}">Make One</a></h1>
+          <br><br>
+        </div>
+        <div id="subscription-container">
+          <!-- Placeholder for dynamic subscription content -->
+        </div>
+        <div class="col-sm-12" id="current-subscription-container"></div>
+        <br>
         <div class="col-sm-12 justify-content-center align-items-center">
           <h4>Stored Payment Methods</h4>
           <div id="payment-methods-container" class="d-flex justify-content-center align-items-center">
@@ -153,168 +198,33 @@ input:checked + .slider:before {
             <p>Loading invoices...</p>
           </div>
         </div>
-        <br><br>
-        <h6>
-          <a class="btn2 nav-item nav-link" href="{{ url_for('auth.logout') }}">LOGOUT</a>
-        </h6>
       </div>
     </div>
-</div>
+    <br>
+    <br>
+    <br>
+    
+    <div class="col-sm-12 justify-content-center align-items-center">
+    <label class="switch">
+      <input type="checkbox" id="enableNotificationsToggle">
+      <span class="slider round"></span> 
+      <span class="switch-text">notification</span>
+    </label>
+    <h4 style="max-width: 260px;">Here, you can set up notifications to receive updates when your match results change or when a new round, in which you are registered, begins.</h4>
+    <br>
+    </div>
+    <h6>
+      <a class="btn2 nav-item nav-link" href="{{ url_for('auth.logout') }}">LOGOUT</a>
+    </h6>
+  </div>
 
-<script>
+  <script>
   document.addEventListener('DOMContentLoaded', function () {
     console.log('Fetching Stripe data...'); // Debugging message
 
+    // Example fetch function, implement accordingly
     function fetchStripeData() {
       fetch('{{ url_for("auth.get_stripe_data") }}')
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('HTTP error! Status: ' + response.status);
-          }
-          return response.json();
-        })
-        .then(data => {
-          const subscriptionContainer = document.getElementById('subscription-container');
-          const adddata = document.getElementById('adddata');
-          const invoiceContainer = document.getElementById('invoice-container');
-          const paymentMethodsContainer = document.getElementById('payment-methods-container');
-          const currentSubscriptionContainer = document.getElementById('current-subscription-container');
-          const pricingTemplateContent = document.getElementById('pricing-template-content');
-
-          if (!data.payment_methods){
-          paymentMethodsContainer.innerText='NO Data';
-          }
-          // Check if elements exist before manipulating
-          if (!subscriptionContainer || !invoiceContainer || !paymentMethodsContainer || !currentSubscriptionContainer) {
-            console.error('One or more required elements are missing.');
-           return;
-          }
-
-          let subscriptionHTML = '';
-          let imgProduct = '';
-          
-          if (data.error) {
-            invoiceContainer.innerHTML = `<p>${data.error}</p>`;
-            paymentMethodsContainer.innerHTML = `<p>${data.error}</p>`;
-            pricingTemplateContent.style.display = 'block';
-            adddata.style.display = 'none';
-            return;
-          }
-
-          if (data.subscriptions && data.subscriptions.length > 0 || data.subscriptions && data.subscriptions.length == 0)  {
-            const subscriptionData = data.subscriptions;
-            const firstSubscription = subscriptionData[0];
-
-            if (firstSubscription && firstSubscription.items && firstSubscription.items.data.length > 0) {
-              const firstItem = firstSubscription.items.data[0];
-              const customerId = firstSubscription.customer;
-              const priceId = firstItem.price.id;
-              
-              if (priceId === 'price_1O3vryKr9xveA3fnqYnskbdW') {
-                imgProduct = `<img src="{{ url_for('static', filename='img/manager.svg') }}" class="filter-green" width="100%" />`;
-              } else if (priceId === 'price_1O3vq1Kr9xveA3fnavSwPRzO') {
-                imgProduct = `<img src="{{ url_for('static', filename='img/player.svg') }}" class="filter-green" width="100%" />`;
-              }
-              
-              subscriptionHTML += `
-                <div class="col-sm-12">
-                  <div class="product-card">
-                    <h4 style="font-size: 80%;line-height:86%;padding:0px;margin-top:10px;">My current subscription</h4>
-                    ${imgProduct}
-                    <form method="post" action="{{ url_for('auth.cancel_subscription') }}" onsubmit="return confirm('Are you sure you want to cancel your subscription?');">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <input type="hidden" name="subscription_id" value="${customerId}">
-                      <input type="hidden" name="product_id" value="${firstItem.price.product}">
-                      <button id="cancelsubscription" class="btn-reverse" type="submit" style="cursor: pointer;margin-left: 0px;margin-right: 5px;">Cancel Subscription</button>
-                    </form>
-                  </div>
-                </div>
-            `;
-
-              currentSubscriptionContainer.innerHTML = subscriptionHTML;
-            } else {
-
-              pricingTemplateContent.style.display = 'block';
-              //adddata.style.display = 'none';
-            }
-          } else {
-            // No subscription found, show the pricing template
-            pricingTemplateContent.style.display = 'block';
-            adddata.style.display = 'none';
-          }
-            // Render invoices
-            
-            let invoiceHTML = '';
-            data.invoices.forEach(invoice => {
-              invoiceHTML += `<table border="1" cellpadding="5" cellspacing="0" class="d-flex justify-content-center align-items-center">`;
-              if (invoice.lines && invoice.lines.data) {
-                invoice.lines.data.forEach(item => {
-                  invoiceHTML += `<tr class="table-row">
-                                      <td style="width:34%; text-align: left; margin: 4px; padding: 8px; border-radius: 20px 0 0 20px;">
-                                          ${item.description.split('×')[1].split('(')[0].trim()}
-                                      </td>
-                                      <td style="width:28%; text-align:center; margin:4px; padding: 8px;">
-                                          ${new Date(invoice.created * 1000).toLocaleDateString()}
-                                      </td>
-                                      <td style="width:28%; text-align:right; margin: 4px; padding: 8px;">
-                                          ${(item.amount / 100).toFixed(2)} €
-                                      </td>
-                                      <td style="width:20%; text-align:center; margin-right: 8px; padding-right: 8px; border-radius: 0 20px 20px 0;">
-                                          <a href="users/download_invoice/${invoice.id}" title="download invoice"><i class="fas fa-download"></i></a>
-                                      </td>
-                                    </tr>`;
-                });
-              } else {
-                invoiceHTML += `<tr><td colspan="4">No line items found for this invoice.</td></tr>`;
-              }
-              invoiceHTML += `</table>`;
-            });
-            invoiceContainer.innerHTML = invoiceHTML;
-
-            // Render payment methods
-            let paymentMethodsHTML = `<table class="table table-bordered"><tbody>`;
-
-            data.payment_methods.forEach(method => {
-              let cardIcon = `<i style="font-size: 163%;" class="fas fa-credit-card"></i>`;
-              if (method.card.brand === 'visa') {
-                cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-visa"></i>`;
-              } else if (method.card.brand === 'mastercard') {
-                cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-mastercard"></i>`;
-              } else if (method.card.brand === 'amex') {
-                cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-amex"></i>`;
-              } else if (method.card.brand === 'discover') {
-                cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-discover"></i>`;
-              }
-
-              paymentMethodsHTML += `<tr class="d-flex justify-content-between align-items-center">
-                                      <td>${cardIcon}</td>
-                                      <td>.... ${method.card.last4}</td>
-                                      <td>${method.card.exp_month}/${method.card.exp_year}</td>
-                                      <td><a href="#" onclick="deletePaymentMethod('${method.id}')"><i class="fas fa-trash-alt"></i></a></td>
-                                  </tr>`;
-            });
-
-            paymentMethodsHTML += `</tbody></table>`;
-            
-            paymentMethodsContainer.innerHTML = paymentMethodsHTML;
-
-        })
-        .catch(error => {
-          console.error('Error loading data:', error);
-          document.getElementById('pricing-template-content').style.display = 'block'; // Show error message
-        });
-    }
-
-    // Function to delete payment method
-    window.deletePaymentMethod = function (paymentMethodId) {
-      fetch('{{ url_for("auth.delete_payment_method") }}', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': '{{ csrf_token() }}'
-        },
-        body: JSON.stringify({ 'payment_method_id': paymentMethodId })
-      })
       .then(response => {
         if (!response.ok) {
           throw new Error('HTTP error! Status: ' + response.status);
@@ -322,21 +232,183 @@ input:checked + .slider:before {
         return response.json();
       })
       .then(data => {
-        if (data.success) {
-          console.log('Payment method deleted successfully');
-          fetchStripeData(); // Refresh the payment methods list
-        } else {
-          console.error('Error deleting payment method:', data.error);
+        const subscriptionContainer = document.getElementById('subscription-container');
+        const adddata = document.getElementById('adddata');
+        const invoiceContainer = document.getElementById('invoice-container');
+        const paymentMethodsContainer = document.getElementById('payment-methods-container');
+        const currentSubscriptionContainer = document.getElementById('current-subscription-container');
+        const pricingTemplateContent = document.getElementById('pricing-template-content');
+
+        if (!data.payment_methods){
+        paymentMethodsContainer.innerText='NO Data';
         }
+        // Check if elements exist before manipulating
+        if (!subscriptionContainer || !invoiceContainer || !paymentMethodsContainer || !currentSubscriptionContainer) {
+          console.error('One or more required elements are missing.');
+         return;
+        }
+
+        let subscriptionHTML = '';
+        let imgProduct = '';
+        
+        if (data.error) {
+          invoiceContainer.innerHTML = `<p>${data.error}</p>`;
+          paymentMethodsContainer.innerHTML = `<p>${data.error}</p>`;
+          pricingTemplateContent.style.display = 'block';
+          adddata.style.display = 'none';
+          return;
+        }
+
+        if (data.subscriptions && data.subscriptions.length > 0 || data.subscriptions && data.subscriptions.length == 0)  {
+          const subscriptionData = data.subscriptions;
+          const firstSubscription = subscriptionData[0];
+
+          if (firstSubscription && firstSubscription.items && firstSubscription.items.data.length > 0) {
+            const firstItem = firstSubscription.items.data[0];
+            const customerId = firstSubscription.customer;
+            const priceId = firstItem.price.id;
+            
+            if (priceId === 'price_1O3vryKr9xveA3fnqYnskbdW') {
+              imgProduct = `<img src="{{ url_for('static', filename='img/manager.svg') }}" class="filter-green" width="100%" />`;
+            } else if (priceId === 'price_1O3vq1Kr9xveA3fnavSwPRzO') {
+              imgProduct = `<img src="{{ url_for('static', filename='img/player.svg') }}" class="filter-green" width="100%" />`;
+            }
+            
+            subscriptionHTML += `
+              <div class="col-sm-12">
+                <div class="product-card">
+                  <h4 style="font-size: 80%;line-height:86%;padding:0px;margin-top:10px;">My current subscription</h4>
+                  ${imgProduct}
+                  <form method="post" action="{{ url_for('auth.cancel_subscription') }}" onsubmit="return confirm('Are you sure you want to cancel your subscription?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="subscription_id" value="${customerId}">
+                    <input type="hidden" name="product_id" value="${firstItem.price.product}">
+                    <button id="cancelsubscription" class="btn-reverse" type="submit" style="cursor: pointer;margin-left: 0px;margin-right: 5px;">Cancel Subscription</button>
+                  </form>
+                </div>
+              </div>
+          `;
+
+            currentSubscriptionContainer.innerHTML = subscriptionHTML;
+          } else {
+
+            pricingTemplateContent.style.display = 'block';
+            //adddata.style.display = 'none';
+          }
+        } else {
+          // No subscription found, show the pricing template
+          pricingTemplateContent.style.display = 'block';
+          adddata.style.display = 'none';
+        }
+          // Render invoices
+          
+          let invoiceHTML = '';
+          data.invoices.forEach(invoice => {
+            invoiceHTML += `<table border="1" cellpadding="5" cellspacing="0" class="d-flex justify-content-center align-items-center">`;
+            if (invoice.lines && invoice.lines.data) {
+              invoice.lines.data.forEach(item => {
+                invoiceHTML += `<tr class="table-row">
+                                    <td style="width:34%; text-align: left; margin: 4px; padding: 8px; border-radius: 20px 0 0 20px;">
+                                        ${item.description.split('×')[1].split('(')[0].trim()}
+                                    </td>
+                                    <td style="width:28%; text-align:center; margin:4px; padding: 8px;">
+                                        ${new Date(invoice.created * 1000).toLocaleDateString()}
+                                    </td>
+                                    <td style="width:28%; text-align:right; margin: 4px; padding: 8px;">
+                                        ${(item.amount / 100).toFixed(2)} €
+                                    </td>
+                                    <td style="width:20%; text-align:center; margin-right: 8px; padding-right: 8px; border-radius: 0 20px 20px 0;">
+                                        <a href="users/download_invoice/${invoice.id}" title="download invoice"><i class="fas fa-download"></i></a>
+                                    </td>
+                                  </tr>`;
+              });
+            } else {
+              invoiceHTML += `<tr><td colspan="4">No line items found for this invoice.</td></tr>`;
+            }
+            invoiceHTML += `</table>`;
+          });
+          invoiceContainer.innerHTML = invoiceHTML;
+
+          // Render payment methods
+          let paymentMethodsHTML = `<table class="table table-bordered"><tbody>`;
+
+          data.payment_methods.forEach(method => {
+            let cardIcon = `<i style="font-size: 163%;" class="fas fa-credit-card"></i>`;
+            if (method.card.brand === 'visa') {
+              cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-visa"></i>`;
+            } else if (method.card.brand === 'mastercard') {
+              cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-mastercard"></i>`;
+            } else if (method.card.brand === 'amex') {
+              cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-amex"></i>`;
+            } else if (method.card.brand === 'discover') {
+              cardIcon = `<i style="font-size: 163%;" class="fab fa-cc-discover"></i>`;
+            }
+
+            paymentMethodsHTML += `<tr class="d-flex justify-content-between align-items-center">
+                                    <td>${cardIcon}</td>
+                                    <td>.... ${method.card.last4}</td>
+                                    <td>${method.card.exp_month}/${method.card.exp_year}</td>
+                                    <td><a href="#" onclick="deletePaymentMethod('${method.id}')"><i class="fas fa-trash-alt"></i></a></td>
+                                </tr>`;
+          });
+
+          paymentMethodsHTML += `</tbody></table>`;
+          
+          paymentMethodsContainer.innerHTML = paymentMethodsHTML;
+
       })
       .catch(error => {
-        console.error('Error deleting payment method:', error);
+        console.error('Error loading data:', error);
+        document.getElementById('pricing-template-content').style.display = 'block'; // Show error message
       });
     }
 
     fetchStripeData(); // Initial fetch
   });
-</script>
 
+  // Toggle visibility with slide effect
+  function toggleSlide(element) {
+    if (element.classList.contains('open')) {
+      element.classList.remove('open');
+    } else {
+      element.classList.add('open');
+    }
+  }
+
+  document.getElementById('toggle_button').addEventListener('click', function() {
+    // Toggle for multiple containers
+
+    var sub_container = document.getElementById('sub-container');
+    var subs_icon = document.getElementById('subs_icon');
+
+    toggleSlide(sub_container);
+
+
+    if (sub_container.classList.contains('open')) {
+      subs_icon.classList.remove('fa-edit');
+      subs_icon.classList.add('fa-times'); // Zmení ikonu na "close"
+    } else {
+      subs_icon.classList.remove('fa-times');
+      subs_icon.classList.add('fa-edit'); // Zmení ikonu späť na "edit"
+    }
+  });
+
+  document.getElementById('edit_button').addEventListener('click', function() {
+    var editForm = document.getElementById('edit_form');
+    var editIcon = document.getElementById('edit_icon');
+
+    // Toggle form visibility with slide effect
+    toggleSlide(editForm);
+
+    // Change icon
+    if (editForm.classList.contains('open')) {
+      editIcon.classList.remove('fa-edit');
+      editIcon.classList.add('fa-times'); // Zmení ikonu na "close"
+    } else {
+      editIcon.classList.remove('fa-times');
+      editIcon.classList.add('fa-edit'); // Zmení ikonu späť na "edit"
+    }
+  });
+  </script>
 
 {% endblock %}

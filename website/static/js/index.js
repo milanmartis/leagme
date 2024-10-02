@@ -107,7 +107,7 @@ async function subscribeToPushNotifications() {
                 const deviceInfo = getDeviceInfo();
 
                 // Send subscription data to backend
-                alert(subscription.endpoint);
+               // alert(subscription.endpoint);
                 const response = await fetch('/subscribe', {
                     method: 'POST',
                     body: JSON.stringify({ 
@@ -154,23 +154,32 @@ function urlBase64ToUint8Array(base64String) {
 
 
 async function unsubscribeFromPushNotifications() {
+    // alert('unsub');
+
+    // const current_user =  current_user;
     
     try {
-        const serviceWorkerRegistration = await navigator.serviceWorker.ready;
-        const subscription = await serviceWorkerRegistration.pushManager.getSubscription();
+        // const serviceWorkerRegistration = await navigator.serviceWorker.ready;
+        // const subscription = await serviceWorkerRegistration.pushManager.getSubscription();
   
-        if (subscription) {
-            await subscription.unsubscribe();
-            console.log('User is unsubscribed.');
+        // if (subscription) {
+        //     await subscription.unsubscribe();
+        //     console.log('User is unsubscribed.');
   
             // Odošleme požiadavku na backend na vymazanie subscription z databázy
+            const deviceInfo = getDeviceInfo();
             fetch('/unsubscribe', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': csrfToken  // Ak používaš CSRF ochranu
                 },
-                body: JSON.stringify({ endpoint: subscription.endpoint })
+                body: JSON.stringify({ 
+                    user_id:  current_user,
+                    device_type: deviceInfo.deviceType,
+                    operating_system: deviceInfo.operatingSystem,
+                    browser_name: deviceInfo.browserName
+                })
             })
             .then(response => response.json())
             .then(data => {
@@ -179,9 +188,7 @@ async function unsubscribeFromPushNotifications() {
             .catch(error => {
                 console.error('Error unsubscribing on server:', error);
             });
-        } else {
-            console.log('No subscription found to unsubscribe.');
-        }
+
     } catch (error) {
         console.error('Failed to unsubscribe the user:', error);
     }
@@ -201,25 +208,28 @@ async function unsubscribeFromPushNotifications() {
   // Funkcia na kontrolu stavu predplatného
   async function checkSubscriptionStatus() {
     try {
-        const serviceWorkerRegistration = await navigator.serviceWorker.ready;
-        const subscription = await serviceWorkerRegistration.pushManager.getSubscription();
+        // const serviceWorkerRegistration = await navigator.serviceWorker.ready;
+        // const subscription = await serviceWorkerRegistration.pushManager.getSubscription();
+        // alert(subscription);
   
-        if (subscription) {
+        // if (subscription) {
             // Načítanie stavu predplatného z backendu
           //  alert('zle');
-            const response = await fetch(`/check-subscription?endpoint=${subscription.endpoint}`);
+            const deviceInfo = getDeviceInfo();
+            const response = await fetch(`/check-subscription?device_type=${deviceInfo.deviceType}&operating_system=${deviceInfo.operatingSystem}&browser_name=${deviceInfo.browserName}&user_id=${current_user}`);
             const data = await response.json();
+            // alert(data.subscribed);
   
             if (data.subscribed) {
                 // Ak je používateľ už predplatený, nastav tlačidlo na zapnuté
                 document.getElementById('enableNotificationsToggle').checked = true;
             } else {
-                // Ak nie je predplatený, nastav tlačidlo na vypnuté
                 document.getElementById('enableNotificationsToggle').checked = false;
+                // Ak nie je predplatený, nastav tlačidlo na vypnuté
             }
-        } else {
-            document.getElementById('enableNotificationsToggle').checked = false;
-        }
+        // } else {
+            // document.getElementById('enableNotificationsToggle').checked = false;
+        // }
     } catch (error) {
         console.error('Error checking subscription status:', error);
     }
