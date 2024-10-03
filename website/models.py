@@ -64,6 +64,8 @@ class User(db.Model, fsqla.FsUserMixin):
     username = db.Column(db.String(64))
     google_id = db.Column(db.String(100), unique=True)
     # messages = db.relationship('Message', backref='user')
+    phone_number = db.Column(db.String(20), nullable=True)  # Pridaný stĺpec pre telefónne číslo
+
     orderz = db.Column(db.Integer)
     notes = db.relationship('Note')
     seasony = db.relationship('Season', secondary=user_season, backref=db.backref('seasons'))
@@ -90,6 +92,7 @@ class User(db.Model, fsqla.FsUserMixin):
     us_totp_secrets = db.Column(db.String(256), nullable=True)
     create_datetime = db.Column(db.DateTime, default=func.now())
     update_datetime = db.Column(db.DateTime, default=func.now(), onupdate=func.now())
+    billing_info = db.relationship('BillingInfo', backref='user', uselist=False)
 
     def get_reset_token(self):
         s = Serializer(current_app.config['SECRET_KEY'])
@@ -320,7 +323,23 @@ class PushSubscription(db.Model):
 
 
 
+class BillingInfo(db.Model):
+    __tablename__ = 'billing_info'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    full_name = db.Column(db.String(255), nullable=False)
+    billing_address = db.Column(db.String(255), nullable=False)
+    city = db.Column(db.String(100), nullable=False)
+    postal_code = db.Column(db.String(20), nullable=False)
+    country = db.Column(db.String(100), nullable=False)
+    company_name = db.Column(db.String(255))
+    vat_number = db.Column(db.String(50))
+    created_at = db.Column(db.DateTime, default=func.now())
+    updated_at = db.Column(db.DateTime, default=func.now(), onupdate=func.now())
 
+    def __repr__(self):
+        return f'<BillingInfo {self.billing_address}, {self.city}>'
 
 
 

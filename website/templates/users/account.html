@@ -6,6 +6,23 @@
 <br />
 <style scoped>
   /* The switch - the box around the slider */
+  #country{
+    border-radius: 14px !important;
+  background-color: transparent;
+  border: 1px solid #00EE00;
+  color: #00EE00;
+  font-size: 100%;
+  text-align: center;
+    background-color: #030303;
+
+    cursor:pointer;
+}
+
+.btn-green {
+  background-color: #00EE00 !important;
+  color: #212529 !important;
+}
+
 .switch {
   display: flex;
   align-items: center;
@@ -61,8 +78,9 @@ input:checked + .slider:before {
 
 .switch-text {
   margin-left: 55px;
-  font-size: 14px;
+  font-size: 12px;
   margin-bottom: 2px;
+  color: #00EE00;
 }
 
 /* Moderné slide animácie */
@@ -74,10 +92,17 @@ input:checked + .slider:before {
 }
 
 .slide-container.open {
-  max-height: 500px; /* Nastav maximálnu výšku podľa obsahu */
+  max-height: 1000px; /* Nastav maximálnu výšku podľa obsahu */
   opacity: 1;
 }
 
+label{
+  margin-top: 5px;
+  margin-bottom: -5px;
+  font-size: small;
+  text-align: center;
+  color:#016601;
+}
 </style>
 
 <div class="container readinglazy" align="center">
@@ -85,105 +110,234 @@ input:checked + .slider:before {
     <div valign="middle" align="center" class="col-12">
       <img src="{{ url_for('static', filename='img/my-account.svg') }}" width="250" class="filter-green" />
     </div>
-    <br><br>
-
+    <br>
+    <h1 style="margin-top:-15px;margin-bottom:15px;">
+      <p style="font-size: 60%;font-weight:500;opacity:0.68;margin-bottom:0px;">
+      User Id
+      </p>
+      {{user.email }}
+    </h1>
+    <br>
     <!-- Zobrazenie mena a ikony edit -->
-    <div id="name_display" style="display: flex; align-items: center;">
-      <h4 style="width: 100%;" id="display_name">Personal details</h4>
-      <a href="#" id="edit_button" style="border: none; background: none; cursor: pointer; margin-left: 10px;">
-        <i class="fas fa-edit" id="edit_icon" style="font-size: 22px;"></i>
-      </a>
-    </div>
+    <button class="btn btn" id="edit_button">
+      Personal details
+        <i class="fas fa-edit" id="edit_icon" style="font-size: 18px; float: right; padding-right: 11px;padding-top: 1px;"></i>
+    </button>
 
     <!-- Formulár je na začiatku skrytý -->
     <form id="edit_form" method="POST" action="{{ url_for('auth.user_details') }}" class="slide-container">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group">
         <input type="hidden" id="useride" name="useride" value="{{user.id}}" />
+        
+        <!-- Meno používateľa 
+        <label for="first_name_update">First Name</label>-->
         <input
           type="text"
           class="form-control"
-          autocomplete="off"
-          maxlength="10"
           id="first_name_update"
           name="first_name_update"
           placeholder="Nick name"
           value="{{ user.first_name }}"
         />
+    
+        <!-- Telefónne číslo
+        <label for="phone_number_update">Phone Number</label> -->
         <input
           type="text"
           class="form-control"
-          autocomplete="off"
-          maxlength="10"
+          id="phone_number_update"
+          name="phone_number_update"
+          placeholder="Phone number"
+          value="{{ user.phone_number }}"
+        />
+    
+        <!-- Plné meno (BillingInfo) 
+        <label for="full_name_update">Full Name</label>-->
+        <input
+          type="text"
+          class="form-control"
           id="full_name_update"
           name="full_name_update"
           placeholder="Full name"
-          value="{{ user.full_name }}"
+          value="{{ billing_info.full_name if billing_info else '' }}"
         />
+    
+        <!-- Adresa (BillingInfo)
+        <label for="address_update">Billing Address</label> -->
         <input
           type="text"
           class="form-control"
-          autocomplete="off"
-          maxlength="10"
           id="address_update"
           name="address_update"
           placeholder="Billing Address"
-          value="{{ user.billing_address }}"
-        />
+          value="{{ billing_info.billing_address if billing_info else '' }}"
+          />
+          <!-- PSČ (BillingInfo) 
+          <label for="postal_code_update">Postal Code</label>-->
+          <input
+            type="text"
+            class="form-control"
+            id="postal_code_update"
+            name="postal_code_update"
+            placeholder="Postal Code"
+            value="{{ billing_info.postal_code if billing_info else '' }}"
+          />
+    
+        <!-- Mesto (BillingInfo) 
+        <label for="city_update">City</label>-->
         <input
           type="text"
           class="form-control"
-          autocomplete="off"
-          maxlength="10"
+          id="city_update"
+          name="city_update"
+          placeholder="City"
+          value="{{ billing_info.city if billing_info else '' }}"
+        />
+    
+        <!-- Krajina (BillingInfo)
+        <label for="country">Country</label> -->
+        <select style="margin-top: 6px;" id="country" name="country_update" class="form-control country mt-2">
+          <option value="">Select Country</option>
+        </select>
+    
+    
+        <!-- Názov spoločnosti (BillingInfo)
+        <label for="company_update">Company Name</label> -->
+        <input
+          type="text"
+          class="form-control"
           id="company_update"
           name="company_update"
           placeholder="Company name"
-          value="{{ user.company_name }}"
+          value="{{ billing_info.company_name if billing_info else '' }}"
         />
+    
+        <!-- VAT (BillingInfo) 
+        <label for="vat_update">VAT</label>-->
         <input
           type="text"
           class="form-control"
-          autocomplete="off"
-          maxlength="10"
           id="vat_update"
           name="vat_update"
           placeholder="VAT"
-          value="{{ user.vat }}"
+          value="{{ billing_info.vat_number if billing_info else '' }}"
         />
       </div>
-      <br />
-      <button type="submit" id="account_button" class="btn-demo btn-outline-dark btn-block" onclick="javascript:spinner();document.getElementById('account_button').style.color='#00EE00';">
-        SUBMIT
-        <div class="loader">
-          <div class="loading"></div>
-        </div>
-      </button>
-      <br>
-      <br>
-      <br>
-    </form>
-
-    <div id="name_display" style="display: flex; align-items: left;">
-      <h6 style="width: 100%;" id="display_name">Subscription Details</h6>
-      <a href="#" id="toggle_button" style="border: none; background: none; cursor: pointer; margin-left: 10px;">
-        <i class="fas fa-edit" id="subs_icon" style="font-size: 22px;"></i>
-      </a>
-    </div>
-    <br>
     
-   
+      <br />
+      <button type="submit" id="account_button" class="btn-demo btn-outline-dark btn-block">
+        SUBMIT
+      </button>
+      <br><br><br>
+    </form>
+    
+    <script type="text/javascript">
+      // Predvolená krajina načítaná zo servera (napríklad "SK" pre Slovensko)
+      const currentCountryCode = "{{ user_country_code }}"; 
+      
+      fetch('https://restcountries.com/v3.1/all')
+        .then(response => response.json())
+        .then(data => {
+          // Zoradenie krajín podľa ich názvu (common name)
+          data.sort((a, b) => {
+            if (a.name.common < b.name.common) {
+              return -1;
+            }
+            if (a.name.common > b.name.common) {
+              return 1;
+            }
+            return 0;
+          });
+    
+          let select = document.getElementById('country');
+          
+          // Prechádzanie cez zoradené krajiny a pridávanie do select elementu
+          data.forEach(country => {
+            let option = document.createElement('option');
+            option.value = country.cca2; // Používa ISO kód krajiny
+            option.text = country.name.common; // Zobrazí názov krajiny
+            select.add(option);
+          });
+    
+          // Nastavenie predvolenej hodnoty podľa aktuálnej krajiny z databázy
+          select.value = currentCountryCode;
+        })
+        .catch(error => console.error('Error loading countries:', error));
+    
+      // Získanie referencií na inputy
+      const postalCodeInput = document.getElementById('postal_code_update');
+      const countrySelect = document.getElementById('country');
+    
+      // Po zmene krajiny validuj PSC
+      countrySelect.addEventListener('change', function () {
+        let selectedCountry = countrySelect.value;
+    
+        // Príklad formátov pre niektoré krajiny
+        let postalCodePatterns = {
+          "US": "\\d{5}(-\\d{4})?", // USA: 12345 or 12345-6789
+          "CA": "[A-Za-z]\\d[A-Za-z] \\d[A-Za-z]\\d", // Canada: A1A 1A1
+          "GB": "([A-Z]{1,2}\\d{1,2}[A-Z]? \\d[A-Z]{2})", // UK
+          "DE": "\\d{5}", // Germany: 5 digit code
+          "FR": "\\d{5}", // France: 5 digit code
+          "IT": "\\d{5}", // Italy: 5 digit code
+          "AU": "\\d{4}", // Australia: 4 digit code
+          "SK": "\\d{5}", // Slovakia: 5 digit code
+        };
+    
+        // Ak existuje formát pre vybranú krajinu, nastav pattern, inak vymaž pattern
+        if (postalCodePatterns[selectedCountry]) {
+          postalCodeInput.pattern = postalCodePatterns[selectedCountry];
+          postalCodeInput.setAttribute('title', `Postal code must match ${postalCodePatterns[selectedCountry]}`);
+        } else {
+          postalCodeInput.pattern = "";
+          postalCodeInput.removeAttribute('title');
+        }
+      });
+    
+      // Pridanie vlastných chybových správ pre validáciu
+      postalCodeInput.addEventListener('input', function () {
+        if (postalCodeInput.validity.patternMismatch) {
+          // Ak PSC nevyhovuje formátu, zobraz správu
+          postalCodeInput.setCustomValidity('Please enter a valid postal code format for your selected country.');
+        } else {
+          // Ak PSC vyhovuje, zruš chybovú správu
+          postalCodeInput.setCustomValidity('');
+        }
+      });
+    </script>
+    
+  
 
+     
+    <br>
+    <div class="col-sm-12 justify-content-center align-items-center">
+      <label class="switch">
+        <input type="checkbox" id="enableNotificationsToggle">
+        <span class="slider round"></span>
+        <span class="switch-text" id="notif-text-switch">Notifications</span>
+      </label>
+      <h4 style="max-width: 260px;margin-top: 6px;" id="notif-text-switch2">You can set up notifications to receive updates when your match results change or when a new round, in which you are registered, begins.</h4>
+      <br>
+      </div>
+    <div id="subscription-container">
+      <!-- Placeholder for dynamic subscription content -->
+    </div>
+    <div class="col-sm-12" id="current-subscription-container"></div>
+    <button class="btn btn-reverse" id="toggle_button">
+      Payments Details
+        <i class="fas fa-edit" id="subs_icon" style="font-size: 18px; float: right; padding-right: 11px; padding-top: 1px;"></i>
+    </button>
+    <br>
+    <div id="pricing-template-content" style="display: none;">
+      <br>
+     
+      <h3>No Subscription</h3>
+      <h1><a href="{{ url_for('views.pricing_list') }}">Make One</a></h1>
+    </div>
     <div id="sub-container" class="slide-container">
       <div class="col-12 justify-content-center text-center" id="adddata" >
-        <div id="pricing-template-content" style="display: none;">
-          <h3>No Subscription</h3>
-          <h1><a href="{{ url_for('views.pricing_list') }}">Make One</a></h1>
-          <br><br>
-        </div>
-        <div id="subscription-container">
-          <!-- Placeholder for dynamic subscription content -->
-        </div>
-        <div class="col-sm-12" id="current-subscription-container"></div>
+     
         <br>
         <div class="col-sm-12 justify-content-center align-items-center">
           <h4>Stored Payment Methods</h4>
@@ -202,17 +356,9 @@ input:checked + .slider:before {
     </div>
     <br>
     <br>
-    <br>
+  
     
-    <div class="col-sm-12 justify-content-center align-items-center">
-    <label class="switch">
-      <input type="checkbox" id="enableNotificationsToggle">
-      <span class="slider round"></span> 
-      <span class="switch-text">notification</span>
-    </label>
-    <h4 style="max-width: 260px;">Here, you can set up notifications to receive updates when your match results change or when a new round, in which you are registered, begins.</h4>
-    <br>
-    </div>
+
     <h6>
       <a class="btn2 nav-item nav-link" href="{{ url_for('auth.logout') }}">LOGOUT</a>
     </h6>
@@ -283,8 +429,9 @@ input:checked + .slider:before {
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="subscription_id" value="${customerId}">
                     <input type="hidden" name="product_id" value="${firstItem.price.product}">
-                    <button id="cancelsubscription" class="btn-reverse" type="submit" style="cursor: pointer;margin-left: 0px;margin-right: 5px;">Cancel Subscription</button>
-                  </form>
+                    <h4><button id="cancelsubscription" class="btn" type="submit" style="display:none; margin-bottom:20px;cursor: pointer; margin: auto;">Cancel Current Subscription</button></h4>
+                 <br>
+                    </form>
                 </div>
               </div>
           `;
@@ -380,21 +527,25 @@ input:checked + .slider:before {
 
     var sub_container = document.getElementById('sub-container');
     var subs_icon = document.getElementById('subs_icon');
+    var cancelsubscription = document.getElementById('cancelsubscription');
 
     toggleSlide(sub_container);
 
 
     if (sub_container.classList.contains('open')) {
       subs_icon.classList.remove('fa-edit');
+      cancelsubscription.style.display = 'block';
       subs_icon.classList.add('fa-times'); // Zmení ikonu na "close"
     } else {
       subs_icon.classList.remove('fa-times');
+      cancelsubscription.style.display = 'none';
       subs_icon.classList.add('fa-edit'); // Zmení ikonu späť na "edit"
     }
   });
 
   document.getElementById('edit_button').addEventListener('click', function() {
     var editForm = document.getElementById('edit_form');
+    var edit_button = document.getElementById('edit_button');
     var editIcon = document.getElementById('edit_icon');
 
     // Toggle form visibility with slide effect
@@ -403,12 +554,16 @@ input:checked + .slider:before {
     // Change icon
     if (editForm.classList.contains('open')) {
       editIcon.classList.remove('fa-edit');
+      edit_button.classList.add('btn-green');
       editIcon.classList.add('fa-times'); // Zmení ikonu na "close"
     } else {
       editIcon.classList.remove('fa-times');
+      edit_button.classList.remove('btn-green');
       editIcon.classList.add('fa-edit'); // Zmení ikonu späť na "edit"
     }
   });
+
   </script>
+  
 
 {% endblock %}

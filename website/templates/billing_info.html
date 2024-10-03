@@ -1,0 +1,58 @@
+{% block content %}
+<div class="container">
+    <h2 class="mt-4">Billing Information</h2>
+    <form method="POST" action="{{ url_for('views.billing_info') }}">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.billing_address.label(class="form-label") }}
+            {{ form.billing_address(class="form-control") }}
+            {% for error in form.billing_address.errors %}
+                <small class="form-text text-danger">{{ error }}</small>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.city.label(class="form-label") }}
+            {{ form.city(class="form-control") }}
+            {% for error in form.city.errors %}
+                <small class="form-text text-danger">{{ error }}</small>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.postal_code.label(class="form-label") }}
+            {{ form.postal_code(class="form-control") }}
+            {% for error in form.postal_code.errors %}
+                <small class="form-text text-danger">{{ error }}</small>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.country.label(class="form-label") }}
+            {{ form.country(class="form-control") }}
+            {% for error in form.country.errors %}
+                <small class="form-text text-danger">{{ error }}</small>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.company_name.label(class="form-label") }}
+            {{ form.company_name(class="form-control") }}
+            {% for error in form.company_name.errors %}
+                <small class="form-text text-danger">{{ error }}</small>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.vat_number.label(class="form-label") }}
+            {{ form.vat_number(class="form-control") }}
+            {% for error in form.vat_number.errors %}
+                <small class="form-text text-danger">{{ error }}</small>
+            {% endfor %}
+        </div>
+
+        <button type="submit" class="btn btn-primary">{{ form.submit.label }}</button>
+    </form>
+</div>
+{% endblock %}

@@ -310,6 +310,7 @@ def create_app():
         device_type = request.args.get('device_type')
         operating_system = request.args.get('operating_system')
         browser_name = request.args.get('browser_name')
+        print(browser_name)
 
         if not user_id:
             return jsonify({'error': 'Žiadny user nebol najdeny.'}), 400
@@ -321,6 +322,7 @@ def create_app():
             operating_system=operating_system,
             browser_name=browser_name
         ).first()
+        print(existing_subscription)
 
         if existing_subscription:
             return jsonify({'subscribed': True}), 200

@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, session, current_app, jsonify, send_file
-from .models import User, Season, PaymentCard, Product, Order, PaymentMethod, Role
+from .models import User, Season, PaymentCard, Product, Order, PaymentMethod, Role, BillingInfo
 from . import db, bcrypt, argon2
 from flask_login import login_user, login_required, logout_user, current_user
 from flask_security.utils import login_user  # Importujte správne login_user z Flask-Security-too
@@ -9,6 +9,9 @@ from flask_security import current_user, Security, SQLAlchemyUserDatastore, role
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import InputRequired, Length, ValidationError, DataRequired, Email, EqualTo, StopValidation
+from wtforms import StringField, PasswordField, SubmitField, BooleanField, SelectField, SelectMultipleField, IntegerField, RadioField, TextAreaField
+from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, StopValidation, NumberRange, Optional
+from wtforms import DateField, DateTimeField, DateTimeLocalField, Form
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_dance.contrib.google import make_google_blueprint, google
 from flask_dance.consumer import oauth_authorized
@@ -696,45 +699,142 @@ def download_invoice(invoice_id):
         return f"An error occurred: {str(e)}"
 
 
+import re
+
+def validate_vat_number(vat_number, country):
+    vat_patterns = {
+        "SK": r'^SK\d{10}$',  # Slovensko: SK + 10 číslic
+        "DE": r'^DE\d{9}$',   # Nemecko: DE + 9 číslic
+        "FR": r'^FR[A-HJ-NP-Z0-9]{2}\d{9}$',  # Francúzsko
+        "IT": r'^IT\d{11}$',  # Taliansko: IT + 11 číslic
+        # Tu môžete pridať ďalšie krajiny s ich príslušnými vzormi
+    }
+
+    pattern = vat_patterns.get(country)
+    if pattern:
+        return re.match(pattern, vat_number) is not None
+    return False  # Ak neexistuje vzor pre danú krajinu, považuje sa za neplatné
+
 
 
 @celery.task
 @auth.route('/account', methods=['GET', 'POST'])
 @login_required
 def user_details():
+    form = BillingInfoForm()
+
     if request.method == 'POST':
         useride = request.form.get('useride')
         first_name = request.form.get('first_name_update')
-        password_old = request.form.get('password_old')
-        password1 = request.form.get('password1')
-        password2 = request.form.get('password2')
-        
-        user = User.query.get(useride)
-        nickname = User.query.filter(User.first_name.like(first_name)).filter(User.first_name.notlike(current_user.first_name)).first()
+        phone_number = request.form.get('phone_number_update')
+        full_name = request.form.get('full_name_update')
+        billing_address = request.form.get('address_update')
+        company_name = request.form.get('company_update')
+        vat_number = request.form.get('vat_update')
+        city = request.form.get('city_update')
+        postal_code = request.form.get('postal_code_update')
+        country = request.form.get('country_update')
 
-        print(current_user.first_name)
+        user = User.query.get(useride)
         
         if not user:
             flash('This user doesn\'t exist.', category='error')
         elif len(first_name) < 2:
             flash("First Name must be greater than 1 chars", category="error")
-        elif nickname:
-            flash("User name already exists.", category="error")
         else:
+            # Aktualizácia údajov o používateľovi
             user.first_name = first_name
-            session["user_name"] = first_name
+            user.phone_number = phone_number
+            
+            # Aktualizácia údajov o fakturácii
+            billing_info = BillingInfo.query.filter_by(customer_id=user.id).first()
+            if not billing_info:
+                billing_info = BillingInfo(
+                    customer_id=user.id,
+                    full_name=full_name,
+                    billing_address=billing_address,
+                    city=city,
+                    postal_code=postal_code,
+                    country=country,
+                    company_name=company_name,
+                    vat_number=vat_number
+                )
+                db.session.add(billing_info)
+            else:
+                billing_info.full_name = full_name
+                billing_info.billing_address = billing_address
+                billing_info.city = city
+                billing_info.postal_code = postal_code
+                billing_info.country = country
+                billing_info.company_name = company_name
+                billing_info.vat_number = vat_number
+
+            # Overenie DIČ (VAT) čísla, ak je zadané
+            if vat_number and not validate_vat_number(vat_number, country):
+                flash("Invalid VAT number format for the selected country.", category="error")
+                return redirect(url_for('auth.user_details'))
+
+            # Aktualizácia údajov v Stripe, ak má používateľ Stripe Customer ID
+            if user.stripe_subscription_id:
+                try:
+                    stripe.Customer.modify(
+                        user.stripe_subscription_id,
+                        name=full_name,
+                        phone=phone_number,
+                        address={
+                            "line1": billing_address,
+                            "city": city,
+                            "postal_code": postal_code,
+                            "country": country
+                        },
+                        # shipping={
+                        #     "name": full_name,
+                        #     "address": {
+                        #         "line1": billing_address,
+                        #         "city": city,
+                        #         "postal_code": postal_code,
+                        #         "country": country
+                        #     }
+                        # },
+                        metadata={
+                            "company_name": company_name,  # Pridanie názvu firmy do metadata
+                            "vat_number": vat_number
+                        },
+                        tax_exempt="none",
+                        tax_id_data=[{
+                            "type": "eu_vat",
+                            "value": vat_number,
+                        }] if vat_number else []
+                    )
+                except stripe.error.StripeError as e:
+                    flash(f"Error updating Stripe customer: {e.user_message}", category="error")
+
             db.session.commit()
             login_user(user, remember=True)
 
             flash("Account updated!", category="success")
             return redirect(url_for('auth.user_details'))
 
-    # Stránka sa načíta bez Stripe dát
-    cards = PaymentCard.query.filter(PaymentCard.user_id==current_user.id).all()
-    products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
-    orders = Order.query.filter(Order.user_id==current_user.id).all()
+    billing_info = BillingInfo.query.filter_by(customer_id=current_user.id).first()
+    cards = PaymentCard.query.filter(PaymentCard.user_id == current_user.id).all()
+    products = Product.query.filter(Product.is_visible == True).order_by(Product.id.asc()).all()
+    orders = Order.query.filter(Order.user_id == current_user.id).all()
 
-    return render_template("users/account.html", checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), vapid_public_key=vapid_public_key , user=current_user, cards=cards, products=products, orders=orders)
+    return render_template(
+        "users/account.html", 
+        checkout_public_key=os.environ.get("STRIPE_PUBLIC_KEY"), 
+        vapid_public_key=vapid_public_key, 
+        user=current_user, 
+        cards=cards, 
+        products=products, 
+        orders=orders, 
+        billing_info=billing_info, 
+        form=form, 
+        user_country_code=billing_info.country if billing_info else ''
+    )
+
+
+
 
 @auth.route('/delete_payment_method', methods=['POST'])
 @login_required
@@ -752,7 +852,7 @@ def delete_payment_method():
 @auth.route('/account/stripe_data', methods=['GET'])
 @login_required
 def get_stripe_data():
-    customer_id = current_user.stripe_subscription_id  # Predpokladám, že máte stripe_customer_id uložené v používateľskom objekte
+    customer_id = current_user.stripe_subscription_id  # Predpokladám, že máte stripe_customer_id alias stripe_subscription_id uložené v používateľskom objekte
     # print(customer_id)
     if not customer_id:
         print("No Stripe subscription ID found for the user.")
@@ -836,3 +936,13 @@ def user_stats():
 
 
         return render_template("users/my-stats.html", user=current_user)
+
+
+class BillingInfoForm(FlaskForm):
+    billing_address = StringField('Billing Address', validators=[DataRequired(), Length(max=255)])
+    city = StringField('City', validators=[DataRequired(), Length(max=100)])
+    postal_code = StringField('Postal Code', validators=[DataRequired(), Length(max=20)])
+    country = StringField('Country', validators=[DataRequired(), Length(max=100)])
+    company_name = StringField('Company Name', validators=[Optional(), Length(max=255)])
+    vat_number = StringField('VAT Number', validators=[Optional(), Length(max=50)])
+    submit = SubmitField('Submit')

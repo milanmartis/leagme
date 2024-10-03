@@ -4,7 +4,7 @@ from flask_security import roles_required
 import os
 from dotenv import load_dotenv
 load_dotenv()
-from .models import Note, User, Duel, Place, OpeningHours, Season, Groupz, Round, Product, Order, user_duel, user_group, user_season, PaymentCard
+from .models import Note, User, Duel, Place, OpeningHours, Season, Groupz, Round, Product, Order, user_duel, user_group, user_season, PaymentCard, BillingInfo
 from .models import PushSubscription
 from pywebpush import webpush, WebPushException
 from . import db, current_app
@@ -790,9 +790,9 @@ def update_duel2():
         subscriptions = PushSubscription.query.filter(
             and_(
                 or_(PushSubscription.user_id == int(data[2]), PushSubscription.user_id == int(data[5])),
-                PushSubscription.user_id != current_user.id
+                PushSubscription.user_id != current_user.id  # Exclude current user
             )
-        ).all()  # Použijeme first(), pretože očakávate iba jeden výsledok
+        ).all()
         print(int(data[5]))
 
         notification_payload = {
@@ -2018,10 +2018,7 @@ def create_new_season(season):
 
     db.session.commit()
     
-    
-    
-    
-    
+
     
     
 #################### FIRE BASE ###########################
@@ -2116,3 +2113,5 @@ class NewPlace(FlaskForm):
     coordinates = StringField('Coordinates', validators=[Optional(), Length(max=100)])
 
     submit = SubmitField('Submit')
+    
+    

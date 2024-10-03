@@ -195,18 +195,44 @@ async function unsubscribeFromPushNotifications() {
   }
   
   
-  
   document.getElementById('enableNotificationsToggle').addEventListener('change', async (event) => {
+    const notifTextSwitch = document.getElementById('notif-text-switch');
+    const notifTextSwitch2 = document.getElementById('notif-text-switch2');
+    
+    // Nastav opacity na zníženie viditeľnosti pri spracovaní
+   // notifTextSwitch.style.opacity = '0.3';
+    
     if (event.target.checked) {
-        await subscribeToPushNotifications();
+      try {
+        await subscribeToPushNotifications();  // Funkcia na prihlásenie k odberu
+       // notifTextSwitch.textContent = 'Notifications enabled';
+        notifTextSwitch.style.opacity = '0.4';
+        notifTextSwitch2.style.opacity = '0.4';
+
+      } catch (error) {
+        console.error('Error subscribing to notifications:', error);
+      }
     } else {
-        await unsubscribeFromPushNotifications();  // Funkcia na odhlásenie
+      try {
+        await unsubscribeFromPushNotifications();  // Funkcia na odhlásenie z odberu
+        notifTextSwitch.style.opacity = '1';
+        notifTextSwitch2.style.opacity = '1';
+
+      } catch (error) {
+        console.error('Error unsubscribing from notifications:', error);
+      }
     }
+  
+    // Po spracovaní obnov opacity na plnú viditeľnosť
+   // notifTextSwitch.style.opacity = '1';
   });
   
   
   // Funkcia na kontrolu stavu predplatného
   async function checkSubscriptionStatus() {
+    const notifTextSwitch = document.getElementById('notif-text-switch');
+    const notifTextSwitch2 = document.getElementById('notif-text-switch2');
+
     try {
         // const serviceWorkerRegistration = await navigator.serviceWorker.ready;
         // const subscription = await serviceWorkerRegistration.pushManager.getSubscription();
@@ -222,9 +248,14 @@ async function unsubscribeFromPushNotifications() {
   
             if (data.subscribed) {
                 // Ak je používateľ už predplatený, nastav tlačidlo na zapnuté
+
                 document.getElementById('enableNotificationsToggle').checked = true;
+                notifTextSwitch.style.opacity = '0.4';
+                notifTextSwitch2.style.opacity = '0.4';
             } else {
                 document.getElementById('enableNotificationsToggle').checked = false;
+                notifTextSwitch.style.opacity = '1';
+                notifTextSwitch2.style.opacity = '1';
                 // Ak nie je predplatený, nastav tlačidlo na vypnuté
             }
         // } else {
