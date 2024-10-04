@@ -1204,60 +1204,91 @@ def generate_unique_slug(session, name):
     slug = slugify(name)
     return slug
 
+
 @views.route('/place/new', methods=['GET', 'POST'])
+@views.route('/place/<int:place_id>/edit', methods=['GET', 'POST'])
 @login_required
-def new_place():
-    form = NewPlace()  # Initialize the form without data
+def new_or_edit_place(place_id=None):
+    place = Place.query.get(place_id) if place_id else None
+    form = NewPlace(obj=place)
+
+    # Get existing opening hours for the place
+    opening_hours = OpeningHours.query.filter_by(place_id=place.id).all() if place else []
+
+    opening_hours_data = [
+        {
+            'day_of_week': oh.day_of_week,
+            'open_time': oh.open_time.strftime('%H:%M'),
+            'close_time': oh.close_time.strftime('%H:%M')
+        }
+        for oh in opening_hours
+    ]
 
     if request.method == 'POST':
         if form.validate_on_submit():
-            # Create a slug from the place name
-            slug = generate_unique_slug(db.session, form.name.data)
-            
-            # Check if slug already exists in the database
-            existing_place = Place.query.filter_by(slug=slug).first()
-            if existing_place:
-                flash('Place with this name already exists', 'error')
-                return render_template('place_create.html', vapid_public_key=vapid_public_key, form=form, head='new-place', title='Create New Place', user=current_user)
+            # Create or update place
+            if place:
+                form.populate_obj(place)
+            else:
+                slug = generate_unique_slug(db.session, form.name.data)
+                places = Place.query.filter_by(slug=slug).first()
+                if places is None:
+                    place = Place(
+                        name=form.name.data,
+                        slug=slug,
+                        address_street=form.address_street.data,
+                        phone_number=form.phone_number.data,
+                        coordinates=form.coordinates.data,
+                        user_id=current_user.id
+                    )
+                    db.session.add(place)
+                else:
+                    flash("Choose another place name", category="error")
+                    return render_template('place_create.html', form=form)
 
-            # Create a new Place object with form data
-            new_place = Place(
-                name=form.name.data,
-                slug=slug,
-                address_street=form.address_street.data,
-                # address_street_no=form.address_street_no.data,
-                # address_street_zip=form.address_street_zip.data,
-                # address_street_city=form.address_street_city.data,
-                # address_street_state=form.address_street_state.data,
-                phone_number=form.phone_number.data,
-                coordinates=form.coordinates.data,
-                user_id=current_user.id
-            )
-            db.session.add(new_place)
             db.session.commit()
+
+            # Delete existing opening hours for the place
+            OpeningHours.query.filter_by(place_id=place.id).delete()
+
+            # Retrieve form data, including opening hours
+            form_data = request.form.to_dict(flat=False)
+            print(form_data)  # Check the received form data in logs
 
             # Process opening hours
-            opening_hours_data = request.form.getlist('opening_hours')
-            print(opening_hours_data)
-            for day, hours in request.form.get('opening_hours', {}).items():
-                open_time = hours.get('open_time')
-                close_time = hours.get('close_time')
-                if open_time and close_time:
-                    opening_hour = OpeningHours(
-                        day_of_week=day,
-                        open_time=open_time,
-                        close_time=close_time,
-                        place_id=new_place.id
-                    )
-                    db.session.add(opening_hour)
+            for key, values in form_data.items():
+                if key.startswith('opening_hours'):
+                    day = key.split('[')[1].split(']')[0]  # Get the day (e.g., 'Monday')
+                    open_time = form_data[f'opening_hours[{day}][open_time]'][0]
+                    close_time = form_data[f'opening_hours[{day}][close_time]'][0]
+
+                    # Store the opening hours in the database
+                    if open_time and close_time:
+                        opening_hour = OpeningHours(
+                            day_of_week=day,
+                            open_time=open_time,
+                            close_time=close_time,
+                            place_id=place.id
+                        )
+                        db.session.add(opening_hour)
+
             db.session.commit()
 
-            flash('New place created successfully.', 'success')
-            return redirect(url_for('views.place_manager', place_slug=new_place.slug))
+            flash('Place saved successfully.', 'success')
+            return redirect(url_for('views.place_manager', place_slug=place.slug))
+
+    return render_template(
+        'place_create.html',
+        form=form,
+        place=place,
+        opening_hours=opening_hours_data,  # Pass serialized opening hours data
+        head='edit-place' if place else 'new-place',
+        title='Edit Place' if place else 'Create New Place',
+        user=current_user
+    )
+
     
-    return render_template('place_create.html', vapid_public_key=vapid_public_key, form=form, head='new-place', title='Create New Place', user=current_user)
-
-
+    
 
 @views.route('/place/<place_slug>', methods=['GET', 'POST'])
 # @login_required
@@ -1265,7 +1296,11 @@ def new_place():
 def place_manager(place_slug):
     # Query the Place object based on the slug
     place = Place.query.filter_by(slug=place_slug).first()
-    season_places = Season.query.filter_by(place_id=place.id)
+    season_places = Season.query.filter_by(place_id=place.id).all()
+    if season_places:
+        season_places = season_places
+    else:
+        season_places = ''
     
     if not place:
         flash("Place not found.", category="error")

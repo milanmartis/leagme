@@ -88,6 +88,7 @@
                     {{ form.winner_points(class="form-control form-control-lg createforms") }}
                 {% endif %}
             </div>
+            {% if user_places %}
             <div class="form-group">
                 <label for="place_select" class="form-control-label createforms">Select Place</label>
                 <select style="font-size: 19px;" id="place_select" name="place_id" class="form-control form-control-lg createforms" required>
@@ -99,6 +100,12 @@
                     {% endfor %}
                 </select>
             </div>
+            {% else %}
+            <br>
+            <div class="form-group" style="max-width: 220px;;">
+            <button class="btn btn-reverse" onclick="javascript:location.href='{{ url_for('views.new_place') }}';">Create your first place >></button>
+            </div>
+            {% endif %}
 
             <div class="form-group">
                 {{ form.open.label(class="form-control-label createforms") }}

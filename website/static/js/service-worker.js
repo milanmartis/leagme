@@ -40,7 +40,6 @@ async function getUnreadCount() {
     });
 }
 
-
 // Listener pre 'push' udalosť - spracovanie prijatej push správy
 self.addEventListener('push', event => {
     event.waitUntil(
@@ -92,13 +91,28 @@ self.addEventListener('push', event => {
     );
 });
 
-
 // Listener pre 'notificationclick' udalosť - spracovanie kliknutia na notifikáciu
 self.addEventListener('notificationclick', event => {
     event.notification.close(); // Zatvorenie notifikácie
 
     event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+        (async () => {
+            // Resetovanie odznaku a neprečítaných notifikácií po kliknutí na notifikáciu
+            if ('clearAppBadge' in navigator) {
+                try {
+                    await navigator.clearAppBadge();
+                    console.log('Odznak resetovaný.');
+                } catch (error) {
+                    console.error('Chyba pri odstraňovaní odznaku:', error);
+                }
+            }
+            
+            // Resetovanie počtu neprečítaných notifikácií
+            await saveUnreadCount(0);
+            console.log('Počet neprečítaných správ resetovaný.');
+
+            // Otvorenie alebo zaostrenie okna s URL
+            const windowClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
             for (let client of windowClients) {
                 if (client.url === event.notification.data.url && 'focus' in client) {
                     return client.focus();
@@ -107,7 +121,7 @@ self.addEventListener('notificationclick', event => {
             if (clients.openWindow) {
                 return clients.openWindow(event.notification.data.url);
             }
-        })
+        })()
     );
 });
 
@@ -116,12 +130,13 @@ self.addEventListener('notificationclose', event => {
     console.log('Notifikácia bola zatvorená.');
 });
 
-// Odstránenie odznaku pri obnovení počtu neprečítaných správ
+// Odstránenie odznaku pri obnovení počtu neprečítaných správ po správe z hlavnej stránky
 self.addEventListener('message', async event => {
     if (event.data === 'reset-badge') {
         if ('clearAppBadge' in navigator) {
             try {
                 await navigator.clearAppBadge();
+                console.log('Odznak resetovaný správou zo stránky.');
             } catch (error) {
                 console.error('Chyba pri odstraňovaní odznaku:', error);
             }
@@ -129,5 +144,13 @@ self.addEventListener('message', async event => {
 
         // Resetovanie počtu neprečítaných notifikácií
         await saveUnreadCount(0);
+        console.log('Počet neprečítaných správ resetovaný správou zo stránky.');
+    }
+});
+
+// Komunikácia so stránkou na resetovanie odznaku pri otvorení stránky
+clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+    if (clients.length) {
+        clients[0].postMessage('reset-badge');
     }
 });
