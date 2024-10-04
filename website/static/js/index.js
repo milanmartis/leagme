@@ -322,3 +322,40 @@ function getDeviceInfo() {
         browserName
     };
 }
+
+
+// Listener na zachytenie správ zo Service Workera
+navigator.serviceWorker.addEventListener('message', event => {
+    if (event.data === 'reset-badge') {
+        console.log('Správa na resetovanie odznaku prijatá.');
+
+        // Volanie backendu alebo iného mechanizmu na resetovanie stavu odznaku v IndexedDB
+        resetUnreadCount();
+    }
+});
+
+// Funkcia na resetovanie počtu neprečítaných správ v IndexedDB
+async function resetUnreadCount() {
+    const db = await openDatabase();
+    const tx = db.transaction('notifications', 'readwrite');
+    const store = tx.objectStore('notifications');
+    store.put({ id: 1, count: 0 });
+    await tx.complete;
+
+    // Zresetuj aj App Badge
+    if ('clearAppBadge' in navigator) {
+        try {
+            await navigator.clearAppBadge();
+            console.log('Odznak App Badge bol úspešne resetovaný.');
+        } catch (error) {
+            console.error('Chyba pri resetovaní odznaku:', error);
+        }
+    }
+}
+
+
+
+// Pri načítaní stránky resetujeme počítadlo neprečítaných správ
+window.addEventListener('load', async () => {
+    await resetUnreadCount(); // Resetuje počítadlo pri načítaní stránky
+});

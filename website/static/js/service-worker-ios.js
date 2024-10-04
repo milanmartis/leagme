@@ -20,3 +20,17 @@ self.addEventListener('notificationclick', function(event) {
         clients.openWindow('/')  // Open your app or a specific page when clicked
     );
 });
+
+
+// Komunikácia so stránkou na resetovanie odznaku pri otvorení stránky
+clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+    if (clients.length) {
+        clients[0].postMessage('reset-badge'); // Posielame správu stránke, že chceme resetovať odznak
+    }
+});
+
+
+// Pri načítaní stránky resetujeme počítadlo neprečítaných správ
+window.addEventListener('load', async () => {
+    await resetUnreadCount(); // Resetuje počítadlo pri načítaní stránky
+});

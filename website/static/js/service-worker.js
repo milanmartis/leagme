@@ -106,7 +106,7 @@ self.addEventListener('notificationclick', event => {
                     console.error('Chyba pri odstraňovaní odznaku:', error);
                 }
             }
-            
+
             // Resetovanie počtu neprečítaných notifikácií
             await saveUnreadCount(0);
             console.log('Počet neprečítaných správ resetovaný.');
@@ -115,15 +115,18 @@ self.addEventListener('notificationclick', event => {
             const windowClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
             for (let client of windowClients) {
                 if (client.url === event.notification.data.url && 'focus' in client) {
+                    client.postMessage('reset-badge'); // Pošleme správu na resetovanie odznaku
                     return client.focus();
                 }
             }
             if (clients.openWindow) {
-                return clients.openWindow(event.notification.data.url);
+                const newClient = await clients.openWindow(event.notification.data.url);
+                newClient.postMessage('reset-badge'); // Pošleme správu na resetovanie odznaku po otvorení
             }
         })()
     );
 });
+
 
 // Listener pre 'notificationclose' udalosť - spracovanie zatvorenia notifikácie
 self.addEventListener('notificationclose', event => {
@@ -154,3 +157,5 @@ clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => 
         clients[0].postMessage('reset-badge');
     }
 });
+
+
