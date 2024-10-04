@@ -4,16 +4,31 @@
 {% endblock %}
 {% block content %}
 <style scoped>
+    .form-control {
+        font-size: 40px;
+        text-align: center;
+    }
 
     .form-group option {
-        font-size: 12px; /* Nastavte požadovanú veľkosť písma */
+        padding-top: 16px;
+        padding-bottom: 10px;
+        background-color: black;
+        color: #00ff00;
+        font-size: 32px;
+        text-align: center;
+        border: 0px;
     }
     option{
-        font-size: 12px; /* Nastavte požadovanú veľkosť písma */
+        padding-top: 10px;
+        padding-bottom: 10px;
+        background-color: black;
+        color: #00ff00;
+        font-size: 82px; /* Nastavte požadovanú veľkosť písma */
     }
 
     select {
         background-color: black;
+        cursor: pointer;
     }
 
     /* Farba pri hover */
@@ -26,9 +41,12 @@
         background-color: black;
         color: white;
     }
-
 </style>
-<h1 align="center"><img src="{{ url_for('static', filename = 'img/'+ head +'.svg') }}" class="filter-green" width="290" /></h1>
+
+<h1 align="center">
+    <img src="{{ url_for('static', filename = 'img/'+ head +'.svg') }}" class="filter-green" width="290" />
+</h1>
+
 <div class="content-section">
     <form action="" method="post" class="form" role="form" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -38,63 +56,124 @@
             <div class="form-group">
                 {{ form.name.label }}
                 {% if form.name.errors %}
-                    {{ form.name(class="form-control form-control-lg is-invalid ") }}
+                    {{ form.name(class="form-control form-control-lg is-invalid") }}
                     <div class="invalid-feedback">
                         {% for error in form.name.errors %}
                             <span>{{ error }}</span>
                         {% endfor %}
                     </div>
                 {% else %}
-                    {{ form.name(autocomplete="off", class="form-control form-control-lg  createforms") }}
+                    {{ form.name(autocomplete="off", class="form-control form-control-lg createforms") }}
                 {% endif %}
             </div>
+            <br>
+
+            <!-- Input field for min_players -->
             <div class="form-group">
                 {{ form.min_players.label(class="form-control-label createforms") }}
                 {% if form.min_players.errors %}
-                    {{ form.min_players(class="form-control form-control-lg is-invalid") }}
+                    {{ form.min_players(
+                        class="form-control form-control-lg is-invalid createforms",
+                        id="min_players",
+                        type="number",
+                        min="1",
+                        max="100",
+                        step="1",
+                        onkeydown="return false;"
+                    ) }}
                     <div class="invalid-feedback">
                         {% for error in form.min_players.errors %}
                             <span>{{ error }}</span>
                         {% endfor %}
                     </div>
                 {% else %}
-                    {{ form.min_players(class="form-control form-control-lg createforms ") }}
+                    {{ form.min_players(
+                        class="form-control form-control-lg createforms",
+                        id="min_players",
+                        type="number",
+                        min="1",
+                        max="100",
+                        step="1",
+                        onkeydown="return false;"
+                    ) }}
                 {% endif %}
+                <small id="min_players_error" class="text-danger"></small>
             </div>
+            <br>
+
+            <!-- Input field for no_group -->
             <div class="form-group">
                 {{ form.no_group.label(class="form-control-label createforms") }}
                 {% if form.no_group.errors %}
-                    {{ form.no_group(class="form-control form-control-lg is-invalid") }}
+                    {{ form.no_group(
+                        class="form-control form-control-lg is-invalid createforms",
+                        id="no_group",
+                        type="number",
+                        min="1",
+                        max="100",
+                        step="1",
+                        onkeydown="return false;"
+                    ) }}
                     <div class="invalid-feedback">
                         {% for error in form.no_group.errors %}
                             <span>{{ error }}</span>
                         {% endfor %}
                     </div>
                 {% else %}
-                    {{ form.no_group(class="form-control form-control-lg createforms ") }}
+                    {{ form.no_group(
+                        class="form-control form-control-lg createforms",
+                        id="no_group",
+                        type="number",
+                        min="1",
+                        max="100",
+                        step="1",
+                        onkeydown="return false;"
+                    ) }}
                 {% endif %}
+                <small id="no_group_error" class="text-danger"></small>
             </div>
+            <br>
 
+            <!-- Input field for winner_points -->
             <div class="form-group">
                 {{ form.winner_points.label(class="form-control-label createforms") }}
                 {% if form.winner_points.errors %}
-                    {{ form.winner_points(class="form-control form-control-lg is-invalid") }}
+                    {{ form.winner_points(
+                        class="form-control form-control-lg is-invalid createforms",
+                        id="winner_points",
+                        type="number",
+                        min="1",
+                        max="100",
+                        step="1",
+                        onkeydown="return false;"
+                    ) }}
                     <div class="invalid-feedback">
                         {% for error in form.winner_points.errors %}
                             <span>{{ error }}</span>
                         {% endfor %}
                     </div>
                 {% else %}
-                    {{ form.winner_points(class="form-control form-control-lg createforms") }}
+                    {{ form.winner_points(
+                        class="form-control form-control-lg createforms",
+                        id="winner_points",
+                        type="number",
+                        min="1",
+                        max="100",
+                        step="1",
+                        onkeydown="return false;"
+                    ) }}
                 {% endif %}
+                <small id="winner_points_error" class="text-danger"></small>
             </div>
+            <br>
+
             {% if user_places %}
             <div class="form-group">
                 <label for="place_select" class="form-control-label createforms">Select Place</label>
-                <select style="font-size: 19px;" id="place_select" name="place_id" class="form-control form-control-lg createforms" required>
-                    <option style="font-size: 13px;" value="0">...choose place</option>
+                <select id="place_select" name="place_id" class="form-control form-control-sm createforms btn-reverse" required>
+                    <option value="0">select...</option>
                     {% for place in user_places %}
-                        <option style="font-size: 13px;" value="{{ place.id }}" {% if form.place_id.data == place.id %}selected{% endif %}>
+                        <option value="{{ place.id }}" {% if form.place_id.data == place.id %}selected{% endif %}>
                             {{ place.name }}
                         </option>
                     {% endfor %}
@@ -102,10 +181,13 @@
             </div>
             {% else %}
             <br>
-            <div class="form-group" style="max-width: 220px;;">
-            <button class="btn btn-reverse" onclick="javascript:location.href='{{ url_for('views.new_place') }}';">Create your first place >></button>
+            <div class="form-group" style="max-width: 220px;">
+                <button class="btn btn-reverse" onclick="javascript:location.href='{{ url_for('views.new_place') }}';">
+                    Create your first place >>
+                </button>
             </div>
             {% endif %}
+            <br>
 
             <div class="form-group">
                 {{ form.open.label(class="form-control-label createforms") }}
@@ -120,6 +202,8 @@
                     {{ form.open(class="form-control form-control-lg createforms") }}
                 {% endif %}
             </div>
+            <br>
+
             <div class="form-group">
                 {{ form.visible.label(class="form-control-label createforms") }}
                 {% if form.visible.errors %}
@@ -133,29 +217,68 @@
                     {{ form.visible(class="form-control form-control-lg createforms") }}
                 {% endif %}
             </div>
+
             <input type="hidden" id="season_type" name="season_type" value="1">
-
-      
-
-     
-
-<br>
         </fieldset>
+        <br>
+        <br>
+
         <div class="form-group">
-            {{ form.submit(class="btn-demo btn-outline-info createforms", value=title) }}
+            {{ form.submit(
+                class="btn-demo btn-outline-info createforms",
+                value=title,
+                id="submit_button",
+                disabled=True
+            ) }}
         </div>
     </form>
-<br>
-{% if season  %}
-    <button onclick="javascript:location.href='{{ url_for('views.season_manager', season=season) }}';" class="btn btn-sm createforms2" />Back</button>
+    <br>
+    {% if season %}
+    <button onclick="javascript:location.href='{{ url_for('views.season_manager', season=season) }}';"
+            class="btn btn-sm createforms2">Back</button>
     {% else %}
-    <button onclick="javascript:location.href='{{ url_for('views.index') }}';" class="btn btn-sm createforms2" />Back</button>
-{% endif %}
+    <button onclick="javascript:location.href='{{ url_for('views.index') }}';"
+            class="btn btn-sm createforms2">Back</button>
+    {% endif %}
 </div>
+
 <script>
-    // Clear localStorage when the page is loaded
     document.addEventListener('DOMContentLoaded', function() {
-        localStorage.clear();
+        const minPlayersInput = document.getElementById('min_players');
+        const noGroupInput = document.getElementById('no_group');
+        const winnerPointsInput = document.getElementById('winner_points');
+        const submitButton = document.getElementById('submit_button');
+
+        // Function to validate the form
+        function validateForm() {
+            const minPlayersValue = minPlayersInput.value;
+            const noGroupValue = noGroupInput.value;
+            const winnerPointsValue = winnerPointsInput.value;
+
+            // Check if all fields have a valid value
+            const isValid = minPlayersValue && noGroupValue && winnerPointsValue;
+
+            // Enable or disable submit button based on validation
+            submitButton.disabled = !isValid;
+        }
+
+        // Add event listeners for validation
+        minPlayersInput.addEventListener('input', validateForm);
+        noGroupInput.addEventListener('input', validateForm);
+        winnerPointsInput.addEventListener('input', validateForm);
+
+        // Prevent typing into the inputs
+        function preventTyping(e) {
+            e.preventDefault();
+        }
+
+        minPlayersInput.addEventListener('keydown', preventTyping);
+        noGroupInput.addEventListener('keydown', preventTyping);
+        winnerPointsInput.addEventListener('keydown', preventTyping);
+
+        // Initial validation on page load
+        validateForm();
     });
 </script>
+
 {% endblock content %}

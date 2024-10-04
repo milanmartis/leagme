@@ -1,19 +1,34 @@
 {% extends "base.html" %}
 {% block title %}
-  DartsClub - Create Tournament
+  Leagme - Create Tournament
 {% endblock %}
 {% block content %}
 <style scoped>
+    .form-control {
+        font-size: 80px;
+        text-align: center;
+    }
 
     .form-group option {
-        font-size: 12px; /* Nastavte požadovanú veľkosť písma */
+        padding-top: 16px;
+        padding-bottom: 10px;
+        background-color: black;
+        color: #00ff00;
+        font-size: 32px;
+        text-align: center;
+        border: 0px;
     }
     option{
-        font-size: 12px; /* Nastavte požadovanú veľkosť písma */
+        padding-top: 10px;
+        padding-bottom: 10px;
+        background-color: black;
+        color: #00ff00;
+        font-size: 82px; /* Nastavte požadovanú veľkosť písma */
     }
 
     select {
         background-color: black;
+        cursor: pointer;
     }
 
     /* Farba pri hover */
@@ -30,6 +45,7 @@
 </style>
 <h1 align="center"><img src="{{ url_for('static', filename = 'img/'+ head +'.svg') }}" class="filter-green" width="290" /></h1>
 <div class="content-section">
+    <br>
     <form action="" method="post" class="form" role="form" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
@@ -48,24 +64,26 @@
                     {{ form.name(autocomplete="off", class="form-control form-control-lg  createforms") }}
                 {% endif %}
             </div>
+
+            <br>
             <div class="form-group">
                 {{ form.min_players.label(class="form-control-label createforms") }}
-                {% if form.min_players.errors %}
-                    {{ form.min_players(class="form-control form-control-lg is-invalid") }}
-                    <div class="invalid-feedback">
-                        {% for error in form.min_players.errors %}
-                            <span>{{ error }}</span>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    {{ form.min_players(class="form-control form-control-lg createforms ") }}
-                {% endif %}
+                <select id="min_players" class="form-control form-control-lg createforms">
+                    <option value="2" selected>2</option>
+                    <option value="4">4</option>
+                    <option value="8">8</option>
+                    <option value="16">16</option>
+                    <option value="32">32</option>
+                    <option value="64">64</option>
+                </select>
+                <small id="min_players_error" class="text-danger"></small> <!-- Miesto pre chybové hlásenie -->
             </div>
+            <br>
             {% if user_places %}
             <div class="form-group">
                 <label for="place_select" class="form-control-label createforms">Select Place</label>
-                <select style="font-size: 19px;" id="place_select" name="place_id" class="form-control form-control-lg createforms" require>
-                    <option style="font-size: 13px;" value="">...choose place</option>
+                <select style="font-size: 19px;" id="place_select" name="place_id" class="btn-reverse form-control form-control-lg createforms" require>
+                    <option style="font-size: 13px;" value="">choose the venue</option>
                     {% for place in user_places %}
                         <option style="font-size: 13px; background-color: black; color: white;font-size: 13px;cursor: pointer;" value="{{ place.id }}" {% if form.place_id.data == place.id %}selected{% endif %}>
                             {{ place.name }}
@@ -75,11 +93,11 @@
             </div>
             {% else %}
             <br>
-            <div class="form-group" style="max-width: 220px;;">
-            <button class="btn btn-reverse" onclick="javascript:location.href='{{ url_for('views.new_place') }}';">Create your first place >></button>
+            <div class="form-group" style="max-width: 220px;">
+                <button class="btn btn-reverse" onclick="javascript:location.href='{{ url_for('views.new_place') }}';" >Create your first place >></button>
             </div>
             {% endif %}
-
+            <br>
             <div class="form-group">
                 {{ form.open.label(class="form-control-label createforms") }}
                 {% if form.open.errors %}
@@ -93,6 +111,7 @@
                     {{ form.open(class="form-control form-control-lg createforms") }}
                 {% endif %}
             </div>
+            <br>
             <div class="form-group">
                 {{ form.visible.label(class="form-control-label createforms") }}
                 {% if form.visible.errors %}
@@ -126,63 +145,51 @@
             -->
 
 <br>
+<br>
+<br>
         </fieldset>
         <div class="form-group">
-            {{ form.submit(class="btn-demo btn-outline-info createforms", value=title) }}
+            {{ form.submit(class="btn-demo btn-outline-info createforms", value=title, id="submit_button", disabled=True) }}
         </div>
+        
     </form>
 <br>
-{% if season  %}
-    <button onclick="javascript:location.href='{{ url_for('views.season_manager', season=season.id) }}';" class="btn btn-sm createforms2" />Back</button>
-    {% else %}
-    <button onclick="javascript:location.href='{{ url_for('views.index') }}';" class="btn btn-sm createforms2" />Back</button>
-{% endif %}</div>
+{% if season %}
+    <button onclick="javascript:location.href='{{ url_for('views.season_manager', season=season.id) }}';" class="btn btn-sm createforms2">Back</button>
+{% else %}
+    <button onclick="javascript:location.href='{{ url_for('views.index') }}';" class="btn btn-sm createforms2">Back</button>
+{% endif %}
+</div>
+
 <script>
-    
-  let formHasChanged = false;
-  window.onload = function() {
-    const form = document.querySelector('form');
-    form.addEventListener('input', function() {
-      formHasChanged = true;
-    });
-    window.addEventListener('beforeunload', function(e) {
-      if (formHasChanged) {
-        const confirmationMessage = 'Are you sure you want to leave? You have unsaved changes.';
-        (e || window.event).returnValue = confirmationMessage; //Gecko + IE
-        return confirmationMessage; //Gecko + Webkit, Safari, Chrome etc.
-      }
-    });
-  };
+    document.addEventListener('DOMContentLoaded', function() {
+        const minPlayersSelect = document.getElementById('min_players');
+        const minPlayersError = document.getElementById('min_players_error');
+        const submitButton = document.getElementById('submit_button');
 
+        // Dynamická validácia pri zmene výberu
+        function validateMinPlayers() {
+            const minPlayersValue = minPlayersSelect.value;
+            let errorMessage = '';
 
-
-  document.addEventListener('DOMContentLoaded', function() {
-    // Vyhľadá všetky formuláre na stránke
-    const forms = document.querySelectorAll('form');
-
-    forms.forEach(form => {
-        const inputs = form.querySelectorAll('input[type=text], input[type=number], input[type=email]');
-
-        inputs.forEach(input => {
-            // Pre každý input načíta uloženú hodnotu z localStorage
-            const savedValue = localStorage.getItem(input.name); // Používa 'name' ako kľúč
-            if (savedValue) {
-                input.value = savedValue;
+            // Overenie, či je hodnota vybraná
+            if (!minPlayersValue) {
+                errorMessage = 'Please select a valid number of players.';
             }
 
-            // Ukladá hodnotu inputu do localStorage pri zmene
-            input.addEventListener('input', function() {
-                localStorage.setItem(this.name, this.value);
-            });
-        });
-    });
-});
+            // Zobraz chybové hlásenie alebo ho odstráň
+            minPlayersError.textContent = errorMessage;
 
-</script>
-<script>
-    // Clear localStorage when the page is loaded
-    document.addEventListener('DOMContentLoaded', function() {
-        localStorage.clear();
+            // Ak je chyba, tlačidlo je zakázané
+            submitButton.disabled = !!errorMessage;
+        }
+
+        // Pridanie listeneru na zmenu
+        minPlayersSelect.addEventListener('change', validateMinPlayers);
+
+        // Zavolaj validáciu pri načítaní stránky
+        validateMinPlayers();
     });
 </script>
+
 {% endblock content %}

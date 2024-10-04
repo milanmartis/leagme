@@ -264,8 +264,7 @@ h6 {
 
 
 .createforms{
-    padding: 8px;
-    margin-top: 15px;
+    color:#0ca00c;
     max-width: 320px;
 
 
@@ -273,6 +272,7 @@ h6 {
 .createforms2{
     padding: 8px;
     margin-top: 15px;
+    margin-bottom: 15px;
     max-width: 120px;
 
 
@@ -528,6 +528,16 @@ input {
 select {
     text-align-last: center;
     appearance: none;
+}
+
+
+.btn-outline-info:disabled{
+    color:#771010;
+    animation: none;
+}
+.btn-outline-info:disabled:hover{
+    color:#771010;
+    animation: none;
 }
 
 
