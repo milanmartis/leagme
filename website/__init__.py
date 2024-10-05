@@ -81,6 +81,7 @@ def make_celery(app=None):
     celery.Task = ContextTask
     return celery
 
+
 def create_app():
     app = Flask(__name__)
 
