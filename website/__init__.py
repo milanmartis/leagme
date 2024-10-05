@@ -106,8 +106,8 @@ def create_app():
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=5)
-    # app.config['CELERY_BROKER_URL'] = os.environ.get("CELERY_BROKER_URL")
-    # app.config['CELERY_RESULT_BACKEND'] = os.environ.get("CELERY_RESULT_BACKEND")
+    app.config['CELERY_BROKER_URL'] = os.environ.get("CELERY_BROKER_URL")
+    app.config['CELERY_RESULT_BACKEND'] = os.environ.get("RESULT_BACKEND")
     app.config['CACHE_TYPE'] = 'redis'
     app.config['CACHE_REDIS_URL'] = os.environ.get("CACHE_REDIS_URL")
     app.config['VAPID_PUBLIC_KEY'] = os.environ.get("VAPID_PUBLIC_KEY")
