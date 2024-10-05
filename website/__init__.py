@@ -57,7 +57,7 @@ def make_celery(app=None):
     celery = Celery(
         app.import_name,
         broker=os.environ.get("CELERY_BROKER_URL"),
-        backend=os.environ.get("CELERY_RESULT_BACKEND")
+        backend=os.environ.get("RESULT_BACKEND")  # Nový názov pre 'CELERY_RESULT_BACKEND'
     )
     celery.conf.update(app.config)
     # Nastavenie Celery Beat (periodické úlohy)
@@ -106,8 +106,8 @@ def create_app():
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=5)
-    app.config['CELERY_BROKER_URL'] = os.environ.get("CELERY_BROKER_URL")
-    app.config['CELERY_RESULT_BACKEND'] = os.environ.get("CELERY_RESULT_BACKEND")
+    # app.config['CELERY_BROKER_URL'] = os.environ.get("CELERY_BROKER_URL")
+    # app.config['CELERY_RESULT_BACKEND'] = os.environ.get("CELERY_RESULT_BACKEND")
     app.config['CACHE_TYPE'] = 'redis'
     app.config['CACHE_REDIS_URL'] = os.environ.get("CACHE_REDIS_URL")
     app.config['VAPID_PUBLIC_KEY'] = os.environ.get("VAPID_PUBLIC_KEY")
@@ -124,7 +124,7 @@ def create_app():
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)
 
-    from .models import User, PushSubscription, ProductCategory, Product, Role, user_datastore
+    from .models import User, Round, PushSubscription, ProductCategory, Product, Role, user_datastore
 
     # Configure Google OAuth Blueprint
     google_blueprint = make_google_blueprint(

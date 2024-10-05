@@ -640,61 +640,61 @@ def send_game_change_notification():
 
 
 ##### CRON  #####
-@celery.task
-def check_and_close_rounds_task():
-    # Získaj aktuálny čas
-    current_time = datetime.now()
+# @celery.task
+# def check_and_close_rounds_task():
+#     # Získaj aktuálny čas
+#     current_time = datetime.now()
 
-    # Načítaj všetky otvorené kolá, kde duration nie je prázdne
-    open_rounds = Round.query.filter(Round.open == True, Round.duration.isnot(None)).all()
+#     # Načítaj všetky otvorené kolá, kde duration nie je prázdne
+#     open_rounds = Round.query.filter(Round.open == True, Round.duration.isnot(None)).all()
 
-    for round_instance in open_rounds:
-        # Vypočíta čas ukončenia kola (round_start + duration v sekundách)
-        round_end_time = round_instance.round_start + timedelta(seconds=round_instance.duration)
+#     for round_instance in open_rounds:
+#         # Vypočíta čas ukončenia kola (round_start + duration v sekundách)
+#         round_end_time = round_instance.round_start + timedelta(seconds=round_instance.duration)
 
-        # Ak je aktuálny čas väčší ako čas ukončenia, nastav `open` na False a uzavri kolo
-        if current_time >= round_end_time:
-            round_instance.open = False
-            db.session.add(round_instance)
+#         # Ak je aktuálny čas väčší ako čas ukončenia, nastav `open` na False a uzavri kolo
+#         if current_time >= round_end_time:
+#             round_instance.open = False
+#             db.session.add(round_instance)
 
-            # Získaj všetky duely v tomto kole (round) a aktualizuj ich status
-            duels_in_round = Duel.query.filter_by(round_id=round_instance.id).all()
-            for duel in duels_in_round:
-                # Aktualizuj user_duel pre oboch hráčov
-                user_duels = db.session.query(user_duel).filter(user_duel.c.duel_id == duel.id).all()
-                for user_duel_instance in user_duels:
-                    # Nastav `checked` na True
-                    user_duel_update = update(user_duel).where(user_duel.c.duel_id == duel.id).values(checked="true")
-                    db.session.execute(user_duel_update)
+#             # Získaj všetky duely v tomto kole (round) a aktualizuj ich status
+#             duels_in_round = Duel.query.filter_by(round_id=round_instance.id).all()
+#             for duel in duels_in_round:
+#                 # Aktualizuj user_duel pre oboch hráčov
+#                 user_duels = db.session.query(user_duel).filter(user_duel.c.duel_id == duel.id).all()
+#                 for user_duel_instance in user_duels:
+#                     # Nastav `checked` na True
+#                     user_duel_update = update(user_duel).where(user_duel.c.duel_id == duel.id).values(checked="true")
+#                     db.session.execute(user_duel_update)
 
-                    # Aktualizácia bodov podľa výsledku duelu (na základe tvojej logiky)
-                    result, against = user_duel_instance.result, user_duel_instance.against
-                    season = Season.query.get(duel.season_id)
+#                     # Aktualizácia bodov podľa výsledku duelu (na základe tvojej logiky)
+#                     result, against = user_duel_instance.result, user_duel_instance.against
+#                     season = Season.query.get(duel.season_id)
 
-                    # Určenie bodov pre hráča
-                    if result == 6 and against <= 4:
-                        points = season.winner_points
-                    elif result == 6 and against == 5:
-                        points = season.winner_points
-                    elif result == 5 and against == 6:
-                        points = 1
-                    elif result <= 4 and against == 6:
-                        points = 0
-                    elif result == 4 and against == 0:
-                        points = season.winner_points
-                    elif result == 0 and against == 0:
-                        points = 0
-                    else:
-                        points = 0
+#                     # Určenie bodov pre hráča
+#                     if result == 6 and against <= 4:
+#                         points = season.winner_points
+#                     elif result == 6 and against == 5:
+#                         points = season.winner_points
+#                     elif result == 5 and against == 6:
+#                         points = 1
+#                     elif result <= 4 and against == 6:
+#                         points = 0
+#                     elif result == 4 and against == 0:
+#                         points = season.winner_points
+#                     elif result == 0 and against == 0:
+#                         points = 0
+#                     else:
+#                         points = 0
 
-                    # Aktualizácia bodov pre user_duel
-                    update_points = update(user_duel).where(user_duel.c.duel_id == duel.id, user_duel.c.user_id == user_duel_instance.user_id).values(points=points)
-                    db.session.execute(update_points)
+#                     # Aktualizácia bodov pre user_duel
+#                     update_points = update(user_duel).where(user_duel.c.duel_id == duel.id, user_duel.c.user_id == user_duel_instance.user_id).values(points=points)
+#                     db.session.execute(update_points)
 
-    # Ulož všetky zmeny do databázy
-    db.session.commit()
+#     # Ulož všetky zmeny do databázy
+#     db.session.commit()
 
-    return f"Closed all opened rounds after limit and updated duels."
+#     return f"Closed all opened rounds after limit and updated duels."
 
 
 @views.route('/update-duel2', methods=['POST', 'GET'])
