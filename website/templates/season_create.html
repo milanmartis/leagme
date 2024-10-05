@@ -5,18 +5,16 @@
 {% block content %}
 <style scoped>
     .form-control {
-        font-size: 40px;
-        text-align: center;
+        font-size: 149px;
     }
 
     .form-group option {
-        padding-top: 16px;
+        padding-top: 10px;
         padding-bottom: 10px;
         background-color: black;
         color: #00ff00;
-        font-size: 32px;
+        font-size: 82px; /* Nastavte požadovanú veľkosť písma */
         text-align: center;
-        border: 0px;
     }
     option{
         padding-top: 10px;
@@ -28,7 +26,6 @@
 
     select {
         background-color: black;
-        cursor: pointer;
     }
 
     /* Farba pri hover */
@@ -41,12 +38,9 @@
         background-color: black;
         color: white;
     }
+
 </style>
-
-<h1 align="center">
-    <img src="{{ url_for('static', filename = 'img/'+ head +'.svg') }}" class="filter-green" width="290" />
-</h1>
-
+<h1 align="center"><img src="{{ url_for('static', filename = 'img/'+ head +'.svg') }}" class="filter-green" width="290" /></h1>
 <div class="content-section">
     <form action="" method="post" class="form" role="form" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -56,15 +50,16 @@
             <div class="form-group">
                 {{ form.name.label }}
                 {% if form.name.errors %}
-                    {{ form.name(class="form-control form-control-lg is-invalid") }}
+                    {{ form.name(class="form-control form-control-lg is-invalid ") }}
                     <div class="invalid-feedback">
                         {% for error in form.name.errors %}
                             <span>{{ error }}</span>
                         {% endfor %}
                     </div>
                 {% else %}
-                    {{ form.name(autocomplete="off", class="form-control form-control-lg createforms") }}
+                    {{ form.name(autocomplete="off", class="form-control form-control-lg createforms", id="name") }}
                 {% endif %}
+                <small id="name_error" class="text-danger"></small>
             </div>
             <br>
 
@@ -72,30 +67,14 @@
             <div class="form-group">
                 {{ form.min_players.label(class="form-control-label createforms") }}
                 {% if form.min_players.errors %}
-                    {{ form.min_players(
-                        class="form-control form-control-lg is-invalid createforms",
-                        id="min_players",
-                        type="number",
-                        min="1",
-                        max="100",
-                        step="1",
-                        onkeydown="return false;"
-                    ) }}
+                    {{ form.min_players(class="form-control form-control-lg is-invalid", id="min_players") }}
                     <div class="invalid-feedback">
                         {% for error in form.min_players.errors %}
                             <span>{{ error }}</span>
                         {% endfor %}
                     </div>
                 {% else %}
-                    {{ form.min_players(
-                        class="form-control form-control-lg createforms",
-                        id="min_players",
-                        type="number",
-                        min="1",
-                        max="100",
-                        step="1",
-                        onkeydown="return false;"
-                    ) }}
+                    {{ form.min_players(class="form-control form-control-lg createforms", id="min_players") }}
                 {% endif %}
                 <small id="min_players_error" class="text-danger"></small>
             </div>
@@ -105,30 +84,14 @@
             <div class="form-group">
                 {{ form.no_group.label(class="form-control-label createforms") }}
                 {% if form.no_group.errors %}
-                    {{ form.no_group(
-                        class="form-control form-control-lg is-invalid createforms",
-                        id="no_group",
-                        type="number",
-                        min="1",
-                        max="100",
-                        step="1",
-                        onkeydown="return false;"
-                    ) }}
+                    {{ form.no_group(class="form-control form-control-lg is-invalid", id="no_group") }}
                     <div class="invalid-feedback">
                         {% for error in form.no_group.errors %}
                             <span>{{ error }}</span>
                         {% endfor %}
                     </div>
                 {% else %}
-                    {{ form.no_group(
-                        class="form-control form-control-lg createforms",
-                        id="no_group",
-                        type="number",
-                        min="1",
-                        max="100",
-                        step="1",
-                        onkeydown="return false;"
-                    ) }}
+                    {{ form.no_group(class="form-control form-control-lg createforms", id="no_group") }}
                 {% endif %}
                 <small id="no_group_error" class="text-danger"></small>
             </div>
@@ -138,30 +101,14 @@
             <div class="form-group">
                 {{ form.winner_points.label(class="form-control-label createforms") }}
                 {% if form.winner_points.errors %}
-                    {{ form.winner_points(
-                        class="form-control form-control-lg is-invalid createforms",
-                        id="winner_points",
-                        type="number",
-                        min="1",
-                        max="100",
-                        step="1",
-                        onkeydown="return false;"
-                    ) }}
+                    {{ form.winner_points(class="form-control form-control-lg is-invalid", id="winner_points") }}
                     <div class="invalid-feedback">
                         {% for error in form.winner_points.errors %}
                             <span>{{ error }}</span>
                         {% endfor %}
                     </div>
                 {% else %}
-                    {{ form.winner_points(
-                        class="form-control form-control-lg createforms",
-                        id="winner_points",
-                        type="number",
-                        min="1",
-                        max="100",
-                        step="1",
-                        onkeydown="return false;"
-                    ) }}
+                    {{ form.winner_points(class="form-control form-control-lg createforms", id="winner_points") }}
                 {% endif %}
                 <small id="winner_points_error" class="text-danger"></small>
             </div>
@@ -170,10 +117,10 @@
             {% if user_places %}
             <div class="form-group">
                 <label for="place_select" class="form-control-label createforms">Select Place</label>
-                <select id="place_select" name="place_id" class="form-control form-control-sm createforms btn-reverse" required>
-                    <option value="0">select...</option>
+                <select style="font-size: 19px;" id="place_select" name="place_id" class="form-control form-control-lg createforms" required>
+                    <option style="font-size: 13px;" value="0">...choose place</option>
                     {% for place in user_places %}
-                        <option value="{{ place.id }}" {% if form.place_id.data == place.id %}selected{% endif %}>
+                        <option style="font-size: 13px;" value="{{ place.id }}" {% if form.place_id.data == place.id %}selected{% endif %}>
                             {{ place.name }}
                         </option>
                     {% endfor %}
@@ -182,9 +129,7 @@
             {% else %}
             <br>
             <div class="form-group" style="max-width: 220px;">
-                <button class="btn btn-reverse" onclick="javascript:location.href='{{ url_for('views.new_place') }}';">
-                    Create your first place >>
-                </button>
+                <button class="btn btn-reverse" onclick="javascript:location.href='{{ url_for('views.new_place') }}';">Create your first place >></button>
             </div>
             {% endif %}
             <br>
@@ -234,16 +179,15 @@
     </form>
     <br>
     {% if season %}
-    <button onclick="javascript:location.href='{{ url_for('views.season_manager', season=season) }}';"
-            class="btn btn-sm createforms2">Back</button>
+    <button onclick="javascript:location.href='{{ url_for('views.season_manager', season=season) }}';" class="btn btn-sm createforms2">Back</button>
     {% else %}
-    <button onclick="javascript:location.href='{{ url_for('views.index') }}';"
-            class="btn btn-sm createforms2">Back</button>
+    <button onclick="javascript:location.href='{{ url_for('views.index') }}';" class="btn btn-sm createforms2">Back</button>
     {% endif %}
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const nameInput = document.getElementById('name');
         const minPlayersInput = document.getElementById('min_players');
         const noGroupInput = document.getElementById('no_group');
         const winnerPointsInput = document.getElementById('winner_points');
@@ -251,30 +195,54 @@
 
         // Function to validate the form
         function validateForm() {
+            const nameValue = nameInput.value.trim();
             const minPlayersValue = minPlayersInput.value;
             const noGroupValue = noGroupInput.value;
             const winnerPointsValue = winnerPointsInput.value;
 
-            // Check if all fields have a valid value
-            const isValid = minPlayersValue && noGroupValue && winnerPointsValue;
+            let isValid = true;
+
+            // Name validation
+            if (nameValue === '') {
+                document.getElementById('name_error').textContent = 'Please enter a valid season name.';
+                isValid = false;
+            } else {
+                document.getElementById('name_error').textContent = '';
+            }
+
+            // Min players validation
+            if (minPlayersValue < 2 || minPlayersValue > 40) {
+                document.getElementById('min_players_error').textContent = 'Set value between 2 and 40.';
+                isValid = false;
+            } else {
+                document.getElementById('min_players_error').textContent = '';
+            }
+
+            // No group validation
+            if (noGroupValue < 2 || noGroupValue > 20) {
+                document.getElementById('no_group_error').textContent = 'Set value between 2 and 20.';
+                isValid = false;
+            } else {
+                document.getElementById('no_group_error').textContent = '';
+            }
+
+            // Winner points validation
+            if (winnerPointsValue < 1 || winnerPointsValue > 5) {
+                document.getElementById('winner_points_error').textContent = 'Set value between 1 and 5.';
+                isValid = false;
+            } else {
+                document.getElementById('winner_points_error').textContent = '';
+            }
 
             // Enable or disable submit button based on validation
             submitButton.disabled = !isValid;
         }
 
         // Add event listeners for validation
+        nameInput.addEventListener('input', validateForm);
         minPlayersInput.addEventListener('input', validateForm);
         noGroupInput.addEventListener('input', validateForm);
         winnerPointsInput.addEventListener('input', validateForm);
-
-        // Prevent typing into the inputs
-        function preventTyping(e) {
-            e.preventDefault();
-        }
-
-        minPlayersInput.addEventListener('keydown', preventTyping);
-        noGroupInput.addEventListener('keydown', preventTyping);
-        winnerPointsInput.addEventListener('keydown', preventTyping);
 
         // Initial validation on page load
         validateForm();
