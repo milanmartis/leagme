@@ -57,10 +57,14 @@ def make_celery(app=None):
     celery = Celery(
         app.import_name,
         broker=os.environ.get("CELERY_BROKER_URL"),
-        backend=os.environ.get("RESULT_BACKEND")  # Nový názov pre 'CELERY_RESULT_BACKEND'
+        backend=os.environ.get("RESULT_BACKEND")
     )
+    
     celery.conf.update(app.config)
-    # Nastavenie Celery Beat (periodické úlohy)
+
+    # Pridaj túto voľbu do konfigurácie Celery
+    celery.conf.broker_connection_retry_on_startup = True
+
     celery.conf.beat_schedule = {
         'close-rounds-every-hour': {
             'task': 'tasks.check_and_close_rounds_task',
@@ -76,7 +80,6 @@ def make_celery(app=None):
 
     celery.Task = ContextTask
     return celery
-
 
 def create_app():
     app = Flask(__name__)
