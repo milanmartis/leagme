@@ -354,8 +354,3 @@ async function resetUnreadCount() {
 }
 
 
-
-// Pri načítaní stránky resetujeme počítadlo neprečítaných správ
-window.addEventListener('load', async () => {
-    await resetUnreadCount(); // Resetuje počítadlo pri načítaní stránky
-});

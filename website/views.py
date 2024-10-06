@@ -1368,37 +1368,37 @@ def place_manager(place_slug):
 
 
 
-####### NEW TOURNAMENT
 @views.route('/tournament/new', methods=['GET', 'POST'])
 @login_required
-@roles_required('Admin','Manager')
+@roles_required('Admin', 'Manager')
 def tournament_new():
     form = NewTournament()
-    
-    players = User.query.all()
 
-    # Získanie všetkých miest aktuálneho používateľa
+    # Načítanie miest aktuálneho používateľa
     user_places = Place.query.filter_by(user_id=current_user.id).all()
-    form.place_id.choices = [(place.id, place.name) for place in Place.query.all()]
-    if request.method == "POST" and not form.validate_on_submit():
-        flash(f"you must fill in required fields", 'error')  # Toto vám ukáže chyby v konzole, ak nejaké existujú
+    form.place_id.choices = [(place.id, place.name) for place in user_places]
 
+    # Ak POST request neprejde validáciou
+    if request.method == "POST" and not form.validate_on_submit():
+        flash("You must fill in all required fields", 'error')
+
+    # Ak formulár prešiel validáciou
     if form.validate_on_submit():
         season = db.session.query(Season).filter(Season.name.like(form.name.data)).first()
         season_type = int(request.form.get('season_type'))
-        place_id = request.form.get('place_id')  # Získanie vybraného miesta z formulára
-    
+        place_id = request.form.get('place_id')
+
         if not season:
             new_season = Season(
                 name=form.name.data,
-                no_group=1, 
+                no_group=1,
                 winner_points=3,
                 open=form.open.data,
                 visible=form.visible.data,
                 user_id=current_user.id,
                 min_players=form.min_players.data,
                 season_type=season_type,
-                place_id=place_id  # Uloženie vybraného miesta do turnaja
+                place_id=place_id
             )
             db.session.add(new_season)
             db.session.commit()
@@ -1406,9 +1406,8 @@ def tournament_new():
         else:
             flash("Tournament name must be unique.", category="error")
 
-    return render_template("tournament_create.html", vapid_public_key=vapid_public_key, head='new-tournament', title='Create New Tournament', form=form, players=players, user=current_user, adminz=adminz, user_places=user_places)
+    return render_template("tournament_create.html", vapid_public_key=vapid_public_key, head='new-tournament', title='Create New Tournament', form=form, user=current_user, user_places=user_places)
 
-        
 
     # return render_template("tournament_create.html", vapid_public_key=vapid_public_key, head='new-tournament', title='Create New Tournament', form=form, players=players, user=current_user, adminz=adminz)
 
@@ -2172,21 +2171,32 @@ class NewSeason(FlaskForm):
     submit = SubmitField()
 
 
+# class NewTournament(FlaskForm):
+#     name = StringField('Tournament name', validators=[DataRequired()])
+#     min_players = IntegerField('Players in Tournament', validators=[
+#             DataRequired(), 
+#             is_power_of_two, is_integer
+#         ])         
+#     # no_round = IntegerField('Rounds (min 1 - max 10)', validators=[DataRequired(), NumberRange(min=1, max=10, message="blah")])
+#     # no_group = IntegerField('Players in group (2 - 20)', validators=[DataRequired(), NumberRange(min=2, max=20, message="blah")])
+#     # winner_points = IntegerField('Points for win (1 - 5)', validators=[DataRequired(), NumberRange(min=1, max=5, message="blah")])
+#     season_from = DateTimeLocalField('Break Point')
+#     # season_to = DateTimeLocalField('Break Point')
+#     open = BooleanField('Open')
+#     visible = BooleanField('Visible')
+#     place_id = SelectField('Select Place', choices=[], coerce=int, validators=[DataRequired()])  # Definujte pole place_id s výberom
+#     submit = SubmitField()
+
+
 class NewTournament(FlaskForm):
     name = StringField('Tournament name', validators=[DataRequired()])
-    min_players = IntegerField('Players in Tournament', validators=[
-            DataRequired(), 
-            is_power_of_two, is_integer
-        ])         
-    # no_round = IntegerField('Rounds (min 1 - max 10)', validators=[DataRequired(), NumberRange(min=1, max=10, message="blah")])
-    # no_group = IntegerField('Players in group (2 - 20)', validators=[DataRequired(), NumberRange(min=2, max=20, message="blah")])
-    # winner_points = IntegerField('Points for win (1 - 5)', validators=[DataRequired(), NumberRange(min=1, max=5, message="blah")])
-    season_from = DateTimeLocalField('Break Point')
-    # season_to = DateTimeLocalField('Break Point')
+    # Zmena min_players z IntegerField na SelectField pre dynamický výber
+    min_players = SelectField('Players in Tournament', choices=[(2, '2'), (4, '4'), (8, '8'), (16, '16'), (32, '32'), (64, '64')], coerce=int, validators=[DataRequired()])
+    season_from = DateTimeLocalField('Break Point', format='%Y-%m-%dT%H:%M')
     open = BooleanField('Open')
     visible = BooleanField('Visible')
-    place_id = SelectField('Select Place', choices=[], coerce=int, validators=[DataRequired()])  # Definujte pole place_id s výberom
-    submit = SubmitField()
+    place_id = SelectField('Select Place', choices=[], coerce=int, validators=[DataRequired()])
+    submit = SubmitField('Create Tournament')
 
 
 class NewPlace(FlaskForm):

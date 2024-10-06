@@ -68,15 +68,16 @@
             <br>
             <div class="form-group">
                 {{ form.min_players.label(class="form-control-label createforms") }}
-                <select id="min_players" class="form-control form-control-lg createforms">
-                    <option value="2" selected>2</option>
-                    <option value="4">4</option>
-                    <option value="8">8</option>
-                    <option value="16">16</option>
-                    <option value="32">32</option>
-                    <option value="64">64</option>
-                </select>
-                <small id="min_players_error" class="text-danger"></small> <!-- Miesto pre chybové hlásenie -->
+                {% if form.min_players.errors %}
+                    {{ form.min_players(class="form-control form-control-lg is-invalid") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.min_players.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.min_players(class="form-control form-control-lg createforms") }}
+                {% endif %}
             </div>
             <br>
             {% if user_places %}
@@ -126,7 +127,11 @@
                 {% endif %}
             </div>
             <input type="hidden" id="season_type" name="season_type" value="2">
-
+            {% for field, errors in form.errors.items() %}
+            <div class="alert alert-danger">
+                <strong>{{ field.label }}:</strong> {{ errors }}
+            </div>
+        {% endfor %}
            <!--
 
                <div class="form-group">
@@ -149,7 +154,7 @@
 <br>
         </fieldset>
         <div class="form-group">
-            {{ form.submit(class="btn-demo btn-outline-info createforms", value=title, id="submit_button", disabled=True) }}
+            {{ form.submit(class="btn-demo btn-outline-info createforms", value=title, id="submit_button", disabled=False) }}
         </div>
         
     </form>
@@ -162,34 +167,40 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    window.onload = function() {
         const minPlayersSelect = document.getElementById('min_players');
         const minPlayersError = document.getElementById('min_players_error');
         const submitButton = document.getElementById('submit_button');
-
-        // Dynamická validácia pri zmene výberu
-        function validateMinPlayers() {
-            const minPlayersValue = minPlayersSelect.value;
-            let errorMessage = '';
-
-            // Overenie, či je hodnota vybraná
-            if (!minPlayersValue) {
-                errorMessage = 'Please select a valid number of players.';
+    
+        // Skontrolujeme, či prvky existujú
+        if (minPlayersSelect && minPlayersError && submitButton) {
+            function validateMinPlayers() {
+                const minPlayersValue = minPlayersSelect.value;
+                let errorMessage = '';
+    
+                // Overenie, či bola hodnota vybraná
+                if (!minPlayersValue || minPlayersValue === '') {
+                    errorMessage = 'Please select a valid number of players.';
+                }
+    
+                // Zobrazenie alebo odstránenie chybového hlásenia
+                minPlayersError.textContent = errorMessage;
+    
+                // Ak je chyba, tlačidlo je zakázané, inak povolené
+                submitButton.disabled = !!errorMessage;
             }
-
-            // Zobraz chybové hlásenie alebo ho odstráň
-            minPlayersError.textContent = errorMessage;
-
-            // Ak je chyba, tlačidlo je zakázané
-            submitButton.disabled = !!errorMessage;
+    
+            // Validácia sa spustí pri zmene výberu
+            minPlayersSelect.addEventListener('change', validateMinPlayers);
+    
+            // Zavoláme validáciu pri načítaní stránky, aby sa tlačidlo aktualizovalo
+            validateMinPlayers();
+        } else {
+            console.error("Elementy s ID 'min_players', 'min_players_error' alebo 'submit_button' neboli nájdené.");
         }
-
-        // Pridanie listeneru na zmenu
-        minPlayersSelect.addEventListener('change', validateMinPlayers);
-
-        // Zavolaj validáciu pri načítaní stránky
-        validateMinPlayers();
-    });
+    };
+    
+    
 </script>
 
 {% endblock content %}

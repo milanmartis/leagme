@@ -192,61 +192,83 @@
         const noGroupInput = document.getElementById('no_group');
         const winnerPointsInput = document.getElementById('winner_points');
         const submitButton = document.getElementById('submit_button');
-
+    
+        // Flags to track if a field has been interacted with
+        let nameTouched = false;
+        let minPlayersTouched = false;
+        let noGroupTouched = false;
+        let winnerPointsTouched = false;
+    
         // Function to validate the form
         function validateForm() {
             const nameValue = nameInput.value.trim();
             const minPlayersValue = minPlayersInput.value;
             const noGroupValue = noGroupInput.value;
             const winnerPointsValue = winnerPointsInput.value;
-
+    
             let isValid = true;
-
+    
             // Name validation
-            if (nameValue === '') {
+            if (nameValue === '' && nameTouched) {
                 document.getElementById('name_error').textContent = 'Please enter a valid season name.';
                 isValid = false;
             } else {
                 document.getElementById('name_error').textContent = '';
             }
-
+    
             // Min players validation
-            if (minPlayersValue < 2 || minPlayersValue > 40) {
+            if ((minPlayersValue < 2 || minPlayersValue > 40) && minPlayersTouched) {
                 document.getElementById('min_players_error').textContent = 'Set value between 2 and 40.';
                 isValid = false;
             } else {
                 document.getElementById('min_players_error').textContent = '';
             }
-
+    
             // No group validation
-            if (noGroupValue < 2 || noGroupValue > 20) {
+            if ((noGroupValue < 2 || noGroupValue > 20) && noGroupTouched) {
                 document.getElementById('no_group_error').textContent = 'Set value between 2 and 20.';
                 isValid = false;
             } else {
                 document.getElementById('no_group_error').textContent = '';
             }
-
+    
             // Winner points validation
-            if (winnerPointsValue < 1 || winnerPointsValue > 5) {
+            if ((winnerPointsValue < 1 || winnerPointsValue > 5) && winnerPointsTouched) {
                 document.getElementById('winner_points_error').textContent = 'Set value between 1 and 5.';
                 isValid = false;
             } else {
                 document.getElementById('winner_points_error').textContent = '';
             }
-
+    
             // Enable or disable submit button based on validation
             submitButton.disabled = !isValid;
         }
-
-        // Add event listeners for validation
-        nameInput.addEventListener('input', validateForm);
-        minPlayersInput.addEventListener('input', validateForm);
-        noGroupInput.addEventListener('input', validateForm);
-        winnerPointsInput.addEventListener('input', validateForm);
-
+    
+        // Add event listeners for validation and to set "touched" flags
+        nameInput.addEventListener('input', function() {
+            nameTouched = true;
+            validateForm();
+        });
+    
+        minPlayersInput.addEventListener('input', function() {
+            minPlayersTouched = true;
+            validateForm();
+        });
+    
+        noGroupInput.addEventListener('input', function() {
+            noGroupTouched = true;
+            validateForm();
+        });
+    
+        winnerPointsInput.addEventListener('input', function() {
+            winnerPointsTouched = true;
+            validateForm();
+        });
+    
         // Initial validation on page load
         validateForm();
     });
+    
 </script>
 
 {% endblock content %}
