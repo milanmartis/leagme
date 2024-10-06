@@ -57,9 +57,17 @@ def make_celery(app=None):
     celery = Celery(
         app.import_name,
         broker=os.environ.get("CELERY_BROKER_URL"),
-        backend=os.environ.get("CELERY_RESULT_BACKEND")
+        backend=os.environ.get("RESULT_BACKEND")  # Nový názov pre 'CELERY_RESULT_BACKEND'
     )
     celery.conf.update(app.config)
+    # Nastavenie Celery Beat (periodické úlohy)
+    celery.conf.beat_schedule = {
+        'close-rounds-every-hour': {
+            'task': 'tasks.check_and_close_rounds_task',
+            'schedule': crontab(minute=0, hour='*/1'),  # Spusti každú hodinu
+            'args': (1,)  # Sezóna s ID 1
+        },
+    }
 
     class ContextTask(celery.Task):
         def __call__(self, *args, **kwargs):
@@ -68,6 +76,7 @@ def make_celery(app=None):
 
     celery.Task = ContextTask
     return celery
+
 
 def create_app():
     app = Flask(__name__)
@@ -97,8 +106,8 @@ def create_app():
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=5)
-    # app.config['CELERY_BROKER_URL'] = os.environ.get("CELERY_BROKER_URL")
-    # app.config['RESULT_BACKEND'] = os.environ.get("RESULT_BACKEND")
+    app.config['CELERY_BROKER_URL'] = os.environ.get("CELERY_BROKER_URL")
+    app.config['RESULT_BACKEND'] = os.environ.get("RESULT_BACKEND")
     app.config['CACHE_TYPE'] = 'redis'
     app.config['CACHE_REDIS_URL'] = os.environ.get("CACHE_REDIS_URL")
     app.config['VAPID_PUBLIC_KEY'] = os.environ.get("VAPID_PUBLIC_KEY")
