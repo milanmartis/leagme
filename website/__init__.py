@@ -57,7 +57,7 @@ def make_celery(app=None):
     celery = Celery(
         app.import_name,
         broker=os.environ.get("CELERY_BROKER_URL"),
-        backend=os.environ.get("CELERY_RESULT_BACKEND")
+        backend=os.environ.get("RESULT_BACKEND")
     )
     celery.conf.update(app.config)
 
