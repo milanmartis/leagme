@@ -59,7 +59,22 @@ def make_celery(app=None):
         broker=os.environ.get("CELERY_BROKER_URL"),
         backend=os.environ.get("RESULT_BACKEND")
     )
+    
     celery.conf.update(app.config)
+
+    # Autodiscover tasks in the specified module
+    # celery.autodiscover_tasks(['website.tasks'])
+
+    # Other configuration settings
+    celery.conf.broker_connection_retry_on_startup = True
+
+    celery.conf.beat_schedule = {
+        'close-rounds-every-hour': {
+            'task': 'website.check_and_close_rounds_task',
+            'schedule': crontab(minute=0, hour='*/1'),
+            'args': (1,)
+        },
+    }
 
     class ContextTask(celery.Task):
         def __call__(self, *args, **kwargs):
