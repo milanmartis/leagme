@@ -16,6 +16,7 @@ from flask_argon2 import Argon2
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from redis import Redis
 from celery import Celery
+from celery.schedules import crontab
 from flask_session import Session
 from flask_caching import Cache
 from flask_cors import CORS
@@ -28,6 +29,7 @@ from firebase_admin import credentials, firestore, auth, messaging, initialize_a
 from pywebpush import webpush, WebPushException
 import requests
 import traceback
+
 # Load environment variables
 load_dotenv()
 
@@ -43,11 +45,11 @@ celery = None  # Initialize as None and configure later
 cors = CORS()
 csrf = CSRFProtect()
 
-# Načítanie certifikátu zo súboru
-cred = credentials.Certificate(os.environ.get("FIREBASE_URL_JSON"))
-
-# Inicializácia aplikácie Firebase
-firebase_admin.initialize_app(cred)
+# Načítanie certifikátu zo súboru alebo obsahu
+firebase_credentials = os.environ.get("FIREBASE_URL_JSON")
+if firebase_credentials:
+    cred = credentials.Certificate(firebase_credentials)
+    firebase_admin.initialize_app(cred)
 
 # Celery configuration
 def make_celery(app=None):
@@ -55,9 +57,24 @@ def make_celery(app=None):
     celery = Celery(
         app.import_name,
         broker=os.environ.get("CELERY_BROKER_URL"),
-        backend=os.environ.get("CELERY_RESULT_BACKEND")
+        backend=os.environ.get("RESULT_BACKEND")
     )
+    
     celery.conf.update(app.config)
+
+    # Autodiscover tasks in the specified module
+    # celery.autodiscover_tasks(['website.tasks'])
+
+    # Other configuration settings
+    celery.conf.broker_connection_retry_on_startup = True
+
+    celery.conf.beat_schedule = {
+        'close-rounds-every-hour': {
+            'task': 'website.check_and_close_rounds_task',
+            'schedule': crontab(minute=0, hour='*/1'),
+            'args': (1,)
+        },
+    }
 
     class ContextTask(celery.Task):
         def __call__(self, *args, **kwargs):
@@ -96,7 +113,7 @@ def create_app():
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=5)
     app.config['CELERY_BROKER_URL'] = os.environ.get("CELERY_BROKER_URL")
-    app.config['CELERY_RESULT_BACKEND'] = os.environ.get("CELERY_RESULT_BACKEND")
+    app.config['RESULT_BACKEND'] = os.environ.get("RESULT_BACKEND")
     app.config['CACHE_TYPE'] = 'redis'
     app.config['CACHE_REDIS_URL'] = os.environ.get("CACHE_REDIS_URL")
     app.config['VAPID_PUBLIC_KEY'] = os.environ.get("VAPID_PUBLIC_KEY")
@@ -108,15 +125,12 @@ def create_app():
     csrf.init_app(app)
     bcrypt.init_app(app)
     argon2.init_app(app)
-    cors.init_app(app, resources={r"/*": {"origins": "*"}}, 
-                  allow_headers=["Authorization", "Content-Type"], 
-                  methods=["GET", "POST", "OPTIONS"], 
-                  supports_credentials=True)
+    cors.init_app(app, resources={r"/*": {"origins": "*"}}, allow_headers=["Authorization", "Content-Type"], methods=["GET", "POST", "OPTIONS"], supports_credentials=True)
     mail.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)
 
-    from .models import User, PushSubscription, ProductCategory, Product, Role, user_datastore
+    from .models import User, Round, PushSubscription, ProductCategory, Product, Role, user_datastore
 
     # Configure Google OAuth Blueprint
     google_blueprint = make_google_blueprint(
@@ -183,26 +197,7 @@ def create_app():
     Security(app, user_datastore)
 
     # Firebase Messaging Example
-    # def send_firebase_message(token, title, body):
-    #     """Send a notification to a device using Firebase Cloud Messaging"""
-    #     message = messaging.Message(
-    #         notification=messaging.Notification(
-    #             title=title,
-    #             body=body
-    #         ),
-    #         token=token
-    #     )
-    #     response = messaging.send(message)
-    #     print(f"Successfully sent message: {response}")
-
-    # # Role Protection Definition
-    # _security = LocalProxy(lambda: current_app.extensions['security'])
-
-    # Zoznam subscription údajov a FCM tokenov
-    subscriptions = []
-    fcm_tokens = []
-
-    # Endpoint pre získanie Firebase konfigurácie
+    # Dynamický endpoint pre získanie Firebase konfigurácie
     @app.route('/get-firebase-config', methods=['GET'])
     def get_firebase_config():
         firebase_config = {
@@ -215,26 +210,19 @@ def create_app():
             "measurementId": os.environ.get('FIREBASE_MEASUREMENT_ID')
         }
         return jsonify(firebase_config)
-    
 
+    # Subscription routes for Push Notifications
     @app.route('/subscribe', methods=['POST'])
     def subscribe():
         subscription_data = request.get_json()
-
-        # Získaj informácie o používateľovi, napr. aktuálne prihláseného používateľa
         user_id = current_user.id if current_user.is_authenticated else None
-
-        # Získaj údaje o zariadení, operačnom systéme a prehliadači z požiadavky
         device_type = subscription_data.get('deviceType', 'Unknown')
         operating_system = subscription_data.get('operatingSystem', 'Unknown')
         browser_name = subscription_data.get('browserName', 'Unknown')
 
-        # Skontroluj, či sa jedná o FCM token alebo Web Push subscription
+        # Handle FCM token subscriptions for iOS
         if 'token' in subscription_data:
-            # Spracovanie FCM tokenu (pre iOS zariadenia)
             fcm_token = subscription_data['token']
-
-            # Nájdeme všetky existujúce FCM subscription pre rovnakého používateľa, zariadenie, OS a prehliadač
             existing_fcm_tokens = PushSubscription.query.filter_by(
                 user_id=user_id,
                 device_type=device_type,
@@ -242,14 +230,11 @@ def create_app():
                 browser_name=browser_name
             ).all()
 
-            # Odstránime všetky záznamy s neplatným auth (FCM token)
             for subscription in existing_fcm_tokens:
                 if subscription.auth != fcm_token:
                     db.session.delete(subscription)
-            
             db.session.commit()
 
-            # Vytvoríme novú subscription, ak neexistuje žiadna s rovnakým auth
             if not any(sub.auth == fcm_token for sub in existing_fcm_tokens):
                 new_fcm_subscription = PushSubscription(
                     user_id=user_id,
@@ -265,12 +250,10 @@ def create_app():
                 return jsonify({'message': 'FCM token už existuje.'}), 200
 
         else:
-            # Spracovanie Web Push subscription (pre ostatné zariadenia)
+            # Handle Web Push subscriptions
             endpoint = subscription_data['subscription']['endpoint']
             p256dh = subscription_data['subscription']['keys']['p256dh']
             auth = subscription_data['subscription']['keys']['auth']
-
-            # Nájdeme všetky existujúce Web Push subscription pre rovnakého používateľa, zariadenie, OS a prehliadač
             existing_subscriptions = PushSubscription.query.filter_by(
                 user_id=user_id,
                 device_type=device_type,
@@ -278,14 +261,11 @@ def create_app():
                 browser_name=browser_name
             ).all()
 
-            # Odstránime všetky záznamy s neplatným endpoint alebo auth
             for subscription in existing_subscriptions:
                 if subscription.endpoint != endpoint or subscription.auth != auth:
                     db.session.delete(subscription)
-            
             db.session.commit()
 
-            # Vytvoríme novú subscription, ak neexistuje žiadna s rovnakým endpoint a auth
             if not any(sub.endpoint == endpoint and sub.auth == auth for sub in existing_subscriptions):
                 new_subscription = PushSubscription(
                     user_id=user_id,
@@ -302,71 +282,56 @@ def create_app():
             else:
                 return jsonify({'message': 'Web Push subscription už existuje.'}), 200
 
-
-            
     @app.route('/check-subscription', methods=['GET'])
     def check_subscription():
         user_id = request.args.get('user_id')
         device_type = request.args.get('device_type')
         operating_system = request.args.get('operating_system')
         browser_name = request.args.get('browser_name')
-        print(browser_name)
 
         if not user_id:
             return jsonify({'error': 'Žiadny user nebol najdeny.'}), 400
 
-        # Skontroluj, či existuje predplatné pre daný endpoint
         existing_subscription = PushSubscription.query.filter_by(
-            user_id=user_id,  # Použijeme 'user_id', nie 'user'
+            user_id=user_id,
             device_type=device_type,
             operating_system=operating_system,
             browser_name=browser_name
         ).first()
-        print(existing_subscription)
 
         if existing_subscription:
             return jsonify({'subscribed': True}), 200
         else:
             return jsonify({'subscribed': False}), 200
 
-            
-            
-    # Odhlásenie z push notifikácií (unsubscribe)
+    # Unsubscribe endpoint
     @app.route('/unsubscribe', methods=['POST'])
     def unsubscribe():
         subscription_data = request.get_json()
-
         user_id = subscription_data.get('user_id')
         device_type = subscription_data.get('device_type')
         operating_system = subscription_data.get('operating_system')
         browser_name = subscription_data.get('browser_name')
 
-        # if not endpoint:
-        #     return jsonify({'message': 'Chýba endpoint pre odhlásenie.'}), 400
-
         try:
-            # Nájdeme predplatné podľa endpointu a odstránime ho
             subscriptions = PushSubscription.query.filter_by(
                 user_id=user_id,
                 device_type=device_type,
                 operating_system=operating_system,
                 browser_name=browser_name
-                
-                ).all()
-            
-            for subscription in subscriptions:
+            ).all()
 
-                if subscription:
-                    db.session.delete(subscription)
-                    db.session.commit()
-                    return jsonify({'message': 'Predplatné bolo vymazané.'}), 200
-                else:
-                    return jsonify({'message': 'Predplatné nebolo nájdené.'}), 404
+            for subscription in subscriptions:
+                db.session.delete(subscription)
+            db.session.commit()
+
+            return jsonify({'message': 'Predplatné bolo vymazané.'}), 200
         except Exception as e:
             print('Error:', e)
             return jsonify({'message': 'Chyba servera.'}), 500
-
-    # Dynamicky nastavíme audience podľa subscription endpointu
+        
+        
+        # Dynamicky nastavíme audience podľa subscription endpointu
     def get_audience_from_subscription(endpoint):
         if "fcm.googleapis.com" in endpoint:
             return "https://fcm.googleapis.com"
@@ -405,44 +370,24 @@ def create_app():
 
     @app.route('/send_test_notification', methods=['POST'])
     def send_test_notification():
-        # Definovanie notifikácie, ktorú chceme poslať
         notification_payload = {
             "title": "Skúšobná notifikácia",
             "body": "Toto je test push notifikácie",
             "icon": "/static/img/icon.png"
         }
-
-        # Načítanie všetkých subscription z databázy
         subscriptions = PushSubscription.query.all()
 
-        if not subscriptions:
-            return jsonify({"message": "Nie sú uložené žiadne predplatné (subscriptions)"}), 400
-
-        # Posielanie Web Push notifikácií pre všetky uložené subscriptions
-        
         for subscription in subscriptions:
-            if subscription.operating_system=='MacOS':
+            if subscription.operating_system == 'MacOS':
                 send_push_notification(subscription.auth, 'title', 'body')
-            
             else:
-            
                 try:
-                    
-                    # Získaj endpoint z databázy
                     endpoint = subscription.endpoint
-                    # print("pojpojpojpojpoj")
-                    print(endpoint)
-
-                    # Dynamické získanie audience (na základe endpointu)
                     audience = get_audience_from_subscription(endpoint)
-
-                    # Nastavenie VAPID claimov s dynamickým audience
                     vapid_claims = {
                         "sub": "mailto:tvoj-email@example.com",
                         "aud": audience
                     }
-
-                    # Posielanie push notifikácie pomocou webpush
                     webpush(
                         subscription_info={
                             "endpoint": subscription.endpoint,
@@ -455,146 +400,35 @@ def create_app():
                         vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY"),
                         vapid_claims=vapid_claims
                     )
-
                 except WebPushException as ex:
                     print(f"Chyba pri posielaní Web Push notifikácie: {ex}")
-                    if ex.response:
-                        print(f"Detailná odpoveď zo servera: Status kód: {ex.response.status_code}, Text: {ex.response.text}")
-                    return jsonify({"message": "Chyba pri odoslaní Web Push notifikácie2"}), 500
+                    return jsonify({"message": "Chyba pri odoslaní Web Push notifikácie"}), 500
                 except ValueError as ve:
                     print(f"Chyba: {ve}")
                     return jsonify({"message": f"Chyba: {ve}"}), 400
 
         return jsonify({"message": "Notifikácia bola úspešne odoslaná všetkým používateľom"}), 200
 
-    
-    
-    @app.route('/send_notification', methods=['POST'])
-    def send_notification():
-        # Príklad payloadu pre notifikáciu
-        notification_payload = {
-            "title": "Nové oznámenie",
-            "body": "Máš nové oznámenie",
-            "icon": "/static/img/icon.png"
-        }
+    # Celery periodic task example
+    @celery.task
+    def check_and_close_rounds_task():
+        current_time = datetime.now()
+        open_rounds = Round.query.filter_by(open=True).all()
 
-        # Získaj všetky subscription z databázy
-        subscriptions = PushSubscription.query.all()
+        for round_instance in open_rounds:
+            round_end_time = round_instance.round_start + timedelta(seconds=round_instance.duration)
+            if current_time >= round_end_time:
+                round_instance.open = False
+                db.session.add(round_instance)
+                db.session.commit()
 
-        for subscription in subscriptions:
-            try:
-                # Odošli push notifikáciu
-                webpush(
-                    subscription_info={
-                        "endpoint": subscription.endpoint,
-                        "keys": {
-                            "p256dh": subscription.p256dh,
-                            "auth": subscription.auth
-                        }
-                    },
-                    data=json.dumps(notification_payload),
-                    vapid_private_key=os.environ.get('VAPID_PRIVATE_KEY'),
-                    vapid_claims={
-                        "sub": "mailto:example@example.com"
-                    }
-                )
-            except WebPushException as ex:
-                print(f"Chyba pri odosielaní notifikácie: {ex}")
-                # Ak je subscription neplatná, môžeme ju odstrániť
-                if ex.response and ex.response.status_code == 410:
-                    db.session.delete(subscription)
-                    db.session.commit()
+        return "Closed all open rounds after limit"
 
-        return jsonify({'message': 'Notifikácie odoslané.'}), 200
-
-    # Route na odosielanie push notifikácií
-    # @app.route('/send_notification', methods=['POST'])
-    # def send_notification():
-    #     notification_payload = {
-    #         "title": "Nová správa",
-    #         "body": "Toto je ukážka push notifikácie",
-    #         "icon": "/path-to-icon.png"
-    #     }
-    #     for subscription in subscriptions:
-    #         try:
-    #             webpush(
-    #                 subscription_info=subscription,
-    #                 data=json.dumps(notification_payload),
-    #                 vapid_private_key=os.environ.get("VAPID_PRIVATE_KEY"),
-    #                 vapid_claims=vapid_claims
-    #             )
-    #         except WebPushException as ex:
-    #             print(f"Error sending notification: {ex}")
-    #             return jsonify({"message": "Error sending notification"}), 500
-
-    #     return jsonify({"message": "Notifications sent"}), 200
-    
-    # @app.route('/get-firebase-config')
-    # def get_firebase_config():
-    #     config = {
-    #         "apiKey": os.environ.get("FIREBASE_API_KEY"),
-    #         "authDomain": os.environ.get("FIREBASE_AUTH_DOMAIN"),
-    #         "projectId": os.environ.get("FIREBASE_PROJECT_ID"),
-    #         "storageBucket": os.environ.get("FIREBASE_STORAGE_BUCKET"),
-    #         "messagingSenderId": os.environ.get("FIREBASE_MESSAGING_SENDER_ID"),
-    #         "appId": os.environ.get("FIREBASE_APP_ID"),
-    #         "measurementId": os.environ.get("FIREBASE_MEASUREMENT_ID")
-    #     }
-    #     return jsonify(config)
-
-    # @app.route('/send-notification', methods=['POST'])
-    # def send_notification():
-    #     data = request.get_json()
-    #     token = data.get('token')
-    #     title = data.get('title')
-    #     body = data.get('body')
-
-    #     # Odoslanie notifikácie cez Firebase Messaging
-    #     message = messaging.Message(
-    #         notification=messaging.Notification(
-    #             title=title,
-    #             body=body
-    #         ),
-    #         token=token
-    #     )
-    #     response = messaging.send(message)
-    #     return jsonify({"message": "Notification sent", "response": response})
-
-    # @app.route('/vapid-public-key')
-    # def get_vapid_public_key():
-    #     vapid_public_key=os.getenv("VAPID_PUBLIC_KEY")
-    #     return jsonify({'publicKey': vapid_public_key})
-    
-    @app.route('/vapid-public-key')
-    def get_public_vapid_key():
-        public_vapid_key = os.getenv('VAPID_PUBLIC_KEY')
-        return jsonify({"publicVapidKey": public_vapid_key})
-
-    @app.route('/firebase-messaging-sw.js')
-    def service_worker():
-        return send_from_directory('static', 'firebase-messaging-sw.js')
-    
-
-
-    @app.template_filter('datetimeformat')
-    def datetimeformat(value, format='%d/%m/%Y'):
-        return datetime.fromtimestamp(value).strftime(format)
-
-    @app.route('/notify-disconnect', methods=['POST'])
-    def notify_disconnect():
-        data = request.get_json()
-        message = data.get('message', 'An unknown issue occurred.')
-
-        # Použijeme flash správu na upozornenie používateľa
-        flash(message, category='error')
-
-        return jsonify({'status': 'success', 'message': 'Notification received'}), 200
-
+    # Error Handler for CSRF errors
     @app.errorhandler(CSRFError)
     def handle_csrf_error(e):
         return jsonify({'error': 'CSRF token missing or incorrect.'}), 400
 
-    # Error Handler for Database Issues
     @app.errorhandler(OperationalError)
     def handle_operational_error(e):
         if "could not translate host name" in str(e):
@@ -602,7 +436,6 @@ def create_app():
             return render_template("errors/500.html"), 500
         return render_template("errors/500.html"), 500
 
-    # User Loader Function for Flask-Login
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
