@@ -61,6 +61,8 @@ def make_celery(app=None):
     )
     
     celery.conf.update(app.config)
+
+    # Pridanie broker_connection_retry_on_startup do konfigurácie Celery
     celery.conf.update(
         broker_connection_retry_on_startup=True
     )
