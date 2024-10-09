@@ -67,13 +67,13 @@ def make_celery(app=None):
         broker_connection_retry_on_startup=True
     )
 
-    celery.conf.beat_schedule = {
-        'close-rounds-every-hour': {
-            'task': 'website.check_and_close_rounds_task',
-            'schedule': crontab(minute=0, hour='*/1'),
-            'args': (1,)
-        },
-    }
+    # celery.conf.beat_schedule = {
+    #     'close-rounds-every-hour': {
+    #         'task': 'website.check_and_close_rounds_task',
+    #         'schedule': crontab(minute=0, hour='*/1'),
+    #         'args': (1,)
+    #     },
+    # }
 
     class ContextTask(celery.Task):
         def __call__(self, *args, **kwargs):
@@ -409,20 +409,20 @@ def create_app():
 
         return jsonify({"message": "Notifikácia bola úspešne odoslaná všetkým používateľom"}), 200
 
-    # Celery periodic task example
-    @celery.task
-    def check_and_close_rounds_task():
-        current_time = datetime.now()
-        open_rounds = Round.query.filter_by(open=True).all()
+    # # Celery periodic task example
+    # @celery.task
+    # def check_and_close_rounds_task():
+    #     current_time = datetime.now()
+    #     open_rounds = Round.query.filter_by(open=True).all()
 
-        for round_instance in open_rounds:
-            round_end_time = round_instance.round_start + timedelta(seconds=round_instance.duration)
-            if current_time >= round_end_time:
-                round_instance.open = False
-                db.session.add(round_instance)
-                db.session.commit()
+    #     for round_instance in open_rounds:
+    #         round_end_time = round_instance.round_start + timedelta(seconds=round_instance.duration)
+    #         if current_time >= round_end_time:
+    #             round_instance.open = False
+    #             db.session.add(round_instance)
+    #             db.session.commit()
 
-        return "Closed all open rounds after limit"
+    #     return "Closed all open rounds after limit"
 
     # Error Handler for CSRF errors
     @app.errorhandler(CSRFError)
