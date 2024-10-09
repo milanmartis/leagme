@@ -57,7 +57,8 @@ def make_celery(app=None):
     celery = Celery(
         app.import_name,
         broker=os.environ.get("CELERY_BROKER_URL"),
-        backend=os.environ.get("RESULT_BACKEND")
+        backend=os.environ.get("RESULT_BACKEND"),
+        broker_connection_retry_on_startup=True
     )
     
     celery.conf.update(app.config)
@@ -66,7 +67,7 @@ def make_celery(app=None):
     # celery.autodiscover_tasks(['website.tasks'])
 
     # Other configuration settings
-    celery.conf.broker_connection_retry_on_startup = True
+    
 
     celery.conf.beat_schedule = {
         'close-rounds-every-hour': {
@@ -178,8 +179,8 @@ def create_app():
     global celery
     celery = make_celery(app)
 
-    # socketio.init_app(app)
-    socketio.init_app(app, cors_allowed_origins="*", async_mode="gevent")
+    socketio.init_app(app)
+    # socketio.init_app(app, cors_allowed_origins="*", async_mode="gevent")
 
 
     # Register Blueprints
