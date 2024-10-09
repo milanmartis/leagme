@@ -58,16 +58,12 @@ def make_celery(app=None):
         app.import_name,
         broker=os.environ.get("CELERY_BROKER_URL"),
         backend=os.environ.get("RESULT_BACKEND"),
-        broker_connection_retry_on_startup=True
     )
     
     celery.conf.update(app.config)
-
-    # Autodiscover tasks in the specified module
-    # celery.autodiscover_tasks(['website.tasks'])
-
-    # Other configuration settings
-    
+    celery.conf.update(
+        broker_connection_retry_on_startup=True
+    )
 
     celery.conf.beat_schedule = {
         'close-rounds-every-hour': {
@@ -84,6 +80,7 @@ def make_celery(app=None):
 
     celery.Task = ContextTask
     return celery
+
 
 def create_app():
     app = Flask(__name__)
@@ -179,8 +176,8 @@ def create_app():
     global celery
     celery = make_celery(app)
 
-    socketio.init_app(app)
-    # socketio.init_app(app, cors_allowed_origins="*", async_mode="gevent")
+    # socketio.init_app(app)
+    socketio.init_app(app, cors_allowed_origins="*", async_mode="gevent")
 
 
     # Register Blueprints
