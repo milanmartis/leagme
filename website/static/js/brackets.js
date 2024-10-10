@@ -5,7 +5,7 @@ num = 0;
 (function($){
 	var get_html_player = function(player,isFinalRound,isFinalRound2,is_pair){
 		// Kontrola, či objekt hráča existuje
-		console.log(player);
+		//console.log(player);
 		num += 1;
 		//alert(player.result);
 

@@ -24,7 +24,7 @@ from flask_argon2 import Argon2
 import uuid
 import random
 import requests
-from website import mail, celery
+from website import mail
 from .utils import send_new_purchase_email
 
 import os
@@ -717,7 +717,7 @@ def validate_vat_number(vat_number, country):
 
 
 
-@celery.task
+# @celery.task
 @auth.route('/account', methods=['GET', 'POST'])
 @login_required
 def user_details():

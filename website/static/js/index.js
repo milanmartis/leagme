@@ -1,8 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
+
 // VAPID public key
 const publicVapidKey = vapidPublicKey;
-//alert(publicVapidKey);
 
 // Function to detect iOS devices
 function isIOS() {
@@ -107,7 +107,6 @@ async function subscribeToPushNotifications() {
                 const deviceInfo = getDeviceInfo();
 
                 // Send subscription data to backend
-               // alert(subscription.endpoint);
                 const response = await fetch('/subscribe', {
                     method: 'POST',
                     body: JSON.stringify({ 
@@ -150,145 +149,84 @@ function urlBase64ToUint8Array(base64String) {
     return outputArray;
 }
 
-
-
-
 async function unsubscribeFromPushNotifications() {
-    // alert('unsub');
-
-    // const current_user =  current_user;
-    
     try {
-        // const serviceWorkerRegistration = await navigator.serviceWorker.ready;
-        // const subscription = await serviceWorkerRegistration.pushManager.getSubscription();
-  
-        // if (subscription) {
-        //     await subscription.unsubscribe();
-        //     console.log('User is unsubscribed.');
-  
-            // Odošleme požiadavku na backend na vymazanie subscription z databázy
-            const deviceInfo = getDeviceInfo();
-            fetch('/unsubscribe', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken  // Ak používaš CSRF ochranu
-                },
-                body: JSON.stringify({ 
-                    user_id:  current_user,
-                    device_type: deviceInfo.deviceType,
-                    operating_system: deviceInfo.operatingSystem,
-                    browser_name: deviceInfo.browserName
-                })
+        const deviceInfo = getDeviceInfo();
+        fetch('/unsubscribe', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ 
+                user_id: current_user,
+                device_type: deviceInfo.deviceType,
+                operating_system: deviceInfo.operatingSystem,
+                browser_name: deviceInfo.browserName
             })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Unsubscribed on server:', data);
-            })
-            .catch(error => {
-                console.error('Error unsubscribing on server:', error);
-            });
-
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Unsubscribed on server:', data);
+        })
+        .catch(error => {
+            console.error('Error unsubscribing on server:', error);
+        });
     } catch (error) {
         console.error('Failed to unsubscribe the user:', error);
     }
-  }
-  
-  
-  document.getElementById('enableNotificationsToggle').addEventListener('change', async (event) => {
-    const notifTextSwitch = document.getElementById('notif-text-switch');
-    const notifTextSwitch2 = document.getElementById('notif-text-switch2');
-    
-    // Nastav opacity na zníženie viditeľnosti pri spracovaní
-   // notifTextSwitch.style.opacity = '0.3';
-    
-    if (event.target.checked) {
-      try {
-        await subscribeToPushNotifications();  // Funkcia na prihlásenie k odberu
-       // notifTextSwitch.textContent = 'Notifications enabled';
-        notifTextSwitch.style.opacity = '0.4';
-        notifTextSwitch2.style.opacity = '0.4';
+}
 
-      } catch (error) {
-        console.error('Error subscribing to notifications:', error);
-      }
-    } else {
-      try {
-        await unsubscribeFromPushNotifications();  // Funkcia na odhlásenie z odberu
-        notifTextSwitch.style.opacity = '1';
-        notifTextSwitch2.style.opacity = '1';
-
-      } catch (error) {
-        console.error('Error unsubscribing from notifications:', error);
-      }
-    }
-  
-    // Po spracovaní obnov opacity na plnú viditeľnosť
-   // notifTextSwitch.style.opacity = '1';
-  });
-  
-  
-  // Funkcia na kontrolu stavu predplatného
-  async function checkSubscriptionStatus() {
-    const notifTextSwitch = document.getElementById('notif-text-switch');
-    const notifTextSwitch2 = document.getElementById('notif-text-switch2');
-
-    try {
-        // const serviceWorkerRegistration = await navigator.serviceWorker.ready;
-        // const subscription = await serviceWorkerRegistration.pushManager.getSubscription();
-        // alert(subscription);
-  
-        // if (subscription) {
-            // Načítanie stavu predplatného z backendu
-          //  alert('zle');
-            const deviceInfo = getDeviceInfo();
-            const response = await fetch(`/check-subscription?device_type=${deviceInfo.deviceType}&operating_system=${deviceInfo.operatingSystem}&browser_name=${deviceInfo.browserName}&user_id=${current_user}`);
-            const data = await response.json();
-            // alert(data.subscribed);
-  
-            if (data.subscribed) {
-                // Ak je používateľ už predplatený, nastav tlačidlo na zapnuté
-
-                document.getElementById('enableNotificationsToggle').checked = true;
-                notifTextSwitch.style.opacity = '0.4';
-                notifTextSwitch2.style.opacity = '0.4';
+// Attach event listener for notifications toggle after DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    const enableNotificationsToggle = document.getElementById('enableNotificationsToggle');
+    if (enableNotificationsToggle) {
+        enableNotificationsToggle.addEventListener('change', async (event) => {
+            const notifTextSwitch = document.getElementById('notif-text-switch');
+            const notifTextSwitch2 = document.getElementById('notif-text-switch2');
+        
+            if (event.target.checked) {
+                try {
+                    await subscribeToPushNotifications();
+                    notifTextSwitch.style.opacity = '0.4';
+                    notifTextSwitch2.style.opacity = '0.4';
+                } catch (error) {
+                    console.error('Error subscribing to notifications:', error);
+                }
             } else {
-                document.getElementById('enableNotificationsToggle').checked = false;
-                notifTextSwitch.style.opacity = '1';
-                notifTextSwitch2.style.opacity = '1';
-                // Ak nie je predplatený, nastav tlačidlo na vypnuté
+                try {
+                    await unsubscribeFromPushNotifications();
+                    notifTextSwitch.style.opacity = '1';
+                    notifTextSwitch2.style.opacity = '1';
+                } catch (error) {
+                    console.error('Error unsubscribing from notifications:', error);
+                }
             }
-        // } else {
-            // document.getElementById('enableNotificationsToggle').checked = false;
-        // }
-    } catch (error) {
-        console.error('Error checking subscription status:', error);
-    }
-  }
-  
-  // Zavolaj funkciu po načítaní stránky, aby sa načítal stav tlačidla
-  window.addEventListener('load', checkSubscriptionStatus);
-
-  // Attach the event listener to a button
-document.getElementById('enableNotificationsButton').addEventListener('click', async () => {
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-        console.log('Permission granted.');
-        await subscribeToPushNotifications();
-    } else {
-        console.log('Push notifications not granted.');
+        });
     }
 });
 
 
+document.addEventListener('DOMContentLoaded', function() {
+    const enableNotificationsButton = document.getElementById('enableNotificationsButton');
+    if (enableNotificationsButton) {
+        enableNotificationsButton.addEventListener('click', async () => {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                console.log('Permission granted.');
+                await subscribeToPushNotifications();
+            } else {
+                console.log('Push notifications not granted.');
+            }
+        });
+    }
+});
+
 function getDeviceInfo() {
     const userAgent = navigator.userAgent;
-
-    // Detekcia zariadenia
     const isMobile = /Mobi|Android/i.test(userAgent);
     const deviceType = isMobile ? 'Mobile' : 'Desktop';
 
-    // Detekcia operačného systému
     let operatingSystem = 'Unknown OS';
     if (/Windows/i.test(userAgent)) {
         operatingSystem = 'Windows';
@@ -302,7 +240,6 @@ function getDeviceInfo() {
         operatingSystem = 'Linux';
     }
 
-    // Detekcia prehliadača
     let browserName = 'Unknown Browser';
     if (/Chrome/i.test(userAgent)) {
         browserName = 'Chrome';
@@ -323,34 +260,27 @@ function getDeviceInfo() {
     };
 }
 
+// Listener for Service Worker messages
+// navigator.serviceWorker.addEventListener('message', event => {
+//     if (event.data === 'reset-badge') {
+//         resetUnreadCount();
+//     }
+// });
 
-// Listener na zachytenie správ zo Service Workera
-navigator.serviceWorker.addEventListener('message', event => {
-    if (event.data === 'reset-badge') {
-        console.log('Správa na resetovanie odznaku prijatá.');
+// // Reset unread count in IndexedDB and App Badge
+// async function resetUnreadCount() {
+//     const db = await openDatabase();
+//     const tx = db.transaction('notifications', 'readwrite');
+//     const store = tx.objectStore('notifications');
+//     store.put({ id: 1, count: 0 });
+//     await tx.complete;
 
-        // Volanie backendu alebo iného mechanizmu na resetovanie stavu odznaku v IndexedDB
-        resetUnreadCount();
-    }
-});
-
-// Funkcia na resetovanie počtu neprečítaných správ v IndexedDB
-async function resetUnreadCount() {
-    const db = await openDatabase();
-    const tx = db.transaction('notifications', 'readwrite');
-    const store = tx.objectStore('notifications');
-    store.put({ id: 1, count: 0 });
-    await tx.complete;
-
-    // Zresetuj aj App Badge
-    if ('clearAppBadge' in navigator) {
-        try {
-            await navigator.clearAppBadge();
-            console.log('Odznak App Badge bol úspešne resetovaný.');
-        } catch (error) {
-            console.error('Chyba pri resetovaní odznaku:', error);
-        }
-    }
-}
-
-
+//     if ('clearAppBadge' in navigator) {
+//         try {
+//             await navigator.clearAppBadge();
+//             console.log('App Badge was successfully reset.');
+//         } catch (error) {
+//             console.error('Error resetting App Badge:', error);
+//         }
+//     }
+// }

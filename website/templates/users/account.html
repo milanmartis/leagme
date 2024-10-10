@@ -564,6 +564,74 @@ label{
   });
 
   </script>
+  <script>
+  // Function to check subscription status
+async function checkSubscriptionStatus() {
+  const notifTextSwitch = document.getElementById('notif-text-switch');
+  const notifTextSwitch2 = document.getElementById('notif-text-switch2');
+
+  try {
+      const deviceInfo = getDeviceInfo();
+      const response = await fetch(`/check-subscription?device_type=${deviceInfo.deviceType}&operating_system=${deviceInfo.operatingSystem}&browser_name=${deviceInfo.browserName}&user_id=${current_user}`);
+      const data = await response.json();
+
+      if (data.subscribed) {
+          document.getElementById('enableNotificationsToggle').checked = true;
+          notifTextSwitch.style.opacity = '0.4';
+          notifTextSwitch2.style.opacity = '0.4';
+      } else {
+          document.getElementById('enableNotificationsToggle').checked = false;
+          notifTextSwitch.style.opacity = '1';
+          notifTextSwitch2.style.opacity = '1';
+      }
+  } catch (error) {
+      console.error('Error checking subscription status:', error);
+  }
+}
+
+// Check subscription status on window load
+window.addEventListener('load', checkSubscriptionStatus);
+
+
+
+function getDeviceInfo() {
+  const userAgent = navigator.userAgent;
+  const isMobile = /Mobi|Android/i.test(userAgent);
+  const deviceType = isMobile ? 'Mobile' : 'Desktop';
+
+  let operatingSystem = 'Unknown OS';
+  if (/Windows/i.test(userAgent)) {
+      operatingSystem = 'Windows';
+  } else if (/Mac/i.test(userAgent)) {
+      operatingSystem = 'MacOS';
+  } else if (/Android/i.test(userAgent)) {
+      operatingSystem = 'Android';
+  } else if (/iPhone|iPad|iPod/i.test(userAgent)) {
+      operatingSystem = 'iOS';
+  } else if (/Linux/i.test(userAgent)) {
+      operatingSystem = 'Linux';
+  }
+
+  let browserName = 'Unknown Browser';
+  if (/Chrome/i.test(userAgent)) {
+      browserName = 'Chrome';
+  } else if (/Firefox/i.test(userAgent)) {
+      browserName = 'Firefox';
+  } else if (/Safari/i.test(userAgent) && !/Chrome/i.test(userAgent)) {
+      browserName = 'Safari';
+  } else if (/Edge/i.test(userAgent)) {
+      browserName = 'Edge';
+  } else if (/Opera|OPR/i.test(userAgent)) {
+      browserName = 'Opera';
+  }
+
+  return {
+      deviceType,
+      operatingSystem,
+      browserName
+  };
+}
+  </script>
   
 
 {% endblock %}

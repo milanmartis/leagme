@@ -304,7 +304,7 @@ aria-hidden="true"
         </div>
       </div>
     </div>
-    <div class="content"">
+    <div class="content">
     <div class="round-time-counting" style="display:none;">
     <h3 style="opacity: 0.5;">Time Left</h3>
 
@@ -498,20 +498,27 @@ aria-hidden="true"
   </div>
 </div>
 <script>
-  document.getElementById('sendNotificationButton').addEventListener('click', async () => {
-      try {
-          const response = await fetch('/send_test_notification', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'X-CSRFToken': csrfToken 
-              }
-          });
-          const data = await response.json();
-          console.log('Notifikácia odoslaná:', data.message);
-      } catch (error) {
-          console.error('Chyba pri odosielaní notifikácie:', error);
-      }
-  });
+  document.addEventListener('DOMContentLoaded', function() {
+    const sendNotificationButton = document.getElementById('sendNotificationButton');
+    if (sendNotificationButton) {
+        sendNotificationButton.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/send_test_notification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    }
+                });
+                const data = await response.json();
+                console.log('Notifikácia odoslaná:', data.message);
+            } catch (error) {
+                console.error('Chyba pri odosielaní notifikácie:', error);
+            }
+        });
+    } else {
+       // console.error('Element s ID sendNotificationButton neexistuje.');
+    }
+});
   </script>
 {% endblock %}

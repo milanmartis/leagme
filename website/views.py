@@ -51,7 +51,8 @@ from math import ceil, log2, log
 from functools import wraps
 from py_vapid import Vapid
 from sqlalchemy.exc import IntegrityError  # Importujte pre zachytávanie chýb pri vkladaní do databázy
-from website import mail, celery
+from website import mail
+
 
 
 # Stripe konfigurácia
@@ -356,7 +357,7 @@ def create_new_round(season_id):
     db.session.commit()
     return new_round
 
-@celery.task
+# @celery.task
 def generate_tournament_structure(season_id):
     players = db.session.query(User)\
         .join(user_season)\

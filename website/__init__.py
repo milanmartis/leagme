@@ -15,8 +15,6 @@ from werkzeug.local import LocalProxy
 from flask_argon2 import Argon2
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from redis import Redis
-from celery import Celery
-from celery.schedules import crontab
 from flask_session import Session
 from flask_caching import Cache
 from flask_cors import CORS
@@ -27,6 +25,8 @@ import boto3
 import firebase_admin
 from firebase_admin import credentials, firestore, auth, messaging, initialize_app
 from pywebpush import webpush, WebPushException
+from lambda_functions import lambda_handler  # Importuješ Lambda handler
+
 import requests
 import traceback
 
@@ -41,7 +41,6 @@ mail = Mail()
 argon2 = Argon2()
 socketio = SocketIO()
 cache = Cache()
-celery = None  # Initialize as None and configure later
 cors = CORS()
 csrf = CSRFProtect()
 
@@ -50,38 +49,6 @@ firebase_credentials = os.environ.get("FIREBASE_URL_JSON")
 if firebase_credentials:
     cred = credentials.Certificate(firebase_credentials)
     firebase_admin.initialize_app(cred)
-
-# Celery configuration
-def make_celery(app=None):
-    app = app or create_app()
-    celery = Celery(
-        app.import_name,
-        broker=os.environ.get("CELERY_BROKER_URL"),
-        backend=os.environ.get("RESULT_BACKEND"),
-    )
-    
-    celery.conf.update(app.config)
-
-    # Pridanie broker_connection_retry_on_startup do konfigurácie Celery
-    celery.conf.update(
-        broker_connection_retry_on_startup=True
-    )
-
-    # celery.conf.beat_schedule = {
-    #     'close-rounds-every-hour': {
-    #         'task': 'website.check_and_close_rounds_task',
-    #         'schedule': crontab(minute=0, hour='*/1'),
-    #         'args': (1,)
-    #     },
-    # }
-
-    class ContextTask(celery.Task):
-        def __call__(self, *args, **kwargs):
-            with app.app_context():
-                return self.run(*args, **kwargs)
-
-    celery.Task = ContextTask
-    return celery
 
 
 def create_app():
@@ -112,8 +79,6 @@ def create_app():
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=5)
-    app.config['CELERY_BROKER_URL'] = os.environ.get("CELERY_BROKER_URL")
-    app.config['RESULT_BACKEND'] = os.environ.get("RESULT_BACKEND")
     app.config['CACHE_TYPE'] = 'redis'
     app.config['CACHE_REDIS_URL'] = os.environ.get("CACHE_REDIS_URL")
     app.config['VAPID_PUBLIC_KEY'] = os.environ.get("VAPID_PUBLIC_KEY")
@@ -129,8 +94,10 @@ def create_app():
     mail.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.init_app(app)
-
+    
     from .models import User, Round, PushSubscription, ProductCategory, Product, Role, user_datastore
+
+
 
     # Configure Google OAuth Blueprint
     google_blueprint = make_google_blueprint(
@@ -174,13 +141,8 @@ def create_app():
         flash("Successfully signed in with Google.", category="success")
         return redirect(url_for("views.index"))
 
-    # Initialize Celery after app is created
-    global celery
-    celery = make_celery(app)
-
     # socketio.init_app(app)
     socketio.init_app(app, cors_allowed_origins="*", async_mode="gevent")
-
 
     # Register Blueprints
     from .views import views
@@ -195,9 +157,17 @@ def create_app():
 
     # Initialize Flask-Security
     Security(app, user_datastore)
+    
+    
+    @app.route('/invoke_lambda', methods=['GET'])
+    def invoke_lambda():
+        # Simuluješ Lambda event pre úlohu "close_rounds"
+        event = {"task": "close_rounds"}
+        result = lambda_handler(event, None)
+        return jsonify(result)
+
 
     # Firebase Messaging Example
-    # Dynamický endpoint pre získanie Firebase konfigurácie
     @app.route('/get-firebase-config', methods=['GET'])
     def get_firebase_config():
         firebase_config = {

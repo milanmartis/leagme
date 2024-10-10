@@ -1,10 +1,10 @@
 import os
 from flask import url_for, current_app
 from flask_mail import Message
-from website import mail, celery
+from website import mail
 import re
 
-@celery.task
+# @celery.task
 def send_new_round_email(users, what, season):
     for user in users:
         # Kontrola, či je email adresa plne kvalifikovaná
@@ -45,7 +45,7 @@ def send_new_round_email(users, what, season):
 
 
 
-@celery.task
+# @celery.task
 def send_new_purchase_email(user, what):
     # Kontrola, či je email adresa plne kvalifikovaná
     if "@example.com" not in user:
