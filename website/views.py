@@ -2064,7 +2064,7 @@ def create_new_season(season):
 
     list_groups_shorts = ['A', 'B1', 'B2', 'C1', 'C2', 'C3', 'C4']
     last_round = db.session.query(Round).filter(Round.season_id==season).order_by(Round.id.desc()).first()
-    new_round = Round(season_id=season, open=True)
+    new_round = Round(season_id=season, open=True, duration=200)
     
     db.session.add(new_round)
     db.session.commit()
