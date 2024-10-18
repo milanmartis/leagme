@@ -111,19 +111,23 @@
                                   {% set current_position = start_position + loop.index0 %} <!-- Aktuálna pozícia hráča v pravidlách -->
 
                                   <!-- Získanie pravidla pre aktuálnu pozíciu -->
-                                  {% set parts = rules[current_position].split(':') %}
-                                  {% set move_value = parts[1] %}
-                                  
+                                  {% if current_position < rules | length %}
+                                      {% set parts = rules[current_position].split(':') %}
+                                      {% set move_value = parts[1] %}
+                                  {% else %}
+                                      {% set move_value = None %}  <!-- Ak neexistuje hodnota, nastavíme na None -->
+                                  {% endif %}
+
                                   <td class="tab-others2">
                                       <!-- Prvé riadky v skupine - šípky hore -->
-                                      {% if loop.index <= 2 %}
+                                      {% if move_value is not none and loop.index <= 2 %}
                                           {% if move_value == '1' %}
                                               <i class="fa fa-arrow-up" style="color:#0ca00c;margin-left: -6px;"></i>
                                           {% endif %}
                                       {% endif %}
 
                                       <!-- Posledné riadky v skupine - šípky dole -->
-                                      {% if loop.index >= group_size - 1 %}
+                                      {% if move_value is not none and loop.index >= group_size - 1 %}
                                           {% if move_value == '2' %}
                                               <i class="fa fa-arrow-down" style="color:#ff0000;margin-left: -6px;"></i>
                                           {% endif %}
