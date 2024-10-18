@@ -38,7 +38,8 @@ user_season = db.Table('user_season',
                        db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
                        db.Column('season_id', db.Integer, db.ForeignKey('season.id')),
                        db.Column('season_first_date', db.DateTime(timezone=True), default=func.now()),
-                       db.Column('orderz', db.Integer))
+                       db.Column('orderz', db.Integer),
+                       db.Column('move', db.Integer, default=0))
 
 
 
@@ -140,6 +141,7 @@ class Round(db.Model):
     round_start = db.Column(db.DateTime(timezone=True), default=func.now())
     open = db.Column(db.Boolean(), default=True)
     duration = db.Column(db.Integer)
+    rules = db.Column(db.Text)
 
 class Season(db.Model):
     __tablename__ = 'season'
@@ -148,6 +150,7 @@ class Season(db.Model):
     min_players = db.Column(db.Integer)
     no_group = db.Column(db.Integer)
     no_round = db.Column(db.Integer)
+    duration = db.Column(db.Integer)
     winner_points = db.Column(db.Integer)
     visible = db.Column(db.Boolean(), default=False)
     season_type = db.Column(db.Integer)

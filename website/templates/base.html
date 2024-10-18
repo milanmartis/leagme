@@ -818,6 +818,13 @@
   type="module"
   src="{{ url_for('static', filename='js/index.js') }}"
 ></script>
-
+<!--<input type="color" id="colorInput" onchange="changeColor()">-->
+<script>
+  function changeColor() {
+      var color = document.getElementById("colorInput").value;
+      //document.body.style.backgroundColor = color;
+     //< document.documentElement.style.setProperty('--main-color', color);  
+  }
+</script>
   </body>
 </html>

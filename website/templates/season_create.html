@@ -114,11 +114,76 @@
             </div>
             <br>
 
+
+            <div class="form-group">
+                {{ form.duration.label(class="form-control-label createforms") }}
+                {% if form.duration.errors %}
+                    {{ form.duration(class="form-control form-control-lg is-invalid", id="duration_input") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.duration.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <!-- Textové pole na zadanie dní -->
+                    {{ form.duration(class="form-control form-control-lg createforms", id="duration_input", type="number", min="1", max="365", value="1") }}
+                    
+                    <!-- Posuvník na výber dní -->
+                    <input type="range" id="duration_slider" class="form-control-range createforms" min="1" max="365" value="1">
+                    
+                    <!-- Skryté pole pre ukladanie počtu sekúnd -->
+                    <input type="hidden" id="duration_hidden" name="duration">
+                {% endif %}
+                <small id="duration_error" class="text-danger"></small>
+            </div>
+            
+            
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const durationInput = document.getElementById('duration_input'); // Textové pole pre dni
+                    const durationSlider = document.getElementById('duration_slider'); // Posuvník
+                    const durationHiddenInput = document.getElementById('duration_hidden'); // Skryté pole
+            
+                    // Nastavenie počiatočnej hodnoty pre skryté pole
+                    function updateDurationInSeconds(days) {
+                        const durationInSeconds = days * 24 * 60 * 60; // Prepočet dní na sekundy
+                        durationHiddenInput.value = durationInSeconds;
+                     //   console.log("Duration set to: " + durationInSeconds + " seconds");
+                    }
+            
+                    // Prepojenie textového vstupu a posuvníka
+                    durationInput.addEventListener('input', function() {
+                        const days = parseInt(this.value, 10);
+                        if (days >= 1 && days <= 365) {
+                            durationSlider.value = days; // Synchronizácia posuvníka s textovým vstupom
+                            updateDurationInSeconds(days); // Aktualizácia skrytého poľa
+                        }
+                    });
+            
+                    // Prepojenie posuvníka s textovým vstupom
+                    durationSlider.addEventListener('input', function() {
+                        const days = parseInt(this.value, 10);
+                        durationInput.value = days; // Synchronizácia textového vstupu s posuvníkom
+                        updateDurationInSeconds(days); // Aktualizácia skrytého poľa
+                    });
+            
+                    // Inicializácia skrytého poľa na začiatku
+                    updateDurationInSeconds(durationInput.value);
+                });
+            </script>
+            
+            
+            
+
+<br>
+<br>
+
+
             {% if user_places %}
             <div class="form-group">
                 <label for="place_select" class="form-control-label createforms">Select Place</label>
-                <select style="font-size: 19px;" id="place_select" name="place_id" class="form-control form-control-lg createforms" required>
-                    <option style="font-size: 13px;" value="0">...choose place</option>
+                <select style="font-size: 19px;" id="place_select" name="place_id" class="btn-reverse form-control form-control-lg createforms" required>
+                    <option style="font-size: 13px;" value="">choose the venue...</option>
                     {% for place in user_places %}
                         <option style="font-size: 13px;" value="{{ place.id }}" {% if form.place_id.data == place.id %}selected{% endif %}>
                             {{ place.name }}
@@ -133,34 +198,40 @@
             </div>
             {% endif %}
             <br>
-
-            <div class="form-group">
-                {{ form.open.label(class="form-control-label createforms") }}
-                {% if form.open.errors %}
+            <div class="row" style="margin: 0; width: 200px;">
+            <div class="col">
+                
+                <div class="form-group">
+                    {{ form.open.label(class="form-control-label createforms") }}
+                    {% if form.open.errors %}
                     {{ form.open(class="form-control form-control-lg is-invalid") }}
                     <div class="invalid-feedback">
                         {% for error in form.open.errors %}
-                            <span>{{ error }}</span>
+                        <span>{{ error }}</span>
                         {% endfor %}
                     </div>
-                {% else %}
+                    {% else %}
                     {{ form.open(class="form-control form-control-lg createforms") }}
-                {% endif %}
-            </div>
-            <br>
-
-            <div class="form-group">
-                {{ form.visible.label(class="form-control-label createforms") }}
-                {% if form.visible.errors %}
+                    {% endif %}
+                </div>
+                </div>
+                
+                <div class="col">
+                
+                <div class="form-group">
+                    {{ form.visible.label(class="form-control-label createforms") }}
+                    {% if form.visible.errors %}
                     {{ form.visible(class="form-control form-control-lg is-invalid") }}
                     <div class="invalid-feedback">
                         {% for error in form.visible.errors %}
-                            <span>{{ error }}</span>
+                        <span>{{ error }}</span>
                         {% endfor %}
                     </div>
-                {% else %}
+                    {% else %}
                     {{ form.visible(class="form-control form-control-lg createforms") }}
-                {% endif %}
+                    {% endif %}
+                </div>
+                </div>
             </div>
 
             <input type="hidden" id="season_type" name="season_type" value="1">

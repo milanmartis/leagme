@@ -1,4 +1,4 @@
-from website import create_app, db, celery
+from website import create_app, db
 from flask_socketio import SocketIO
 from website.database_initializer import initialize_database
 

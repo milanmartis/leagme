@@ -84,7 +84,7 @@
             <div class="form-group">
                 <label for="place_select" class="form-control-label createforms">Select Place</label>
                 <select style="font-size: 19px;" id="place_select" name="place_id" class="btn-reverse form-control form-control-lg createforms" require>
-                    <option style="font-size: 13px;" value="">choose the venue</option>
+                    <option style="font-size: 13px;" value="">choose the venue...</option>
                     {% for place in user_places %}
                         <option style="font-size: 13px; background-color: black; color: white;font-size: 13px;cursor: pointer;" value="{{ place.id }}" {% if form.place_id.data == place.id %}selected{% endif %}>
                             {{ place.name }}
@@ -99,6 +99,10 @@
             </div>
             {% endif %}
             <br>
+
+            <div class="row" style="margin: 0; width: 200px;">
+                <div class="col">
+                    
             <div class="form-group">
                 {{ form.open.label(class="form-control-label createforms") }}
                 {% if form.open.errors %}
@@ -112,7 +116,8 @@
                     {{ form.open(class="form-control form-control-lg createforms") }}
                 {% endif %}
             </div>
-            <br>
+            </div>
+            <div class="col">
             <div class="form-group">
                 {{ form.visible.label(class="form-control-label createforms") }}
                 {% if form.visible.errors %}
@@ -130,6 +135,8 @@
             {% for field, errors in form.errors.items() %}
             <div class="alert alert-danger">
                 <strong>{{ field.label }}:</strong> {{ errors }}
+            </div>
+            </div>
             </div>
         {% endfor %}
            <!--

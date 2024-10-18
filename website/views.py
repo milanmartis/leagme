@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, request, jsonify, flash, jsonify, redirect, url_for, session, current_app, send_file
 from flask_login import login_required, current_user
 from flask_security import roles_required
+from sqlalchemy import text
+
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -216,6 +218,7 @@ def home(season):
     groups = db.session.query(Groupz).join(
         Season).filter(Season.id == season).all()
     round = db.session.query(Groupz.round_id).filter(Groupz.season_id==season).order_by(Groupz.round_id.desc()).first()
+    round_all_info = db.session.query(Round).filter(Round.season_id==season, Round.open==True).first()
     print(round)
     if round is not None:
         user_group = db.session.query(Groupz).join(User.groupy).filter(User.id == current_user.id).filter(Groupz.season_id == Season.id).filter(Season.id == season).filter(Groupz.round_id == round[0]).first()
@@ -246,7 +249,7 @@ def home(season):
     seas = Season.query.get(season)
 
 
-    return render_template("home.html", vapid_public_key=vapid_public_key, round=round, seas = seas, season=season, user_group=user_group, groups=groups, dataAll=data_all, players=players, data_name_tabz=data_name_tabz, data_show_table=data_show_table, user=current_user, adminz=adminz)
+    return render_template("home.html", round_all_info=round_all_info, vapid_public_key=vapid_public_key, round=round, seas = seas, season=season, user_group=user_group, groups=groups, dataAll=data_all, players=players, data_name_tabz=data_name_tabz, data_show_table=data_show_table, user=current_user, adminz=adminz)
 
 
 # def make_tab_list():
@@ -369,9 +372,9 @@ def generate_tournament_structure(season_id):
     num_rounds = calculate_rounds(num_players)
 
     # Vytvorenie hlavnej Round pre celý turnaj
-    print("************************************OOO************************************")
-    print(season_id)
-    print("************************************OOO************************************")
+    # print("************************************OOO************************************")
+    # print(season_id)
+    # print("************************************OOO************************************")
     tournament_round = create_new_round(season_id)
 
     # Vytvorenie skupín pre každé kolo
@@ -472,7 +475,7 @@ def assign_players_to_duel(season_id,duel_id, player1_id, player2_id, poradove_c
     # user_duel_last_record = db.session.query(user_duel).filter(user_duel.c.notez==duel.id).all()
 
     # print(user_duel_last_record)
-    print("aaaaaaaaaaaaaaaaaaaaaa")
+    # print("aaaaaaaaaaaaaaaaaaaaaa")
     duel_first_groupz = db.session.query(Duel.id).filter(Duel.round_id==duel.round_id).all()
     print(len(duel_first_groupz))
     
@@ -490,7 +493,7 @@ def assign_players_to_duel(season_id,duel_id, player1_id, player2_id, poradove_c
 
     if not player1_id or not player2_id:
         for index, player_id in enumerate(player_idss, start=(len(duel_first_groupz)-1)):
-            print(f"POMOOOOC - {duel.groupz_id}")
+            # print(f"POMOOOOC - {duel.groupz_id}")
             # index = index + dom
             duel_no = db.session.query(Duel).filter(Duel.round_id == duel.round_id).order_by(Duel.id.asc()).offset((len(duel_first_groupz) + index)- all_players).first()
             new_record = user_duel.insert().values(
@@ -1437,7 +1440,7 @@ def season_new():
         ## season_from=form.season_from.data, 
         if not season:
                 new_season = Season(name=form.name.data, no_group=form.no_group.data, 
-                                    winner_points=form.winner_points.data, open=form.open.data, visible=form.visible.data ,user_id=current_user.id, min_players=form.min_players.data,season_type=season_type,place_id=form.place_id.data)
+                                    winner_points=form.winner_points.data, open=form.open.data, visible=form.visible.data ,user_id=current_user.id, min_players=form.min_players.data,season_type=season_type,place_id=form.place_id.data,duration=form.duration.data)
                 db.session.add(new_season)
                 db.session.commit()
                 return redirect(url_for('views.season_manager', season=new_season.id))
@@ -1601,31 +1604,123 @@ def season_players(season):
 
 @views.route('/season/<season>/get_user_seasons', methods=['GET'])
 @login_required
-@roles_required('Admin','Manager')
-# @roles_required('Admin')
+@roles_required('Admin', 'Manager')
 def get_user_seasons(season):
-    # results = db.session.execute(user_season.select().order_by(user_season.c.orderz.asc())).fetchall()
-    results = db.session.query(user_season.c.user_id, user_season.c.season_id, User.first_name, user_season.c.orderz, Season.no_group).join(Season, Season.id==user_season.c.season_id).join(User, User.id==user_season.c.user_id).filter(user_season.c.season_id==season).order_by(user_season.c.orderz.asc()).all()
+    # Dotaz na získanie potrebných údajov, vrátane stĺpca move
+    results = db.session.query(
+        user_season.c.user_id,
+        user_season.c.season_id,
+        User.first_name,
+        user_season.c.orderz,
+        Season.no_group,
+        user_season.c.move  # Pridanie stĺpca move do dotazu
+    ).join(
+        Season, Season.id == user_season.c.season_id
+    ).join(
+        User, User.id == user_season.c.user_id
+    ).filter(
+        user_season.c.season_id == season
+    ).order_by(
+        user_season.c.orderz.asc()
+    ).all()
 
-    # Convert rows to list of dictionaries before jsonifying
-    user_seasons_list = [{"user_id": row[0], "season_id": row[1], "season_first_date": row[2], "orderz": row[3], "no_group": row[4]} for row in results]
+    # Konvertovanie výsledkov na zoznam slovníkov vrátane move
+    user_seasons_list = [
+        {
+            "user_id": row[0],
+            "season_id": row[1],
+            "first_name": row[2],  # Opravené meno stĺpca
+            "orderz": row[3],
+            "no_group": row[4],
+            "move": row[5]  # Pridanie stĺpca move do výstupu
+        } 
+        for row in results
+    ]
+    
     return jsonify(user_seasons_list)
 
+
+@views.route('/season/update_move', methods=['POST'])
+@login_required
+@roles_required('Admin', 'Manager', 'Player')
+def update_move():
+    # Retrieve data from the request
+    data = request.json
+    user_id = data.get('user_id')
+    season_id = data.get('season_id')
+    move_value = data.get('move')
+
+    # Ensure all required fields are provided
+    if user_id is None or season_id is None or move_value is None:
+        return jsonify({'error': 'Invalid data provided'}), 400
+
+    # Update the 'move' column in the 'user_season' table
+    stmt = (user_season.update()
+            .where(user_season.c.user_id == user_id)
+            .where(user_season.c.season_id == season_id)
+            .values(move=move_value))
+
+    try:
+        db.session.execute(stmt)
+        db.session.commit()
+        return jsonify({'message': 'Move updated successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+    
+    
+    
 @views.route('/season/update_order', methods=['POST'])
 @login_required
-@roles_required('Admin','Manager','Player')
-# @roles_required('Admin')
+@roles_required('Admin', 'Manager', 'Player')
 def update_order():
-    # Update ordering logic here
     data = request.json
-    for item in data:
-        stmt = (user_season.update().where(user_season.c.user_id == item['user_id'])
-                                    .where(user_season.c.season_id == item['season_id'])
-                                    .values(orderz=item['orderz']+1))
-        db.session.execute(stmt)
-    db.session.commit()
-    return jsonify({'message': 'Order updated'}), 200
 
+    # Najprv načítame všetky záznamy pre túto sezónu, zoradené podľa `orderz`
+    season_id = data[0]['season_id'] if data else None
+    if not season_id:
+        return jsonify({'error': 'Season ID missing'}), 400
+
+    # Načítanie všetkých hráčov v danej sezóne podľa `orderz`
+    results = db.session.execute(
+        user_season.select().where(user_season.c.season_id == season_id).order_by(user_season.c.orderz)
+    ).fetchall()
+
+    # Vytvoríme mapu pre {orderz: move}
+    order_to_move_map = {row[3]: row[4] for row in results}  # Index 3 pre `orderz`, index 4 pre `move`
+
+    # Prechádzame každú položku a aktualizujeme poradie (orderz)
+    for item in data:
+        new_orderz = item['orderz'] + 1  # Pridáme 1, ak je potrebné, inak ponecháme pôvodnú hodnotu
+        old_orderz = item['orderz']
+
+        # Tu presúvame hráča, ale hodnota `move` zostane na pôvodnom mieste (orderz)
+        # Ak je nová pozícia, nech sa zmení len `orderz`, ale `move` zostane pôvodné pre dané poradie
+        new_move_value = order_to_move_map.get(new_orderz, 0)  # Získame move hodnotu pre novú pozíciu
+        old_move_value = order_to_move_map.get(old_orderz, 0)  # Získame move hodnotu pre starú pozíciu
+
+        # Priraď pôvodnú hodnotu `move` tam, kde má byť
+        # Staré poradie dostane nového hráča, ale staré `move` musí zostať na pozícii
+        stmt_new = (user_season.update()
+                    .where(user_season.c.user_id == item['user_id'])
+                    .where(user_season.c.season_id == season_id)
+                    .values(orderz=new_orderz, move=new_move_value))  # Update new orderz and preserve move
+        db.session.execute(stmt_new)
+
+        # Zachovaj pôvodnú hodnotu `move` pre túto pozíciu
+        stmt_old = (user_season.update()
+                    .where(user_season.c.orderz == old_orderz)
+                    .where(user_season.c.season_id == season_id)
+                    .values(move=old_move_value))  # Preserve move on the old orderz
+        db.session.execute(stmt_old)
+
+    db.session.commit()
+    return jsonify({'message': 'Order and move updated successfully'}), 200
+
+
+
+
+    
 @views.route('/season/add_row', methods=['POST'])
 @login_required
 @roles_required('Admin','Manager','Player')
@@ -1759,6 +1854,7 @@ def update_season(season):
         season.open = form.open.data
         season.visible = form.visible.data
         season.place_id = form.place_id.data
+        season.duration = form.duration.data
 
         
         db.session.commit()
@@ -1777,6 +1873,7 @@ def update_season(season):
         form.open.data = season.open
         form.visible.data = season.visible
         form.place_id.data = season.place_id
+        form.duration.data = season.duration
 
         
     return render_template("season_create.html", vapid_public_key=vapid_public_key, head='edit-season', title='Update Season', season=season.id, seas=season, form=form, user=current_user, adminz=adminz, user_places=user_places)
@@ -2005,12 +2102,29 @@ def season_manager(season):
     products = Product.query.filter(Product.is_visible==True).order_by(Product.id.asc()).all()
     orders = Order.query.filter(Order.user_id==current_user.id).filter(Order.stripe_subscription_id==current_user.stripe_subscription_id).all()
     # print(order)
-    end_date = last_day.strftime('%Y-%m-%d %H:%M:%S')
+    round_end_data = db.session.query(Round).filter(Round.open == True, Round.season_id == season).first()
+
+    if round_end_data and round_end_data.duration:
+        # Povedzme, že máš 'round_start' ako počiatočný dátum kola
+        round_start = round_end_data.round_start  # Použitie správneho importu
+        duration_seconds = round_end_data.duration  # Predpokladajme, že duration je v sekundách
+        round_end = round_start + timedelta(seconds=duration_seconds)
+
+        # Formátovanie do podoby '%Y-%m-%d %H:%M:%S'
+        # start_date = round_end_data.round_start
+        end_date = round_end.strftime('%Y-%m-%d %H:%M:%S')
+        print("Round ends on:", end_date)
+    else:
+        print("No round data found.")
+        end_date = False
+        round_start = False
+
+    # print(round_end[0])
     
     # print(last_day.strftime('%Y-%m-%d %H:%M:%S'))
     # end_date=last_day.strftime('%Y-%m-%d %H:%M:%S')
     season_author = db.session.query(User.first_name).join(Season).filter(Season.user_id == User.id).filter(Season.id==season).first()
-    return render_template("season.html", vapid_public_key=vapid_public_key, season_author=season_author,season_type=season_type.season_type, season_type_name=season_type_name,products=products, orders=orders, order=order, rounds_open=rounds_open, manager=manager, end_date=end_date, players_wait=players_wait, players=players, seas=seas, groupz=groupz, dic=dic, season=season, seasons=rounds, user=current_user, adminz=adminz)
+    return render_template("season.html", start_date=round_start, vapid_public_key=vapid_public_key, season_author=season_author,season_type=season_type.season_type, season_type_name=season_type_name,products=products, orders=orders, order=order, rounds_open=rounds_open, manager=manager, end_date=end_date, players_wait=players_wait, players=players, seas=seas, groupz=groupz, dic=dic, season=season, seasons=rounds, user=current_user, adminz=adminz)
 
 
 
@@ -2057,14 +2171,31 @@ def create_new_season(season):
 
     # n = int(len(players) / settings.no_group)
     groups = list(divide_to_groups(players, settings.no_group))
-    print('--------***-----')
-    print(groups)
-    print('--------***----------')
+    # print('--------***-----')
+    # print(groups)
+    # print('--------***----------')
+    user_seasons2 = db.session.execute(
+        user_season.select().where(user_season.c.season_id == season).order_by(user_season.c.orderz.asc())
+    ).fetchall()
+
+    # 2. Generovanie pravidiel pre postup a vypadnutie
+    rules = []
+    for user_season2 in user_seasons2:
+        if user_season2.move == 1:  # Postup
+            rules.append(f"{user_season2.orderz}:1")  # orderz je miesto v sezóne, 1 znamená postup
+        elif user_season2.move == 2:  # Vypadnutie
+            rules.append(f"{user_season2.orderz}:2")  # orderz je miesto v sezóne, 2 znamená vypadnutie
+        else:
+            rules.append(f"{user_season2.orderz}:0")  # 0 znamená žiadna zmena
+
+    # 3. Zlúčenie pravidiel do jedného reťazca v tvare '1:0,2:0,3:2,...'
+    rules_str = ','.join(rules)
+
 
 
     list_groups_shorts = ['A', 'B1', 'B2', 'C1', 'C2', 'C3', 'C4']
     last_round = db.session.query(Round).filter(Round.season_id==season).order_by(Round.id.desc()).first()
-    new_round = Round(season_id=season, open=True, duration=200)
+    new_round = Round(season_id=season, open=True, duration=settings.duration, rules=rules_str)
     
     db.session.add(new_round)
     db.session.commit()
@@ -2169,6 +2300,7 @@ class NewSeason(FlaskForm):
     open = BooleanField('Open')
     visible = BooleanField('Visible')
     place_id = SelectField('Select Place', choices=[], coerce=int, validators=[DataRequired()])  # Definujte pole place_id s výberom
+    duration = IntegerField('Duration (in days)', validators=[DataRequired(), NumberRange(min=1, max=365)])
     submit = SubmitField()
 
 

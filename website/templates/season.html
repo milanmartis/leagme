@@ -304,9 +304,11 @@ aria-hidden="true"
         </div>
       </div>
     </div>
+
+{% if season_type == 1 %}
     <div class="content">
-    <div class="round-time-counting" style="display:none;">
-    <h3 style="opacity: 0.5;">Time Left</h3>
+    <div class="round-time-counting" style="display:block;">
+    <h3 style="opacity: 0.9;">Time Left</h3>
 
       <div class="countdown-container" id="countdown">
         <div class="countdown-el days-c">
@@ -328,52 +330,55 @@ aria-hidden="true"
     </div>
     <h4 style="max-width: 260px;">Complete all duels before the time limit. Results won't be changed afterward.</h4>
   </div>
-      
+     {% endif %} 
       
       
       
       
       <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
-    <script>
+      <script>
         $(document).ready(function() {
-          // Váš server by mal poskytnúť koncový dátum vo formáte 'YYYY-MM-DD HH:MM:SS'
-          //var endDate = "{{ '2023-12-31' }}";
-          var endDate = "{{ end_date }}";
-          // Konvertujeme koncový dátum na objekt dátumu JavaScriptu
-          var end = new Date(endDate);
-          
-          var countdown = function() {
-            var now = new Date();
-            var remainingTime = end - now;
-            
-            if (remainingTime >= 0) {
-              var secondsDivElement = document.getElementById("seconds");
-              var hoursDivElement = document.getElementById("hours");
-              var minutesDivElement = document.getElementById("minutes");
-              var daysDivElement = document.getElementById("days");
-              
-              
-              var seconds = Math.floor((remainingTime / 1000) % 60);
-              var minutes = Math.floor((remainingTime / 1000 / 60) % 60);
-              var hours = Math.floor((remainingTime / (1000 * 60 * 60)) % 24);
-              var days = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
-                  
-                  secondsDivElement.innerHTML = seconds; // Ak chcete nastaviť HTML obsah
-                  hoursDivElement.innerHTML = hours; // Ak chcete nastaviť HTML obsah
-                  minutesDivElement.innerHTML = minutes; // Ak chcete nastaviť HTML obsah
-                  daysDivElement.innerHTML = days; // Ak chcete nastaviť HTML obsah
-                  
-                  // Aktualizácia DOM každú sekundu
-                  //   $('#countdown').text(days + "d |" + hours + "h |" + minutes + "m |" + seconds + "s");
+            // Flask odosiela end_date a start_date
+            var endDateStr = "{{ end_date }}";
+            var startDateStr = "{{ start_date }}";
+    
+            // Konverzia dátumov na JavaScriptové objekty dátumu
+            var end = new Date(endDateStr.replace(" ", "T"));  // Konvertujeme na ISO formát pre JS
+            var now = new Date(startDateStr.replace(" ", "T"));  // Rovnako konvertujeme start_date
+    
+            var countdown = function() {
+                now = new Date();  // Získame aktuálny čas
+                var remainingTime = end - now;  // Spočítame zostávajúci čas
+    
+                if (remainingTime >= 0) {
+                    // Získanie elementov pre zobrazenie času
+                    var secondsDivElement = document.getElementById("seconds");
+                    var hoursDivElement = document.getElementById("hours");
+                    var minutesDivElement = document.getElementById("minutes");
+                    var daysDivElement = document.getElementById("days");
+    
+                    // Vypočítanie zostávajúceho času
+                    var seconds = Math.floor((remainingTime / 1000) % 60);
+                    var minutes = Math.floor((remainingTime / 1000 / 60) % 60);
+                    var hours = Math.floor((remainingTime / (1000 * 60 * 60)) % 24);
+                    var days = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
+    
+                    // Nastavenie hodnôt do HTML elementov
+                    secondsDivElement.innerHTML = seconds;
+                    hoursDivElement.innerHTML = hours;
+                    minutesDivElement.innerHTML = minutes;
+                    daysDivElement.innerHTML = days;
                 } else {
-                  $('#countdown').text("Current round is closed");
-                  clearInterval(interval);
+                  const button = document.getElementById('season_round');
+                  //  button.disabled = true;
+                    $('#countdown').text("Current round is closed");
+                    clearInterval(interval);  // Zastavíme odpočítavanie
                 }
             };
-            
-            var interval = setInterval(countdown, 1000);
-          });
+    
+            var interval = setInterval(countdown, 1000);  // Aktualizácia každú sekundu
+        });
     </script>
 
     

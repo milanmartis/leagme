@@ -56,60 +56,84 @@
               {% for data12 in data_show_table %}
               {% set de = data_name_tabz %}
               {% if not user.id in [adminz[0], adminz[1]] %}
-              {% set user_groupz = user_group.id %} 
+                  {% set user_groupz = user_group.id %} 
               {% else %} 
-              {% set user_groupz = 18 %} {% endif %}
-    
+                  {% set user_groupz = 18 %}
+              {% endif %}
+
               {% set list1 = de %}
-              {% set list1len =  loop.index0 %}  
-              <!-- <div class="carousel-item {% if list1[list1len].id == user_groupz %}active{% endif %}" > -->
+              {% set list1len = loop.index0 %}  <!-- Toto je skupina -->
 
-              <div class="carousel-item {% if loop.index == 1 %}active{% endif %}" style="align-items: center;height: fit-content;" >
-    
-                <table class="table" style="display:block;position:relative;" id="datas">
-                  <thead style="margin-bottom:5px;">
-                    <tr>
-                      <th scope="col"></th>
-                      <th scope="col"></th>
-                      <th scope="col" style="width: 15px;" title="Game Played">G</th>
-                      <th scope="col" style="width: 15px;">W</th>
-                      <th scope="col" style="width: 15px;">L</th>
-                      <th scope="col" style="width: 28px;">Legs</th>
-                      <th scope="col" style="width: 15px; text-align: center;">+/-</th>
-                      <th scope="col" style="width: 15px;">P</th>
-                    </tr>
-                  </thead>
-    
-                  {% for i in data12 %} {% for j in i %}
-    
-                  <tr>
-                    <!-- <tr onclick="javascript:location.href='myduels.html'"> -->
-                    <td class="tab-others">
-                      {{ loop.index }}
-                    </td>
-                    
-                    {% for k in j %}
-                    {% if loop.index == 1 %}
-                    <td class="tab-name">{{ k | upper }}</td>
-                    {% else %}
-                    {% if not loop.index == 7 %}
-                    <td class="tab-others">{{ k | upper }}</td>
-                    {% else %}
-                    <td class="tab-points">{{ k | upper }}</td>
-                    {% endif %}{% endif %} {% endfor %}
+              <div class="carousel-item {% if loop.index == 1 %}active{% endif %}" style="align-items: center;height: fit-content;">
+                  <table class="table" style="display:block;position:relative;" id="datas">
+                      <thead style="margin-bottom:5px;">
+                          <tr>
+                              <th scope="col"></th>
+                              <th scope="col"></th>
+                              <th scope="col" style="width: 15px;" title="Game Played">G</th>
+                              <th scope="col" style="width: 15px;">W</th>
+                              <th scope="col" style="width: 15px;">L</th>
+                              <th scope="col" style="width: 28px;">Legs</th>
+                              <th scope="col" style="width: 15px; text-align: center;">+/-</th>
+                              <th scope="col" style="width: 15px;">P</th>
+                          </tr>
+                      </thead>
 
-                    <!-- {% if (list1[list1len].shorts == 'A' ) and (loop.revindex == 2 or loop.last == true) %} <td class="tab-others2"><i class="fa fa-arrow-down" style="color:#0ca00c"></i></td> {% endif %} -->
-                    <!-- {% if (list1[list1len].shorts == 'B1' or list1[list1len].shorts == 'B2') and loop.last == true %} <td class="tab-others2"><i class="fa fa-arrow-down" style="color:#0ca00c"></i></td> {% endif %} -->
-                    <!-- {% if loop.index0 == 0 and (list1[list1len].shorts == 'B1' or list1[list1len].shorts == 'B2') %} <td class="tab-others2"><i class="fa fa-arrow-up" style="color:#0ca00c"></i></td> {% endif %} -->
-                    <!-- {% if (loop.index0 == 0 or loop.index0 == 1) and (list1[list1len].shorts == 'C1') %} <td class="tab-others2"><i class="fa fa-arrow-up" style="color:#0ca00c"></i></td> {% endif %} -->
-                    <!-- {% if (loop.index0 == 0) and (list1[list1len].shorts == 'C2') %} <td class="tab-others2"><i class="fa fa-arrow-up" style="color:#0ca00c"></i></td> {% endif %} -->
-                    <!-- {% if loop.index0 == 0 or loop.index0 == 1 and (list1[list1len].shorts == 'C1') %} <td class="tab-others"><i class="fa fa-arrow-up" style="color:blue"></i></td> {% endif %} -->
-                    
-                  </tr>
-                  {% endfor %} {% endfor %}
-                </table>
+                      {% set rules = round_all_info.rules.split(',') %}
+                      {% set total_players = rules | length %}  <!-- Celkový počet hráčov -->
+                      {% set total_groups = list1 | length %}  <!-- Počet skupín -->
+                      {% set group_size = total_players // total_groups %}  <!-- Dynamická veľkosť jednej skupiny -->
+
+                      {% for i in data12 %}
+                          {% for j in i %}
+                              <tr>
+                                  <td class="tab-others">{{ loop.index }}</td>
+
+                                  {% for k in j %}
+                                      {% if loop.index == 1 %}
+                                          <td class="tab-name">{{ k | upper }}</td>
+                                      {% else %}
+                                          {% if not loop.index == group_size %}
+                                              <td class="tab-others">{{ k | upper }}</td>
+                                          {% else %}
+                                              <td class="tab-points">{{ k | upper }}</td>
+                                          {% endif %}
+                                      {% endif %}
+                                  {% endfor %}
+
+                                  <!-- Logika pre dynamické šípky na základe pravidiel -->
+                                  {% set start_position = list1len * group_size %} <!-- Začiatok tejto skupiny -->
+                                  {% set current_position = start_position + loop.index0 %} <!-- Aktuálna pozícia hráča v pravidlách -->
+
+                                  <!-- Získanie pravidla pre aktuálnu pozíciu -->
+                                  {% set parts = rules[current_position].split(':') %}
+                                  {% set move_value = parts[1] %}
+                                  
+                                  <td class="tab-others2">
+                                      <!-- Prvé riadky v skupine - šípky hore -->
+                                      {% if loop.index <= 2 %}
+                                          {% if move_value == '1' %}
+                                              <i class="fa fa-arrow-up" style="color:#0ca00c;margin-left: -6px;"></i>
+                                          {% endif %}
+                                      {% endif %}
+
+                                      <!-- Posledné riadky v skupine - šípky dole -->
+                                      {% if loop.index >= group_size - 1 %}
+                                          {% if move_value == '2' %}
+                                              <i class="fa fa-arrow-down" style="color:#ff0000;margin-left: -6px;"></i>
+                                          {% endif %}
+                                      {% endif %}
+                                  </td>
+                              </tr>
+                          {% endfor %}
+                      {% endfor %}
+                  </table>
               </div>
-              {% endfor %}
+          {% endfor %}
+
+
+          
+
             </div>
         </div>
     </div>
