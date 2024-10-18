@@ -79,8 +79,13 @@
                           </tr>
                       </thead>
 
-                      {% set rules = round_all_info.rules.split(',') %}
-                      {% set total_players = rules | length %}  <!-- Celkový počet hráčov -->
+                      {% if round_all_info.rules %}
+                          {% set rules = round_all_info.rules.split(',') %}
+                          {% set total_players = rules | length %}  <!-- Celkový počet hráčov -->
+                      {% else %}
+                          {% set rules = [] %}  <!-- Prázdny zoznam, ak nie sú pravidlá -->
+                          {% set total_players = 0 %}  <!-- Ak nie sú pravidlá, počet hráčov je 0 -->
+                      {% endif %}
                       {% set total_groups = list1 | length %}  <!-- Počet skupín -->
                       {% set group_size = total_players // total_groups %}  <!-- Dynamická veľkosť jednej skupiny -->
 
