@@ -110,6 +110,7 @@
             <div class="form-group">
                 <button type="submit" class="btn-demo btn-outline-info createforms">{{ title }}</button> <!-- Updated button -->
             </div>
+
             </div>
             <br>
         </fieldset>
@@ -197,9 +198,21 @@
             });
         </script>
     </form>
+    <div class="container readinglazy" align="center">
+        <div class="row" style="display:block;max-width:300px; text-align: center;">
+                          <!-- Delete form -->
+                           {% if place.id %}
+                          <form action="{{ url_for('views.delete_place', place_id=place.id) }}" method="POST" style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn-reverse" onclick="return confirm('Are you sure you want to delete this place?');">
+                                Delete this place <!-- FontAwesome delete icon -->
+                            </button>
+                        </form>
+                            {% endif %}
+        </div></div>
     <br>
     {% if place %}
-    <button onclick="javascript:location.href='{{ url_for('views.place_manager', place_slug=place.slug) }}';" class="btn btn-sm createforms2">Back</button>
+    <button onclick="javascript:location.href='{{ url_for('views.places') }}';" class="btn btn-sm createforms2">Back</button>
     {% else %}
     <button onclick="javascript:location.href='{{ url_for('views.index') }}';" class="btn btn-sm createforms2">Back</button>
     {% endif %}

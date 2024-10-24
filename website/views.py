@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 from .models import Note, User, Duel, Place, OpeningHours, Season, Groupz, Round, Product, Order, user_duel, user_group, user_season, PaymentCard, BillingInfo
-from .models import PushSubscription
+from .models import PushSubscription, Reservation, Field
 from pywebpush import webpush, WebPushException
 from . import db, current_app
 import json
@@ -48,6 +48,7 @@ from wtforms import DateField, DateTimeField, DateTimeLocalField, Form
 from psycopg2.errorcodes import UNIQUE_VIOLATION
 from psycopg2 import errors
 import datetime
+from datetime import datetime as datetime2
 from datetime import datetime as dt
 from math import ceil, log2, log
 from functools import wraps
@@ -1309,12 +1310,15 @@ def new_or_edit_place(place_id=None):
 
             db.session.commit()
 
-            # Delete existing opening hours for the place
+            # Delete existing opening hours for the place once
             OpeningHours.query.filter_by(place_id=place.id).delete()
 
             # Retrieve form data, including opening hours
             form_data = request.form.to_dict(flat=False)
             print(form_data)  # Check the received form data in logs
+
+            # Set to track unique days
+            unique_days = set()
 
             # Process opening hours
             for key, values in form_data.items():
@@ -1323,8 +1327,9 @@ def new_or_edit_place(place_id=None):
                     open_time = form_data[f'opening_hours[{day}][open_time]'][0]
                     close_time = form_data[f'opening_hours[{day}][close_time]'][0]
 
-                    # Store the opening hours in the database
-                    if open_time and close_time:
+                    # Ensure unique days
+                    if day not in unique_days and open_time and close_time:
+                        unique_days.add(day)  # Add day to the set to avoid duplicates
                         opening_hour = OpeningHours(
                             day_of_week=day,
                             open_time=open_time,
@@ -1348,27 +1353,331 @@ def new_or_edit_place(place_id=None):
         user=current_user
     )
 
+
+@views.route('/place/<int:place_id>/delete', methods=['POST'])
+@roles_required('Admin', 'Player', 'Manager')
+def delete_place(place_id):
+    # Získať miesto podľa ID
+    place = Place.query.get_or_404(place_id)
+
+    # Skontrolovať, či používateľ je vlastníkom miesta alebo má príslušné práva
+    if place.user_id != current_user.id:
+        flash("You do not have permission to delete this place.", "error")
+        return redirect(url_for('views.places'))
+
+    try:
+        # Vymazať miesto
+        db.session.delete(place)
+        db.session.commit()
+        flash("Place has been deleted successfully.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"An error occurred while trying to delete the place: {str(e)}", "error")
     
+    return redirect(url_for('views.places'))
+
+    
+@views.route('/places', methods=['GET'])
+def places():
+    places = Place.query.filter_by(user_id=current_user.id).all()
+    
+    return render_template("myplaces.html", vapid_public_key=vapid_public_key, places=places, user=current_user)
+
     
 
 @views.route('/place/<place_slug>', methods=['GET', 'POST'])
-# @login_required
-# @roles_required('Admin', 'Player', 'Manager')
+@roles_required('Admin', 'Player', 'Manager')
 def place_manager(place_slug):
     # Query the Place object based on the slug
     place = Place.query.filter_by(slug=place_slug).first()
-    season_places = Season.query.filter_by(place_id=place.id).all()
-    if season_places:
-        season_places = season_places
-    else:
-        season_places = ''
-    
+
     if not place:
         flash("Place not found.", category="error")
         return redirect(url_for('views.index'))
-    
-    return render_template("place.html", vapid_public_key=vapid_public_key, season_places=season_places, place=place, user=current_user)
 
+    # Query all seasons related to this place
+    season_places = Season.query.filter_by(place_id=place.id).all()
+
+    # Query fields related to this place
+    fields = Field.query.filter_by(place_id=place.id).all()
+
+    return render_template(
+        "place.html", 
+        vapid_public_key=vapid_public_key, 
+        season_places=season_places, 
+        fields=fields,  # Pass the fields to the template
+        place=place, 
+        user=current_user
+    )
+
+
+
+
+# Zobraziť dostupné ihriská v rámci miesta
+@views.route('/place/<int:place_id>/fields', methods=['GET'])
+def get_fields(place_id):
+    place = Place.query.get_or_404(place_id)
+    fields = Field.query.filter_by(place_id=place.id).all()
+    opening_hours = OpeningHours.query.filter_by(place_id=place.id).all()
+    
+    return render_template("fields.html", place=place, fields=fields, opening_hours=opening_hours)
+
+# Rezervácia ihriska
+# @views.route('/place/<int:place_id>/fields/<int:field_id>/reserve', methods=['POST'])
+# @login_required
+# def reserve_field(place_id, field_id):
+#     place = Place.query.get_or_404(place_id)
+#     field = Field.query.get_or_404(field_id)
+    
+#     start_time_str = request.form['start_time']
+#     end_time_str = request.form['end_time']
+    
+#     # Prevod z reťazca na datetime objekt
+#     start_time = datetime.strptime(start_time_str, '%Y-%m-%d %H:%M')
+#     end_time = datetime.strptime(end_time_str, '%Y-%m-%d %H:%M')
+    
+#     # Overiť, či rezervácia spadá do otváracích hodín
+#     opening_hours = OpeningHours.query.filter_by(place_id=place.id, day_of_week=start_time.strftime('%A')).first()
+    
+#     if not (opening_hours and opening_hours.open_time <= start_time.time() <= opening_hours.close_time):
+#         return jsonify({'error': 'Rezervácia mimo otváracích hodín'}), 400
+
+#     # Skontroluj, či už nie je ihrisko rezervované v tom čase
+#     existing_reservation = Reservation.query.filter_by(field_id=field.id).filter(
+#         (Reservation.start_time <= start_time) & (Reservation.end_time >= end_time)
+#     ).first()
+    
+#     if existing_reservation:
+#         return jsonify({'error': 'Ihrisko je už rezervované na tento čas'}), 400
+
+#     # Ak je všetko v poriadku, vytvor rezerváciu
+#     reservation = Reservation(
+#         user_id=current_user.id,
+#         field_id=field.id,
+#         start_time=start_time,
+#         end_time=end_time,
+#         place_id=place.id
+#     )
+    
+#     db.session.add(reservation)
+#     db.session.commit()
+    
+#     return jsonify({'success': 'Rezervácia bola úspešná'}), 200
+
+
+
+
+# Endpoint na vytvorenie ihriska
+@views.route('/place/<int:place_id>/field/new', methods=['GET', 'POST'])
+@login_required
+def create_field(place_id):
+    place = Place.query.get_or_404(place_id)  # Získa miesto z databázy podľa ID
+
+    if request.method == 'POST':
+        # Získaj dáta z formulára
+        field_name = request.form['name']
+        field_description = request.form.get('description')
+        field_capacity = request.form['capacity']
+
+        # Vytvor nové ihrisko (Field) a priraď ho k miestu (Place)
+        new_field = Field(
+            name=field_name,
+            description=field_description,
+            capacity=int(field_capacity),
+            place_id=place.id
+        )
+        db.session.add(new_field)
+        db.session.commit()
+
+        # Zobrazenie flash správy a presmerovanie na zoznam ihrísk
+        place = Place.query.get_or_404(place_id)
+        flash('Ihrisko bolo úspešne vytvorené.', 'success')
+        return redirect(url_for('views.place_manager', place_slug=place.slug))
+
+    return render_template('create_field.html', place=place, user=current_user)
+
+
+
+
+
+
+def get_available_slots(open_time, close_time, reservations, slot_duration=1):
+    """
+    Funkcia na získanie dostupných časových slotov pre daný deň
+    :param open_time: Čas otvárania (datetime.time)
+    :param close_time: Čas zatvárania (datetime.time)
+    :param reservations: Zoznam existujúcich rezervácií pre tento deň
+    :param slot_duration: Trvanie slotu v hodinách (napr. 1 hodina)
+    :return: Zoznam dostupných časov
+    """
+    available_slots = []
+    current_time = dt.combine(dt.today(), open_time)
+    closing_time = dt.combine(dt.today(), close_time)
+
+    # Prejdi všetky časové intervaly medzi otváracím a zatváracím časom
+    while current_time + timedelta(hours=slot_duration) <= closing_time:
+        slot_start = current_time
+        slot_end = current_time + timedelta(hours=slot_duration)
+
+        # Skontroluj, či je tento slot už rezervovaný
+        is_reserved = any(
+            reservation.start_time <= slot_start.time() < reservation.end_time
+            for reservation in reservations
+        )
+
+        if not is_reserved:
+            available_slots.append({
+                'start': slot_start.strftime('%H:%M'),
+                'end': slot_end.strftime('%H:%M')
+            })
+
+        current_time += timedelta(hours=slot_duration)
+
+    return available_slots
+
+
+
+
+
+
+@views.route('/place/<int:place_id>/field/<int:field_id>/available_slots', methods=['GET'])
+def available_slots(place_id, field_id):
+    date_str = request.args.get('date')
+    if not date_str:
+        return jsonify({'error': 'No date provided'}), 400
+
+    date = dt.strptime(date_str, '%Y-%m-%d')
+
+    # Získaj objekt Field
+    field = Field.query.get_or_404(field_id)
+
+    # Zavolaj metódu get_opening_hours_for_day na priradený objekt Place
+    opening_hours = field.place.get_opening_hours_for_day(date.weekday())
+
+    if not opening_hours:
+        return jsonify({'error': 'No opening hours for this day'}), 400
+
+    # Pripoj čas k dátumu, aby sme mohli používať datetime objekty
+    start_time = dt.combine(date, opening_hours.open_time)
+    end_time = dt.combine(date, opening_hours.close_time)
+
+    # Predpokladáme, že máme model Reservation na uchovávanie rezervácií
+    reservations = Reservation.query.filter_by(field_id=field_id, reservation_date=date).all()
+
+    # Definuj dostupné časové sloty (napr. od 9:00 do 18:00 každých 60 minút)
+    slots = []
+    current_time = start_time
+    while current_time + timedelta(minutes=60) <= end_time:
+        slot_start = current_time
+        slot_end = current_time + timedelta(minutes=60)
+        booked = False
+        booked_by_current_user = False
+
+        # Skontroluj, či je slot rezervovaný
+        for reservation in reservations:
+            if reservation.start_time == slot_start.time() and reservation.end_time == slot_end.time():
+                booked = True
+                if reservation.user_id == current_user.id:  # Rezervácia aktuálneho používateľa
+                    booked_by_current_user = True
+                break
+
+        slots.append({
+            'start': slot_start.strftime('%H:%M'),
+            'end': slot_end.strftime('%H:%M'),
+            'booked': booked,
+            'booked_by_current_user': booked_by_current_user
+        })
+        current_time += timedelta(minutes=60)
+
+    return jsonify(slots)
+
+
+
+
+
+@views.route('/reserve_field', methods=['POST'])
+@login_required
+def reserve_field():
+    place_id = request.form.get('place_id')
+    # print(place_id)
+    field_id = request.form.get('field_id')
+    date = request.form.get('reservation_date')
+    time_slot = request.form.get('time_slot')
+    print(date)
+    # Rozdelenie časového slotu na začiatok a koniec
+    start_time, end_time = time_slot.split('-')
+
+    # Overenie existencie miesta a ihriska
+    place = Place.query.get(place_id)
+    field = Field.query.get(field_id)
+
+    if not place or not field:
+        return jsonify({'success': False, 'error': 'Miesto alebo ihrisko neexistuje'}), 404
+
+    # Overenie, či ihrisko patrí k miestu
+    if field.place_id != place.id:
+        return jsonify({'success': False, 'error': 'Ihrisko nepatrí k tomuto miestu'}), 400
+    
+    start_time = dt.strptime(start_time, '%H:%M').time()  # Prevod na typ time
+    end_time = dt.strptime(end_time, '%H:%M').time()
+
+    # Overenie, či je slot už rezervovaný
+    existing_reservation = Reservation.query.filter_by(
+        field_id=field_id, place_id=place_id, reservation_date=date,
+        start_time=start_time, end_time=end_time
+    ).first()
+
+    if existing_reservation:
+        return jsonify({'success': False, 'error': 'Slot je už rezervovaný'}), 400
+
+    # Uloženie novej rezervácie
+    new_reservation = Reservation(
+        user_id=current_user.id,
+        field_id=field_id,
+        place_id=place_id,
+        reservation_date=date,
+        start_time=start_time,
+        end_time=end_time
+    )
+    db.session.add(new_reservation)
+    db.session.commit()
+
+    return jsonify({'success': True, 'message': 'Rezervácia bola úspešná!'})
+
+        
+        
+@views.route('/place/<int:place_id>/field/<int:field_id>/cancel_booking', methods=['POST'])
+def cancel_booking(place_id, field_id):
+    data = request.get_json()
+    time_slot = data.get('slot')
+    date_str = data.get('reservation_date')
+
+    if not time_slot or not date_str:
+        return jsonify({'error': 'Missing data'}), 400
+
+    slot_start_str, slot_end_str = time_slot.split('-')
+    slot_start = dt.strptime(slot_start_str, '%H:%M').time()
+    slot_end = dt.strptime(slot_end_str, '%H:%M').time()
+    date = dt.strptime(date_str, '%Y-%m-%d')
+
+    # Skontroluj, či existuje rezervácia pre aktuálneho používateľa
+    reservation = Reservation.query.filter_by(
+        field_id=field_id,
+        place_id=place_id,
+        user_id=current_user.id,
+        reservation_date=date,
+        start_time=slot_start,
+        end_time=slot_end
+    ).first()
+
+    if not reservation:
+        return jsonify({'error': 'Reservation not found'}), 404
+
+    # Zruš rezerváciu
+    db.session.delete(reservation)
+    db.session.commit()
+
+    return jsonify({'success': True})
 
 
 
@@ -1590,13 +1899,13 @@ def season_list():
 # @roles_required('Admin')
 def season_players(season):
     seas = Season.query.get(season)
-    seasons = Season.query.all()
+    # seasons = Season.query.all()
     users = User.query.all()
     manager = db.session.query(Season.user_id).filter(Season.user_id==current_user.id).filter(Season.id==season).first()
 
     rounds = db.session.query(Season, Round).filter(Groupz.season_id==Season.id).filter(Groupz.round_id==Round.id).filter(User.id==user_group.c.user_id).filter(user_group.c.groupz_id==Groupz.id).filter(Season.id==season).order_by(Groupz.round_id.desc()).all()
     if manager or current_user.id==21:
-        return render_template('users/season_players.html', vapid_public_key=vapid_public_key, manager=manager, seas=seas, seasons=rounds, season=season, seasons2=seasons, users=users, user=current_user)
+        return render_template('users/season_players.html', vapid_public_key=vapid_public_key, manager=manager, seas=seas, seasons=rounds, season=season, users=users, user=current_user)
     else:
         flash('You don`t have permission!', 'error')
         return redirect(url_for('auth.login'))

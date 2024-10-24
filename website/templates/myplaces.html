@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block title %}
+  LeagMe - My Places
+{% endblock %}
+
+{% block content %}
+<br>
+<style scope>
+  .center-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px; /* Space between the cards */
+    padding: 10px;
+  }
+
+  .card {
+    flex: 1 1 250px; /* Flex-grow: 1, Flex-shrink: 1, Flex-basis: 300px */
+    max-width: 300px; /* Optional: limit the maximum width */
+    text-align: center;
+    padding: 10px;
+    border: 3px solid #4CAF50;
+    border-radius: 8px;
+    background-color: transparent;
+    cursor: pointer; /* Make it look clickable */
+  }
+
+  .card:hover {
+    background-color: #f0f0f0; /* Change background on hover */
+  }
+
+  .flex {
+    text-align: center; /* Center the text inside <h4> */
+  }
+
+  #map {
+    height: 400px; /* Height of the map */
+    width: 100%; /* Full width */
+    margin-top: 20px;
+    border-radius: 8px;
+  }
+
+  .btn-reverse {
+    position: relative;
+    padding-right: 40px; /* Add some space for the icon */
+  }
+
+  .edit-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #4CAF50;
+  }
+
+  .edit-icon:hover {
+    color: #0ca00c;
+  }
+
+</style>
+
+<center>
+  <img
+    src="{{ url_for('static', filename='img/my-places.svg') }}"
+    class="filter-green"
+    width="273"
+  />
+</center>
+<br>
+
+<div class="container readinglazy" align="center">
+    <div class="row" style="display:block;max-width:320px; text-align: center;">
+        <div class="col">
+            <!-- Display the Place Information -->
+            <div class="center-container">
+            {% for place in places %}
+                <div style="position: relative;display:block;width: 100%;">
+                    <button class="btn-reverse" data-slug="{{ place.slug }}">
+                        {{ place.name }}
+                    </button>
+
+                    <!-- Edit icon that links to edit page -->
+                    <a href="{{ url_for('views.new_or_edit_place', place_id=place.id) }}" class="edit-icon">
+                        <i class="fa fa-edit btn3"></i> <!-- FontAwesome edit icon -->
+                    </a>
+           
+                </div>
+            {% else %}
+                <p>No places found.</p>
+            {% endfor %}
+            
+            <!-- Button to add new place -->
+            <a style="font-size: 150%;padding: 0px;margin: 4px;" href="{{ url_for('views.new_or_edit_place') }}" type="button" class="btn">+Place</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.btn-reverse').forEach(card => {
+        card.addEventListener('click', () => {
+          const placeSlug = card.getAttribute('data-slug');
+          window.location.href = `/place/${placeSlug}`;
+        });
+      });
+    });
+</script>
+{% endblock %}

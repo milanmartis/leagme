@@ -94,6 +94,7 @@ class User(db.Model, fsqla.FsUserMixin):
     create_datetime = db.Column(db.DateTime, default=func.now())
     update_datetime = db.Column(db.DateTime, default=func.now(), onupdate=func.now())
     billing_info = db.relationship('BillingInfo', backref='user', uselist=False)
+    reservations = db.relationship('Reservation', back_populates='user')  # Pridajte tento vzťah
 
     def get_reset_token(self):
         s = Serializer(current_app.config['SECRET_KEY'])
@@ -180,6 +181,25 @@ class Place(db.Model):
     
     # Establish a relationship with PlaceGallery using back_populates to avoid naming conflicts
     galleries = relationship('PlaceGallery', back_populates='place', lazy=True)
+    fields = db.relationship('Field', back_populates='place', lazy=True)  # Toto pridajte
+    
+    def get_opening_hours_for_day(self, day_of_week):
+        # Mapovanie dňa týždňa (0 = Pondelok, 6 = Nedeľa) na skratku
+        day_mapping = {
+            0: 'MON',
+            1: 'TUE',
+            2: 'WED',
+            3: 'THU',
+            4: 'FRI',
+            5: 'SAT',
+            6: 'SUN'
+        }
+        
+        day_str = day_mapping.get(day_of_week)  # Získaj reťazcovú hodnotu dňa
+        if day_str:
+            return OpeningHours.query.filter_by(place_id=self.id, day_of_week=day_str).first()
+        else:
+            return None
 
 
     # Relationship with OpeningHours
@@ -196,6 +216,33 @@ class OpeningHours(db.Model):
     # Relationship with Place
     place = relationship('Place', back_populates='opening_hours')
     
+    
+class Reservation(db.Model):
+    __tablename__ = 'reservation'
+    id = db.Column(db.Integer, primary_key=True)
+    field_id = db.Column(db.Integer, db.ForeignKey('field.id'))
+    place_id = db.Column(db.Integer, db.ForeignKey('place.id'))
+    reservation_date = db.Column(db.Date, nullable=False)
+    start_time = db.Column(db.Time)  # Zmena na Time
+    end_time = db.Column(db.Time)    # Zmena na Time
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    # Vzťahy
+    user = db.relationship('User', back_populates='reservations')  # Tento vzťah odkazuje na používateľa
+    field = db.relationship('Field', back_populates='field_reservations')
+
+
+class Field(db.Model):
+    __tablename__ = 'field'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True)
+    place_id = db.Column(db.Integer, db.ForeignKey('place.id'))
+    capacity = db.Column(db.Integer)
+    description = db.Column(db.Text)
+
+    # Vzťahy
+    place = db.relationship('Place', back_populates='fields')
+    field_reservations = db.relationship('Reservation', back_populates='field') 
     
 class PlaceGallery(db.Model):
     __tablename__ = 'place_gallery'

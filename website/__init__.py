@@ -394,9 +394,9 @@ def create_app():
 
     #     return "Closed all open rounds after limit"
 
-    # Error Handler for CSRF errors
     @app.errorhandler(CSRFError)
     def handle_csrf_error(e):
+        print("CSRF Error: ", e.description)
         return jsonify({'error': 'CSRF token missing or incorrect.'}), 400
 
     @app.errorhandler(OperationalError)

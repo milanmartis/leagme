@@ -1,11 +1,52 @@
-{% extends 'base.html' %} 
+{% extends 'base.html' %}
 {% block title %}
-  LeagMe
-{% endblock %} 
+  LeagMe - {{ place.name }}
+{% endblock %}
 
 {% block content %}
 <br>
+<script>
+  //const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+</script>
 <style scope>
+  /* Modal styling */
+  .modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4); /* Background dim effect */
+  }
+
+  .modal-content {
+    background-color: #000;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+  /*max-width: 400px;*/
+  }
+
+  .close {
+    z-index: 999999;
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    
+  }
+
+  .close:hover,
+  .close:focus {
+    color: #00ff00;
+    text-decoration: none;
+    cursor: pointer;
+  }
   .center-container {
     display: flex;
     flex-wrap: wrap;
@@ -16,11 +57,11 @@
 
   .card {
     flex: 1 1 250px; /* Flex-grow: 1, Flex-shrink: 1, Flex-basis: 300px */
-    max-width: 300px; /* Optional: limit the maximum width */
+    max-width: 320px; /* Optional: limit the maximum width */
     text-align: center;
     padding: 10px;
-    border: 3px solid #4CAF50;
-    border-radius: 8px;
+    border: 1px solid #4CAF50;
+    border-radius: 18px;
     background-color: transparent;
   }
 
@@ -34,51 +75,190 @@
     margin-top: 20px;
     border-radius: 8px;
   }
+
+  .opening-hours-container {
+    margin-top: 20px;
+    text-align: center;
+  }
+
+  .opening-hours-table {
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+    border-collapse: collapse;
+  }
+
+  .opening-hours-table tr:nth-child(even) {
+    background-color: rgba(0, 255, 0, 0.2);
+  }
+
+  .opening-hours-table th, .opening-hours-table td {
+    padding: 5px;
+    text-align: center;
+    border: 0px solid #4CAF50;
+    font-size: 75%;
+  }
+
+  .opening-hours-table th {
+    background-color: #4CAF50;
+    color: white;
+  }
+
+  .fields-container {
+    margin-top: 20px;
+    text-align: center;
+  }
+
+  .fields-list {
+    list-style-type: none;
+    padding: 0;
+  }
+
+  .fields-list li {
+    margin: 10px 0;
+    padding: 10px;
+    border: 0px solid #4CAF50;
+    border-radius: 10px;
+    background-color:#00ff00;
+    color: #000;
+  }
+
+  .fields-list li p {
+color: #000;
+  }
+
+  .slot-button {
+    padding: 6px;
+    margin: 3px;
+    border: 1px solid #4CAF50;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    border-radius: 5px;
+  }
+  .slot-button.available {
+    background-color: rgba(0, 255, 0, 1); /* Voľné sloty */
+  }
+  .slot-button.booked {
+    background-color: rgba(255, 255, 0, 0.2); /* Rezervované sloty */
+    color:#00ff00;
+    cursor: not-allowed;
+  }
+  .slot-button.my-booking {
+    background-color: rgba(0, 0, 0, 1); /* Sloty rezervované aktuálnym používateľom */
+    color:#00ff00;
+
+  }
+  .slot-button.my-booking:hover {
+    background-color: rgba(0, 255, 0, 0.41); /* Zvýraznenie na zrušenie rezervácie */
+    color:#00ff00;
+
+  }
+
 </style>
 
-<center>
-  <img
-    src="{{ url_for('static', filename='img/place.svg') }}"
-    class="filter-green"
-    width="273"
-  />
-</center>
-<br>
+<img src="{{ url_for('static', filename='img/place.svg') }}" class="filter-green" width="273" />
 
 <!-- Display the Place Information -->
 <div class="center-container">
   <div class="card">
-    <h4>
-      <strong>Place Name: </strong>{{ place.name }}<br>
-      <strong>Coordinates: </strong>{{ place.coordinates }}<br>
+  
+      <h4>Place Name</h4><h2>{{ place.name }}      
+        {% if place.user_id==user.id %}             
+         <!-- Edit icon that links to edit page -->
+        <a href="{{ url_for('views.new_or_edit_place', place_id=place.id) }}" class="edit-icon">
+            <i class="fa fa-edit "></i> <!-- FontAwesome edit icon -->
+        </a>
+        {% endif %}
+      </h2>
+      <h4 style="line-height: 90%;"><i class="fas fa-map-marker" style="font-size: 144%; color: rgba(0, 255, 0, 0.45); padding-right: 6px;" aria-hidden="true"></i> {{ place.address_street }}</h4>
+      <h4><i class="fas fa-phone" style="font-size: 144%; color: rgba(0, 255, 0, 0.45); padding-right: 6px;" aria-hidden="true"></i> {{ place.phone_number }}</h4>
+      <h4><i class="fas fa-envelope" style="font-size: 144%; color: rgba(0, 255, 0, 0.45); padding-right: 6px;" aria-hidden="true"></i> {{ user.email }}</h4>
+
+      <!-- Otváracie hodiny -->
+      <div class="opening-hours-container">
+        <h4>Opening Hours</h4>
+        {% if place.opening_hours %}
+          <table class="opening-hours-table">
+            <tbody>
+              {% for oh in place.opening_hours %}
+                <tr>
+                  <td>{{ oh.day_of_week }}</td>
+                  <td>{{ oh.open_time.strftime('%H:%M') }}</td>
+                  <td>{{ oh.close_time.strftime('%H:%M') }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p>No opening hours for this place</p>
+        {% endif %}
+      </div>
+
+      <!-- Zobrazenie ihrísk -->
+      <div class="fields-container">
+        <h4>Fields</h4>
+        <ul class="fields-list">
+          {% for field in fields %}
+            <li>
+              <strong>{{ field.name }}</strong> (Capacity: {{ field.capacity }})
+              <p>{{ field.description }}</p>
+              <button class="btn-reverse" data-field-id="{{ field.id }}">Reservation</button>
+            </li>
+          {% else %}
+            <p>No fields available.</p>
+          {% endfor %}
+        </ul>
+        <!-- Odkaz na vytvorenie nového ihriska -->
+        <a href="{{ url_for('views.create_field', place_id=place.id) }}" class="btn">Vytvoriť nové ihrisko</a>
+      </div>
+
+            <!-- Modal for selecting reservation time -->
+            <div id="reservationModal" class="modal">
+              <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2 id="fieldName"></h2>
+                <form id="reservationForm" method="POST">
+                  <input type="hidden" name="field_id" id="field_id">
+                  <input type="hidden" name="place_id" id="place_id" value="{{place.id}}">
+              
+                  <label for="reservation_date">Dátum:</label>
+                 <input type="date" name="reservation_date" id="reservation_date" required>
+                  <button id="prev-week" class="arrow-button btn3"><<</button>
+                  <button id="next-week" class="arrow-button btn3">>></button>
+                  <div id="availableSlotsContainer"></div> <!-- Bude obsahovať dostupné sloty -->
+              
+                  <button type="submit" class="btn">Pick up</button>
+              </form>
+              </div>
+            </div>
+
       <!-- Map Placeholder -->
       <div id="map"></div>
-    </h4>
   </div>
 </div>
+
+<br>
 <center><h3 class="neon-text" style="font-size: 99%; font-weight: 700;">OPEN</h3></center>
 <h1 style="margin-top: -40px;" align="center"><img src="{{ url_for('static', filename = 'img/seasons.svg') }}" class="filter-green" width="150" /></h1>
-{{place.id}}
+
 {% if season_places %}
   <div class="container readinglazy" align="center">
     <div class="row" style="display:block;max-width:320px; text-align: center;">
       {% for season in season_places %}
         <div valign="middle" align="center" class="col-12">
           {% if season.visible == true %}
-          {% if season.open == true %}
-          <a href="{{ url_for('views.home', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none">{{ season.name }}</a>
+            {% if season.open == true %}
+              <a href="{{ url_for('views.home', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none">{{ season.name }}</a>
+            {% else %}
+              <a href="{{ url_for('views.season_manager', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none">{{ season.name }}</a>
+            {% endif %}
           {% else %}
-          <a href="{{ url_for('views.season_manager', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none">{{ season.name }}</a>
+            {% if season.open == true %}
+              <a href="{{ url_for('views.home', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none" style="opacity:0.6;">{{ season.name }}</a>
+            {% else %}
+              <a href="{{ url_for('views.season_manager', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none" style="opacity:0.6;">{{ season.name }}</a>
+            {% endif %}
           {% endif %}
-          {% else %}
-          {% if season.open == true %}
-          <a href="{{ url_for('views.home', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none" style="opacity:0.6;">{{ season.name }}</a>
-          {% else %}
-          <a href="{{ url_for('views.season_manager', season=season.id) }}" class="btn btn-outline-dark btn-block shadow-none" style="opacity:0.6;">{{ season.name }}</a>
-          {% endif %}
-
-          {% endif %}
-
         </div>
       {% endfor %}
     </div>
@@ -92,6 +272,8 @@
     </div>
   </div>
 {% endif %}
+
+
 <!-- Include Leaflet JavaScript -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
@@ -107,16 +289,236 @@
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        
       }).addTo(map);
 
       L.marker([latitude, longitude]).addTo(map)
         .bindPopup("{{ place.name }}")
-        .openPopup();
+        //.openPopup();
     } else {
       console.error('Invalid coordinates:', coordinates);
     }
   });
 </script>
+
+<!-- Include Leaflet JavaScript -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var csrfToken = '{{ csrf_token() }}';
+    var placeId = '{{ place.id }}';  // ID miesta
+    var currentDate = new Date();  // Aktuálny dátum
+    var modal = document.getElementById("reservationModal");
+    var closeBtn = document.getElementsByClassName("close")[0];
+
+    // Funkcia na formátovanie dátumu na yyyy-mm-dd
+    function formatDate(date) {
+      var d = new Date(date);
+      let month = '' + (d.getMonth() + 1);
+      let day = '' + d.getDate();
+      const year = d.getFullYear();
+
+      if (month.length < 2) month = '0' + month;
+      if (day.length < 2) day = '0' + day;
+
+      return [year, month, day].join('-');
+    }
+
+    // Funkcia na získanie prvého dňa aktuálneho týždňa (pondelok)
+    function getFirstDayOfWeek(date) {
+      var day = date.getDay(); // Získa deň v týždni (0 = nedeľa, 1 = pondelok, ..., 6 = sobota)
+      var diffToMonday = day === 0 ? -6 : 1 - day; // Ak je nedeľa, ideme o 6 dní dozadu, inak do pondelka
+      var firstDayOfWeek = new Date(date);
+      firstDayOfWeek.setDate(date.getDate() + diffToMonday);  // Nastav pondelok
+      return firstDayOfWeek;
+    }
+
+    // Funkcia na otvorenie modálneho okna a zobrazenie aktuálneho týždňa
+    function openModalForField(fieldId) {
+      var firstDayOfWeek = getFirstDayOfWeek(currentDate);
+      fetchWeekSlots(fieldId, firstDayOfWeek); // Získaj sloty pre celý týždeň od pondelka
+      modal.style.display = "block";
+    }
+
+    // Funkcia na načítanie dostupných slotov pre celý týždeň
+    function fetchWeekSlots(fieldId, startDate) {
+      var slotsContainer = document.getElementById('availableSlotsContainer');
+      slotsContainer.innerHTML = '';  // Vymaže predchádzajúce sloty
+
+      for (let i = 0; i < 7; i++) {
+        let currentDay = new Date(startDate);
+        currentDay.setDate(startDate.getDate() + i);  // Pridať i dní
+
+        fetchSlotsForDay(fieldId, currentDay, slotsContainer);
+      }
+    }
+
+    // Funkcia na načítanie slotov pre konkrétny deň
+    function fetchSlotsForDay(fieldId, date, container) {
+      let formattedDate = formatDate(date);  // Formátuj dátum na yyyy-mm-dd
+
+      fetch(`/place/${placeId}/field/${fieldId}/available_slots?date=${formattedDate}`)
+        .then(response => response.json())
+        .then(slots => {
+          // Vytvoríme sekciu pre konkrétny deň
+          let daySection = document.createElement('div');
+          daySection.innerHTML = `<h4>${formattedDate} (${getDayName(date)})</h4>`;
+          container.appendChild(daySection);
+
+          // Vytvoríme tlačidlá pre každý časový slot
+          slots.forEach(function(slot) {
+            let slotButton = document.createElement('button');
+            slotButton.className = 'slot-button available';
+            slotButton.innerText = `${slot.start} - ${slot.end}`;
+            slotButton.setAttribute('data-slot', `${slot.start}-${slot.end}`);
+            slotButton.setAttribute('data-date', formattedDate);  // Pridáme atribút pre dátum
+
+            if (slot.booked_by_current_user) {
+              slotButton.className = 'slot-button my-booking';
+              slotButton.innerText += "";
+             // slotButton.innerText += " (Your booking)";
+              slotButton.addEventListener('click', function() {
+                if (confirm('Do you want to cancel this reservation?')) {
+                  cancelBooking(fieldId, slotButton.getAttribute('data-slot'), formattedDate, slotButton);
+                }
+              });
+            } else if (slot.booked) {
+              slotButton.className = 'slot-button booked';
+              slotButton.disabled = false;
+            } else {
+              slotButton.addEventListener('click', function() {
+                // Pri kliknutí na slot, aktualizujeme skrytý input s dátumom
+                document.getElementById('reservation_date').value = slotButton.getAttribute('data-date');
+                document.querySelectorAll('.slot-button').forEach(btn => btn.classList.remove('selected'));
+                this.classList.add('selected');
+              });
+            }
+
+            daySection.appendChild(slotButton);
+          });
+        })
+        .catch(error => console.error('Error fetching available slots:', error));
+    }
+
+    // Funkcia na získanie názvu dňa týždňa
+    function getDayName(date) {
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      return days[date.getDay()];
+    }
+
+    // Funkcia na zrušenie rezervácie
+    function cancelBooking(fieldId, slot, reservationDate, slotButton) {
+      fetch(`/place/${placeId}/field/${fieldId}/cancel_booking`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify({ 
+          slot: slot,
+          reservation_date: reservationDate
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Booking cancelled.');
+          slotButton.classList.remove('my-booking');  // Odstráň rezerváciu
+          slotButton.classList.add('available');  // Zmena na dostupný slot
+          slotButton.innerText = `${slotButton.getAttribute('data-slot')}`;
+          slotButton.disabled = false;  // Umožniť opätovnú rezerváciu
+          slotButton.addEventListener('click', function() {
+            document.getElementById('reservation_date').value = slotButton.getAttribute('data-date');
+            document.querySelectorAll('.slot-button').forEach(btn => btn.classList.remove('selected'));
+            slotButton.classList.add('selected');
+          });
+        } else {
+          alert('Error canceling the booking.');
+        }
+      });
+    }
+
+    // Funkcia na spracovanie úspešnej rezervácie
+    function markSlotAsBooked(slotButton) {
+      slotButton.classList.remove('available');  // Odstrániť dostupnosť
+      slotButton.classList.add('my-booking');  // Označiť ako rezervovaný
+      slotButton.innerText += "";
+      slotButton.disabled = false;  // Zakázať ďalšie kliknutia
+    }
+
+    // Funkcie na navigáciu medzi týždňami
+    document.getElementById('prev-week').addEventListener('click', function() {
+      currentDate.setDate(currentDate.getDate() - 7);  // Posun o týždeň späť
+      var fieldId = document.getElementById('field_id').value;
+      openModalForField(fieldId);  // Znovu načítaj modal
+    });
+
+    document.getElementById('next-week').addEventListener('click', function() {
+      currentDate.setDate(currentDate.getDate() + 7);  // Posun o týždeň dopredu
+      var fieldId = document.getElementById('field_id').value;
+      openModalForField(fieldId);  // Znovu načítaj modal
+    });
+
+    // Otvorenie modal okna pri kliknutí na tlačidlo Rezervácia
+    document.querySelectorAll('.btn-reverse').forEach(function(button) {
+      button.addEventListener('click', function() {
+        var fieldId = this.getAttribute('data-field-id');
+        document.getElementById('field_id').value = fieldId;
+        openModalForField(fieldId);  // Otvoríme modal pre konkrétne ihrisko
+      });
+    });
+
+    // Zatvorenie modal okna
+    closeBtn.onclick = function() {
+      modal.style.display = "none";
+    };
+
+    // Zatvorenie modal okna pri kliknutí mimo
+    window.onclick = function(event) {
+      if (event.target == modal) {
+      //  modal.style.display = "none";
+      }
+    };
+
+    // Odoslanie formulára na rezerváciu
+    document.getElementById('reservationForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      var formData = new FormData(this);
+      var selectedSlot = document.querySelector('.slot-button.selected');
+
+      if (!selectedSlot) {
+      //  alert('Please select a time slot.');
+        return;
+      }
+
+      formData.append('time_slot', selectedSlot.getAttribute('data-slot'));
+      formData.append('reservation_date', selectedSlot.getAttribute('data-date'));  // Pridaj dynamicky dátum slotu
+
+      fetch('/reserve_field', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrfToken,  // Pridanie CSRF tokenu do hlavičky
+        },
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Rezervácia bola úspešná!');
+          markSlotAsBooked(selectedSlot);  // Označiť slot ako rezervovaný
+        } else {
+          alert('Chyba pri vytváraní rezervácie.');
+        }
+      //  modal.style.display = "none"; // Zatvorenie modalu po úspechu alebo chybe
+      })
+      .catch(error => console.error('Error:', error));
+    });
+});
+</script>
+
+
+
+
+
+
 
 {% endblock %}

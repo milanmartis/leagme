@@ -1,5 +1,31 @@
 {% extends "base.html" %} {% block title %}LeagMe - Standings{% endblock %} {% block
   content %}
+  {% if round_all_info.rules %}
+<style scoped>
+  td.tab-name {
+    min-width:150px;
+    color: var(--main-color);
+    font-size: 80%;
+    text-align: left;
+    padding: 4px;
+    margin: 4px;
+}
+
+</style>
+{% else %}
+<style scoped>
+  td.tab-name {
+    min-width:160px;
+    color: var(--main-color);
+    font-size: 80%;
+    text-align: left;
+    padding: 4px;
+    margin: 4px;
+}
+
+</style>
+
+{% endif %}
 
   {% if seas.season_type == 1 %}
   <h1 align="center">
@@ -120,18 +146,14 @@
 
                                   <td class="tab-others2">
                                       <!-- Prvé riadky v skupine - šípky hore -->
-                                      {% if move_value is not none and loop.index <= 2 %}
                                           {% if move_value == '1' %}
-                                              <i class="fa fa-arrow-up" style="color:#0ca00c;margin-left: -6px;"></i>
+                                              <i class="fa fa-arrow-up" style="color:#0ca00c;margin-left: -6px;" title="promotion"></i>
                                           {% endif %}
-                                      {% endif %}
 
                                       <!-- Posledné riadky v skupine - šípky dole -->
-                                      {% if move_value is not none and loop.index >= group_size - 1 %}
                                           {% if move_value == '2' %}
-                                              <i class="fa fa-arrow-down" style="color:#ff0000;margin-left: -6px;"></i>
+                                              <i class="fa fa-arrow-down" style="color:#ff0000;margin-left: -6px;" title="relegation"></i>
                                           {% endif %}
-                                      {% endif %}
                                   </td>
                               </tr>
                           {% endfor %}
